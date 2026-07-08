@@ -894,6 +894,7 @@ export default function BezAgenciaLuxuryApp() {
   const [adminOfferSaveStatus, setAdminOfferSaveStatus] = useState("idle"); // idle | saving | sent | error
   const [adminSelectedInquiry, setAdminSelectedInquiry] = useState(null); // пълните данни от запитването на клиента
   const [adminSelectedInquiryPaid, setAdminSelectedInquiryPaid] = useState(false);
+  const [adminSelectedInquiryStatus, setAdminSelectedInquiryStatus] = useState("none"); // none | awaiting_payment | paid
   const [adminSelectedInquiryLoading, setAdminSelectedInquiryLoading] = useState(false);
 
   const [adminDealSaveStatus, setAdminDealSaveStatus] = useState("idle");
@@ -1514,17 +1515,29 @@ export default function BezAgenciaLuxuryApp() {
     setAdminOfferForm((f) => ({ ...f, inquiryId: id }));
     setAdminSelectedInquiry(null);
     setAdminSelectedInquiryPaid(false);
+    setAdminSelectedInquiryStatus("none");
     if (!id) return;
     setAdminSelectedInquiryLoading(true);
     try {
       const r = await db.get(`inquiry:${id}`, true);
       setAdminSelectedInquiry(r?.value ? JSON.parse(r.value) : null);
     } catch { setAdminSelectedInquiry(null); }
+
+    let hasOffer = false;
+    try {
+      const o = await db.get(`offer:${id}`, true);
+      hasOffer = !!o?.value;
+    } catch { hasOffer = false; }
+
+    let isPaid = false;
     try {
       const p = await db.get(`payment:${id}`, true);
       const pData = p?.value ? JSON.parse(p.value) : null;
-      setAdminSelectedInquiryPaid(!!pData?.paid);
-    } catch { setAdminSelectedInquiryPaid(false); }
+      isPaid = !!pData?.paid;
+    } catch { isPaid = false; }
+
+    setAdminSelectedInquiryPaid(isPaid);
+    setAdminSelectedInquiryStatus(isPaid ? "paid" : hasOffer ? "awaiting_payment" : "none");
     setAdminSelectedInquiryLoading(false);
   };
 
@@ -2796,9 +2809,14 @@ export default function BezAgenciaLuxuryApp() {
                         <option value="">Избери запитване</option>
                         {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
                       </select>
-                      {adminSelectedInquiryPaid && (
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: PALETTE.jungle, background: "rgba(46,158,118,0.14)", border: `1px solid ${PALETTE.jungle}`, borderRadius: 20, padding: "7px 14px", whiteSpace: "nowrap", flexShrink: 0 }}>
-                          ✓ Платено
+                      {adminOfferForm.inquiryId && !adminSelectedInquiryLoading && (
+                        <span style={{
+                          fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, borderRadius: 20, padding: "7px 14px",
+                          color: adminSelectedInquiryStatus === "paid" ? PALETTE.jungle : adminSelectedInquiryStatus === "awaiting_payment" ? PALETTE.oceanBright : PALETTE.goldBright,
+                          background: adminSelectedInquiryStatus === "paid" ? "rgba(46,158,118,0.14)" : adminSelectedInquiryStatus === "awaiting_payment" ? "rgba(46,111,149,0.14)" : "rgba(212,175,55,0.12)",
+                          border: `1px solid ${adminSelectedInquiryStatus === "paid" ? PALETTE.jungle : adminSelectedInquiryStatus === "awaiting_payment" ? PALETTE.oceanBright : "rgba(212,175,55,0.4)"}`,
+                        }}>
+                          {adminSelectedInquiryStatus === "paid" ? "✓ Чака пълна оферта" : adminSelectedInquiryStatus === "awaiting_payment" ? "Оферта изпратена — чака плащане" : "Чака кратка оферта"}
                         </span>
                       )}
                     </div>
