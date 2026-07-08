@@ -6,7 +6,7 @@ import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap');`;
@@ -834,6 +834,14 @@ export default function BezAgenciaLuxuryApp() {
   const [offerDiscountCode, setOfferDiscountCode] = useState("");
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
   const [offerConfirmError, setOfferConfirmError] = useState("");
+  const [offerDiscountStatus, setOfferDiscountStatus] = useState("idle"); // idle | checking | applied | invalid | used
+  const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  // ── Публични отзиви (показани в края на страница Отзиви) ────────────
+  const [publicReviews, setPublicReviews] = useState([]);
+  const [publicReviewsLoading, setPublicReviewsLoading] = useState(false);
+
 
 
   // ── Отзиви и ваучери — проверка по номер на резервация, дали е реално платено ──
@@ -1091,6 +1099,22 @@ export default function BezAgenciaLuxuryApp() {
     } catch { setOfferLoadStatus("notfound"); }
   };
 
+  const handleApplyDiscountCode = async () => {
+    const code = offerDiscountCode.trim().toUpperCase();
+    if (!code) return;
+    setOfferDiscountStatus("checking");
+    try {
+      const v = await db.get(`voucher:${code}`, true);
+      const voucherData = v?.value ? JSON.parse(v.value) : null;
+      if (!voucherData) { setOfferDiscountStatus("invalid"); setOfferDiscountPercent(0); return; }
+      if (voucherData.used) { setOfferDiscountStatus("used"); setOfferDiscountPercent(0); return; }
+      setOfferDiscountPercent(voucherData.percent || 10);
+      setOfferDiscountStatus("applied");
+    } catch {
+      setOfferDiscountStatus("invalid"); setOfferDiscountPercent(0);
+    }
+  };
+
   const handleConfirmOffer = async () => {
     if (!offerData || !offerViewId) return;
     setOfferConfirmStatus("checking"); setOfferConfirmError("");
@@ -1099,25 +1123,19 @@ export default function BezAgenciaLuxuryApp() {
       let commission = Math.max(total * 0.05, 50);
 
       const code = offerDiscountCode.trim().toUpperCase();
-      if (code) {
-        let voucherData = null;
+      if (code && offerDiscountStatus === "applied") {
+        commission = commission * (1 - offerDiscountPercent / 100);
         try {
           const v = await db.get(`voucher:${code}`, true);
-          voucherData = v?.value ? JSON.parse(v.value) : null;
-        } catch { voucherData = null; }
-
-        if (!voucherData) {
-          setOfferConfirmError("Невалиден код за отстъпка.");
-          setOfferConfirmStatus("error");
-          return;
-        }
-        if (voucherData.used) {
-          setOfferConfirmError("Този код вече е използван.");
-          setOfferConfirmStatus("error");
-          return;
-        }
-        commission = commission * (1 - (voucherData.percent || 10) / 100);
-        await db.set(`voucher:${code}`, JSON.stringify({ ...voucherData, used: true, usedAt: Date.now() }), true);
+          const voucherData = v?.value ? JSON.parse(v.value) : null;
+          if (voucherData && !voucherData.used) {
+            await db.set(`voucher:${code}`, JSON.stringify({ ...voucherData, used: true, usedAt: Date.now() }), true);
+          }
+        } catch { /* не е критично, продължаваме с плащането */ }
+      } else if (code && offerDiscountStatus !== "applied") {
+        setOfferConfirmError("Натисни „Приложи отстъпка", за да провериш кода, преди да потвърдиш.");
+        setOfferConfirmStatus("error");
+        return;
       }
 
       commission = Math.round(commission * 100) / 100;
@@ -1146,6 +1164,20 @@ export default function BezAgenciaLuxuryApp() {
       setOfferConfirmError(e.message || "Проблем с връзката.");
       setOfferConfirmStatus("error");
     }
+  };
+
+  /* ── Публични отзиви — зареждане за показ в края на страница Отзиви ── */
+  const loadPublicReviews = async () => {
+    setPublicReviewsLoading(true);
+    try {
+      const res = await db.list("review:", true);
+      const keys = res?.keys || [];
+      const items = await Promise.all(keys.map(async (k) => {
+        try { const r = await db.get(k, true); return JSON.parse(r.value); } catch { return null; }
+      }));
+      setPublicReviews(items.filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+    } catch { setPublicReviews([]); }
+    setPublicReviewsLoading(false);
   };
 
   /* ── Отзиви: проверка дали номерът реално отговаря на платено пътуване ── */
@@ -1183,8 +1215,25 @@ export default function BezAgenciaLuxuryApp() {
       await db.set(`voucher:${code}`, JSON.stringify({
         code, percent: 10, inquiryId: id, createdAt: Date.now(), used: false,
       }), true);
+
+      if (reviewInquiryInfo?.email) {
+        await sendTransactionalEmail({
+          to: reviewInquiryInfo.email,
+          subject: "Благодарим за отзива! Ето твоя ваучер за 10% отстъпка",
+          html: emailWrap("Ваучер за отстъпка", `
+            <p style="margin:0 0 10px;">Здравей ${reviewInquiryInfo.name || ""},</p>
+            <p style="margin:0 0 20px;">Благодарим ти, че отдели време да оставиш отзив! Ето твоя код за 10% отстъпка от следващото пътуване:</p>
+            <p style="text-align:center;margin:0 0 20px;">
+              <span style="display:inline-block;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;font-weight:700;font-size:20px;letter-spacing:1px;padding:14px 22px;border-radius:10px;">${code}</span>
+            </p>
+            <p style="margin:0;font-size:13px;color:#8E99AE;">Спомени кода при следващото си запитване или го въведи в полето за код за отстъпка, когато получиш персонална оферта.</p>
+          `),
+        });
+      }
+
       setReviewVoucherCode(code);
       setReviewSubmitStatus("done");
+      loadPublicReviews();
     } catch { setReviewSubmitStatus("error"); }
   };
 
@@ -1235,14 +1284,15 @@ export default function BezAgenciaLuxuryApp() {
   };
 
   useEffect(() => {
-    if (page === "deals") loadDeals();
+    if (page === "deals" || modalPage === "deals") loadDeals();
+    if (page === "reviews" || modalPage === "reviews") loadPublicReviews();
     if (page === "admin" && adminAuthed) {
       if (adminTab === "payments") loadAdminPayments();
       if (adminTab === "deals") loadDeals();
       if (adminTab === "contacts" || adminTab === "offer" || adminTab === "email") loadAdminContacts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, adminAuthed, adminTab]);
+  }, [page, modalPage, adminAuthed, adminTab]);
 
   /* ── Админ: плащания ─────────────────────────────────────────────── */
   const loadAdminPayments = async () => {
@@ -1717,6 +1767,25 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── МОДАЛ: ЗАЩИТА НА КАРТОВИ ДАННИ ───────────────────────────── */}
       {showCardSecurity && (
         <CardSecurityModal onClose={() => setShowCardSecurity(false)} />
+      )}
+
+      {/* ── LIGHTBOX: снимка на цял екран (оферта) ───────────────────── */}
+      {lightboxImage && (
+        <div
+          onClick={() => setLightboxImage(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 60, background: "rgba(6,8,16,0.92)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24, cursor: "zoom-out",
+          }}
+        >
+          <button onClick={() => setLightboxImage(null)} style={{
+            position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.08)", border: `1px solid ${PALETTE.panelBorder}`,
+            borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.ink,
+          }}>
+            <X size={20} />
+          </button>
+          <img src={lightboxImage} alt="" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+        </div>
       )}
 
       {/* ── СТРАНИЦА: НАЧАЛО ──────────────────────────────────────── */}
@@ -2372,6 +2441,30 @@ export default function BezAgenciaLuxuryApp() {
               </div>
             </div>
           )}
+
+          <div style={{ marginTop: 44, paddingTop: 28, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
+            <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, margin: "0 0 16px" }}>Какво споделят другите пътешественици</h3>
+            {publicReviewsLoading && <p style={{ fontSize: 13, color: PALETTE.inkMuted }}>Зареждам отзиви…</p>}
+            {!publicReviewsLoading && publicReviews.length === 0 && (
+              <p style={{ fontSize: 13, color: PALETTE.inkMuted }}>Все още няма оставени отзиви — бъди първият!</p>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {publicReviews.map((r, i) => (
+                <div key={i} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13.5, color: PALETTE.ink }}>{r.name}</span>
+                    <span style={{ display: "flex", gap: 1 }}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={13} fill={n <= r.rating ? PALETTE.goldBright : "none"} color={n <= r.rating ? PALETTE.goldBright : PALETTE.panelBorder} strokeWidth={1.5} />
+                      ))}
+                    </span>
+                  </div>
+                  {(r.city || r.country) && <div style={{ fontSize: 11.5, color: PALETTE.inkFaint, marginBottom: 6 }}>{r.city}{r.city && r.country ? ", " : ""}{r.country}</div>}
+                  <p style={{ fontSize: 13, color: PALETTE.inkMuted, margin: 0, lineHeight: 1.6 }}>{r.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </>
         );
         return modalPage === "reviews" ? (
@@ -2412,7 +2505,10 @@ export default function BezAgenciaLuxuryApp() {
                 {offerData.photos?.length > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(offerData.photos.length, 3)}, 1fr)`, gap: 8 }}>
                     {offerData.photos.map((p, i) => (
-                      <img key={i} src={p} alt="" style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12, border: `1px solid ${PALETTE.panelBorder}` }} />
+                      <img
+                        key={i} src={p} alt="" onClick={() => setLightboxImage(p)}
+                        style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12, border: `1px solid ${PALETTE.panelBorder}`, cursor: "zoom-in" }}
+                      />
                     ))}
                   </div>
                 )}
@@ -2426,22 +2522,69 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
                 </div>
 
-                <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: PALETTE.inkMuted, lineHeight: 1.6 }}>
-                  <span>* След плащане ще получиш 2 конкретни опции за настаняване на място.</span>
-                  <span>* След плащане ще получиш линкове за входни билети за забележителности и допълнителни екскурзии през GetYourGuide.</span>
-                  <span>* След плащане ще получиш информация за трансфер от летището и видовете градски транспорт.</span>
+                <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
+                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 14 }}>След потвърдено плащане получаваш</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><HomeIcon size={15} /></div>
+                      <div style={{ fontSize: 13, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
+                        <strong style={{ color: PALETTE.ink }}>2 конкретни опции за настаняване</strong> — избираш това, което ти хареса повече.
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Compass size={15} /></div>
+                      <div style={{ fontSize: 13, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
+                        <strong style={{ color: PALETTE.ink }}>Билети за забележителности и екскурзии</strong> — линкове през GetYourGuide.
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Car size={15} /></div>
+                      <div style={{ fontSize: 13, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
+                        <strong style={{ color: PALETTE.ink }}>Трансфер от летището и градски транспорт</strong> — как да се придвижваш на място.
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <Field label="Код за отстъпка (ако имаш от отзив)">
-                  <input value={offerDiscountCode} onChange={(e) => setOfferDiscountCode(e.target.value)} placeholder="напр. VIP10-ABCDE" style={inputStyle} />
+                <Field label="Имаш код за отстъпка от отзив?">
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      value={offerDiscountCode}
+                      onChange={(e) => { setOfferDiscountCode(e.target.value); setOfferDiscountStatus("idle"); }}
+                      placeholder="напр. VIP10-ABCDE" style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button
+                      onClick={handleApplyDiscountCode}
+                      disabled={!offerDiscountCode.trim() || offerDiscountStatus === "checking"}
+                      className="lux-hover"
+                      style={{
+                        background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "0 18px",
+                        fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 13, color: PALETTE.ink, cursor: "pointer", whiteSpace: "nowrap",
+                      }}
+                    >
+                      {offerDiscountStatus === "checking" ? "Проверявам…" : "Приложи отстъпка"}
+                    </button>
+                  </div>
+                  {offerDiscountStatus === "applied" && <p style={{ fontSize: 12, color: PALETTE.jungle, margin: "6px 0 0" }}>Кодът е валиден — {offerDiscountPercent}% отстъпка е приложена ✓</p>}
+                  {offerDiscountStatus === "invalid" && <p style={{ fontSize: 12, color: PALETTE.coralDark, margin: "6px 0 0" }}>Невалиден код за отстъпка.</p>}
+                  {offerDiscountStatus === "used" && <p style={{ fontSize: 12, color: PALETTE.coralDark, margin: "6px 0 0" }}>Този код вече е използван.</p>}
                 </Field>
 
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
                   <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>Дължима комисионна сега</div>
-                  <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldBright, marginBottom: 6 }}>
-                    {Math.round(baseCommission)} €
-                  </div>
-                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: 0 }}>5% от стойността на пътуването, минимум 50 € — комисионна за услугата, не цената на самото пътуване. Ако въведеш валиден код за отстъпка, ще се приложи автоматично при потвърждение.</p>
+                  {offerDiscountStatus === "applied" ? (
+                    <>
+                      <div style={{ fontSize: 15, color: PALETTE.inkFaint, textDecoration: "line-through", marginBottom: 2 }}>{Math.round(baseCommission)} €</div>
+                      <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldBright, marginBottom: 6 }}>
+                        {Math.round(baseCommission * (1 - offerDiscountPercent / 100))} €
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldBright, marginBottom: 6 }}>
+                      {Math.round(baseCommission)} €
+                    </div>
+                  )}
+                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: 0 }}>5% от стойността на пътуването, минимум 50 € — това е комисионна за услугата, не цената на самото пътуване.</p>
                 </div>
 
                 <button onClick={handleConfirmOffer} disabled={offerConfirmStatus === "checking" || offerConfirmStatus === "redirecting"} className="lux-btn" style={{
