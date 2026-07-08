@@ -29,6 +29,11 @@ export default async function handler(req, res) {
   try {
     const params = new URLSearchParams();
     params.append("mode", "payment");
+    // Само карта (в която автоматично се показват Apple Pay / Google Pay
+    // за поддържани устройства/браузъри) + Revolut Pay. Без банкови
+    // преводи, Klarna и т.н.
+    params.append("payment_method_types[0]", "card");
+    params.append("payment_method_types[1]", "revolut_pay");
     params.append("line_items[0][price_data][currency]", "eur");
     params.append("line_items[0][price_data][product_data][name]", `Пътуване — запитване ${inquiryId}`);
     params.append("line_items[0][price_data][unit_amount]", String(Math.round(amountNum * 100)));
