@@ -946,6 +946,29 @@ export default function BezAgenciaLuxuryApp() {
   const goHome = () => { setPage("home"); setShowAbout(false); setModalPage(null); };
   const goWizard = () => { setPage("wizard"); if (step === 6) resetWizard(); };
 
+  /* ── "Искам тази оферта" — пренася данните от офертата директно на стъпка 4 ── */
+  const handleWantThisDeal = (deal) => {
+    resetWizard();
+
+    const dep = DEPARTURES.find((d) => d.name === deal.departureFrom);
+    if (dep) setDeparture(dep);
+
+    let foundCountry = null, foundCity = null;
+    for (const c of COUNTRIES) {
+      const matchCity = c.cities.find((ci) => ci.name === deal.city);
+      if (matchCity) { foundCountry = c; foundCity = matchCity; break; }
+    }
+    setCountry(foundCountry || { id: "custom", name: deal.country || "-", cities: [] });
+    setCity(foundCity || { id: "custom", name: deal.city || "-", from: [] });
+
+    if (deal.totalPrice) setBudgetPerPerson(String(deal.totalPrice));
+    if (deal.travelMonth) { setFindLowestPrice(true); setLowestPriceMonth(deal.travelMonth); }
+
+    setModalPage(null);
+    setPage("wizard");
+    setStep(4);
+  };
+
   const allChildrenAgesSet = childrenCount === 0 || (childrenAges.length === childrenCount && childrenAges.every((a) => a !== ""));
   const datesValid = findLowestPrice ? !!lowestPriceMonth : !!(dateFrom && dateTo);
   const canSubmit =
@@ -2336,10 +2359,17 @@ export default function BezAgenciaLuxuryApp() {
                       <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 24, color: PALETTE.goldBright }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                     </div>
                     {d.travelMonth && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: PALETTE.inkFaint }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: PALETTE.inkFaint, marginBottom: 14 }}>
                         <Clock size={12} /> Пътуване през {d.travelMonth}
                       </div>
                     )}
+                    <button onClick={() => handleWantThisDeal(d)} className="lux-btn" style={{
+                      width: "100%", background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none",
+                      borderRadius: 10, padding: "11px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 13.5, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}>
+                      Искам тази оферта <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
               );
