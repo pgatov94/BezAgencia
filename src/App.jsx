@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
@@ -898,6 +896,8 @@ export default function BezAgenciaLuxuryApp() {
   const [adminSelectedInquiryPaid, setAdminSelectedInquiryPaid] = useState(false);
   const [adminSelectedInquiryStatus, setAdminSelectedInquiryStatus] = useState("none"); // none | awaiting_payment | paid
   const [adminOffersIds, setAdminOffersIds] = useState(new Set());
+  const [inquiryDropdownOpen, setInquiryDropdownOpen] = useState(false);
+  const inquiryDropdownRef = useRef(null);
   const [adminSelectedInquiryLoading, setAdminSelectedInquiryLoading] = useState(false);
 
   const [adminDealSaveStatus, setAdminDealSaveStatus] = useState("idle");
@@ -1430,6 +1430,18 @@ export default function BezAgenciaLuxuryApp() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [lightboxIndex, offerData]);
 
+  // Затваря custom менюто за избор на запитване при клик извън него.
+  useEffect(() => {
+    if (!inquiryDropdownOpen) return;
+    const onClickOutside = (e) => {
+      if (inquiryDropdownRef.current && !inquiryDropdownRef.current.contains(e.target)) {
+        setInquiryDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [inquiryDropdownOpen]);
+
   const handleAdminSavePayment = async () => {
     const id = adminIdInput.trim().toUpperCase();
     const amt = Number(adminAmountInput);
@@ -1551,12 +1563,30 @@ export default function BezAgenciaLuxuryApp() {
   // запитвания в падащото меню, без да чакаме отделна заявка при избор.
   const getInquiryPipelineStatus = (id) => {
     const payment = adminPayments.find((p) => p.key === `payment:${id}`);
+    if (payment?.paid && payment?.fullOfferSent) return "ready";
     if (payment?.paid) return "paid";
     if (adminOffersIds.has(id)) return "awaiting_payment";
     return "none";
   };
-  const pipelineStatusLabel = (status) =>
-    status === "paid" ? "✓ Чака пълна оферта" : status === "awaiting_payment" ? "Чака плащане" : "Чака кратка оферта";
+  const pipelineStatusInfo = (status) => {
+    switch (status) {
+      case "ready": return { label: "Готов за излитане", color: PALETTE.jungle, bold: true };
+      case "paid": return { label: "✓ Чака пълна оферта", color: PALETTE.jungle, bold: false };
+      case "awaiting_payment": return { label: "Чака плащане", color: PALETTE.coralDark, bold: false };
+      default: return { label: "Чака кратка оферта", color: PALETTE.coralDark, bold: false };
+    }
+  };
+  const pipelineStatusLabel = (status) => pipelineStatusInfo(status).label;
+
+  const handleMarkFullOfferSent = async (id) => {
+    try {
+      const p = await db.get(`payment:${id}`, true);
+      const current = p?.value ? JSON.parse(p.value) : {};
+      await db.set(`payment:${id}`, JSON.stringify({ ...current, fullOfferSent: true, fullOfferSentAt: Date.now() }), true);
+      await loadAdminPayments();
+      setAdminSelectedInquiryStatus(getInquiryPipelineStatus(id));
+    } catch { /* показваме нищо специално, но не чупим UI-а */ }
+  };
 
   const handleSelectOfferInquiry = (id) => {
     setAdminOfferForm((f) => ({ ...f, inquiryId: id }));
@@ -2840,24 +2870,67 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
-                      <select value={adminOfferForm.inquiryId} onChange={(e) => handleSelectOfferInquiry(e.target.value)} style={{ ...selectStyle, flex: 1 }}>
-                        <option value="">Избери запитване</option>
-                        {adminContacts.map((c) => (
-                          <option key={c.key} value={c.id}>
-                            {c.id} — {c.name} ({c.city}, {c.country}) · {pipelineStatusLabel(getInquiryPipelineStatus(c.id))}
-                          </option>
-                        ))}
-                      </select>
-                      {adminOfferForm.inquiryId && (
-                        <span style={{
-                          fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, borderRadius: 20, padding: "7px 14px",
-                          color: adminSelectedInquiryStatus === "paid" ? PALETTE.jungle : adminSelectedInquiryStatus === "awaiting_payment" ? PALETTE.oceanBright : PALETTE.goldBright,
-                          background: adminSelectedInquiryStatus === "paid" ? "rgba(46,158,118,0.14)" : adminSelectedInquiryStatus === "awaiting_payment" ? "rgba(46,111,149,0.14)" : "rgba(212,175,55,0.12)",
-                          border: `1px solid ${adminSelectedInquiryStatus === "paid" ? PALETTE.jungle : adminSelectedInquiryStatus === "awaiting_payment" ? PALETTE.oceanBright : "rgba(212,175,55,0.4)"}`,
+                    <div ref={inquiryDropdownRef} style={{ position: "relative", gridColumn: "1 / -1" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <button
+                          type="button"
+                          onClick={() => setInquiryDropdownOpen((o) => !o)}
+                          style={{
+                            ...selectStyle, flex: 1, textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+                            cursor: "pointer", appearance: "none",
+                          }}
+                        >
+                          {adminOfferForm.inquiryId ? (() => {
+                            const c = adminContacts.find((x) => x.id === adminOfferForm.inquiryId);
+                            return c ? `${c.id} — ${c.name} (${c.city}, ${c.country})` : adminOfferForm.inquiryId;
+                          })() : "Избери запитване"}
+                          <ChevronRight size={14} style={{ transform: inquiryDropdownOpen ? "rotate(-90deg)" : "rotate(90deg)", transition: "transform .2s", flexShrink: 0, marginLeft: 8 }} />
+                        </button>
+                        {adminOfferForm.inquiryId && (() => {
+                          const info = pipelineStatusInfo(adminSelectedInquiryStatus);
+                          return (
+                            <span style={{
+                              fontSize: 11.5, fontWeight: info.bold ? 800 : 700, whiteSpace: "nowrap", flexShrink: 0, borderRadius: 20, padding: "7px 14px",
+                              color: info.color, background: `${info.color}22`, border: `1px solid ${info.color}`,
+                            }}>
+                              {info.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      {inquiryDropdownOpen && (
+                        <div style={{
+                          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, maxHeight: 320, overflowY: "auto",
+                          background: PALETTE.panelSolid, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
                         }}>
-                          {adminSelectedInquiryStatus === "paid" ? "✓ Чака пълна оферта" : adminSelectedInquiryStatus === "awaiting_payment" ? "Оферта изпратена — чака плащане" : "Чака кратка оферта"}
-                        </span>
+                          <div
+                            onClick={() => { handleSelectOfferInquiry(""); setInquiryDropdownOpen(false); }}
+                            className="lux-nav-item"
+                            style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13, color: PALETTE.inkFaint, borderBottom: `1px solid ${PALETTE.panelBorder}` }}
+                          >
+                            Избери запитване
+                          </div>
+                          {adminContacts.map((c) => {
+                            const status = getInquiryPipelineStatus(c.id);
+                            const info = pipelineStatusInfo(status);
+                            return (
+                              <div
+                                key={c.key}
+                                onClick={() => { handleSelectOfferInquiry(c.id); setInquiryDropdownOpen(false); }}
+                                className="lux-nav-item"
+                                style={{
+                                  padding: "10px 14px", cursor: "pointer", fontSize: 13, borderBottom: `1px solid ${PALETTE.panelBorder}`,
+                                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+                                  background: adminOfferForm.inquiryId === c.id ? "rgba(212,175,55,0.08)" : "transparent",
+                                }}
+                              >
+                                <span style={{ color: PALETTE.ink }}>{c.id} — {c.name} ({c.city}, {c.country})</span>
+                                <span style={{ color: info.color, fontWeight: info.bold ? 800 : 700, fontSize: 12, whiteSpace: "nowrap" }}>{info.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
 
@@ -2884,6 +2957,19 @@ export default function BezAgenciaLuxuryApp() {
                           </div>
                         ) : (
                           <p style={{ fontSize: 12, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
+                        )}
+                        {adminSelectedInquiryStatus === "paid" && (
+                          <button
+                            onClick={() => handleMarkFullOfferSent(adminOfferForm.inquiryId)}
+                            className="lux-hover"
+                            style={{
+                              marginTop: 14, background: "rgba(46,158,118,0.12)", border: `1px solid ${PALETTE.jungle}`, color: PALETTE.jungle,
+                              borderRadius: 10, padding: "9px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                            }}
+                          >
+                            <Check size={14} /> Маркирай пълната оферта като изпратена
+                          </button>
                         )}
                       </div>
                     )}
