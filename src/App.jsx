@@ -1478,6 +1478,13 @@ export default function BezAgenciaLuxuryApp() {
           .ba-hero-steps { grid-template-columns: repeat(2, 1fr) !important; }
           section { padding-left: 18px !important; padding-right: 18px !important; }
           .footer-grid { grid-template-columns: repeat(2, 1fr) !important; text-align: left; }
+          .ba-hero-gold-text {
+            background-image: none !important;
+            -webkit-text-fill-color: ${PALETTE.goldBright} !important;
+            color: ${PALETTE.goldBright} !important;
+            filter: none !important;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.6) !important;
+          }
         }
         @media (max-width: 480px) {
           .ba-grid { grid-template-columns: 1fr !important; }
@@ -1540,7 +1547,7 @@ export default function BezAgenciaLuxuryApp() {
               pointerEvents: "none",
             }} />
             <div style={{ position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "96px 24px 70px", textAlign: "center" }}>
-              <h1 className="ba-hero-title" style={{
+              <h1 className="ba-hero-title ba-hero-gold-text" style={{
                 fontFamily: "Fraunces, serif", fontWeight: 700, fontStyle: "italic", fontSize: 48, lineHeight: 1.16, margin: "0 0 22px",
                 letterSpacing: 0.2,
                 backgroundImage: `linear-gradient(100deg, ${PALETTE.goldBright} 10%, #FFE8B0 42%, ${PALETTE.gold} 68%, ${PALETTE.goldDeep} 100%)`,
@@ -1554,7 +1561,7 @@ export default function BezAgenciaLuxuryApp() {
                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: PALETTE.goldBright, boxShadow: "0 0 8px rgba(212,175,55,0.7)" }} />
                 <span style={{ width: 40, height: 1, background: `linear-gradient(90deg, ${PALETTE.gold}, transparent)` }} />
               </div>
-              <p style={{
+              <p className="ba-hero-gold-text" style={{
                 fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 500, fontSize: 18, lineHeight: 1.65, margin: "0 0 42px", maxWidth: 540, marginLeft: "auto", marginRight: "auto",
                 backgroundImage: `linear-gradient(100deg, ${PALETTE.goldBright} 10%, #FFE8B0 42%, ${PALETTE.gold} 68%, ${PALETTE.goldDeep} 100%)`,
                 WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent",
