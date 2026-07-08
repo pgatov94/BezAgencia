@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
+import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp } from "react-icons/si";
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon,
@@ -242,50 +243,35 @@ function FlagBadge({ id, style, preserveAspectRatio = "xMidYMid meet" }) {
    ИКОНИ ЗА СОЦИАЛНИ МРЕЖИ — рисувани векторно (без брандирани лога), за
    да паснат на златната линия-арт естетика на приложението.
    ───────────────────────────────────────────────────────────────────── */
-function SocialIconArt({ id }) {
-  switch (id) {
-    case "facebook": return (
-      <path d="M13.5 21v-7.5H16l.4-3h-2.9v-2c0-.9.2-1.5 1.5-1.5H16V4.2C15.7 4.1 14.7 4 13.6 4c-2.4 0-4.1 1.5-4.1 4.2v2.3H7v3h2.5V21Z" />
-    );
-    case "instagram": return (
-      <>
-        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-        <circle cx="12" cy="12" r="4.2" />
-        <circle cx="17" cy="7" r="1.1" fill="currentColor" stroke="none" />
-      </>
-    );
-    case "tiktok": return (
-      <path d="M13.5 3.5c.3 2.1 1.8 3.6 3.9 3.8v2.3c-1.4 0-2.7-.4-3.9-1.1v6.2c0 3.1-2.5 5.3-5.4 4.9-2.3-.3-4-2.3-3.9-4.6.1-2.6 2.4-4.6 5-4.4.2 0 .5.1.7.1v2.4c-.2 0-.4-.1-.7-.1-1.3-.1-2.4.9-2.5 2.1-.1 1.3.9 2.4 2.1 2.5 1.4.1 2.6-1 2.6-2.4V3.5h2.1Z" />
-    );
-    case "viber": return (
-      <>
-        <path d="M12 3.5c-4.7 0-8.5 3.2-8.5 7.5 0 2.6 1.4 4.9 3.5 6.3l-.7 3.2 3.5-1.6c.7.2 1.4.3 2.2.3 4.7 0 8.5-3.2 8.5-7.5S16.7 3.5 12 3.5Z" />
-        <path d="M9.2 9c-.2.4-.1.9.2 1.6.4.9 1.1 1.9 1.9 2.7.8.8 1.8 1.5 2.7 1.9.7.3 1.2.4 1.6.2.3-.1.7-.5.9-.9.1-.2.1-.5-.1-.6l-1.6-1.1c-.2-.1-.4-.1-.5 0l-.6.6c-.1.1-.3.1-.4 0-.5-.3-1-.7-1.5-1.2-.5-.5-.9-1-1.2-1.5-.1-.1 0-.3 0-.4l.6-.6c.1-.1.1-.3 0-.5L9.7 8.7c-.1-.2-.4-.2-.6-.1-.3.1-.7.3-.9.4Z" fill="none" />
-      </>
-    );
-    case "whatsapp": return (
-      <>
-        <path d="M12 3.5c-4.7 0-8.5 3.7-8.5 8.3 0 1.5.4 2.9 1.1 4.1L3.5 20l4.3-1.1c1.2.6 2.6 1 4.2 1 4.7 0 8.5-3.7 8.5-8.3s-3.8-8.1-8.5-8.1Z" />
-        <path d="M9 8.3c.2-.4.4-.4.6-.4h.5c.2 0 .4 0 .5.4.2.5.6 1.5.7 1.6.1.1.1.3 0 .5-.1.2-.2.3-.3.4-.1.2-.3.3-.4.4-.1.1-.3.3-.1.6.2.4.8 1.3 1.7 2.1 1.1 1 2 1.3 2.4 1.5.3.1.5.1.6-.1.2-.2.7-.8.8-1 .2-.3.3-.2.6-.1.2.1 1.4.7 1.6.8.3.1.4.2.5.3.1.2.1.8-.2 1.6-.3.7-1.5 1.4-2.2 1.4-.6.1-1.3.1-4.2-.9-3.4-1.4-5.6-4.8-5.8-5-.2-.2-1.4-1.9-1.4-3.5s.8-2.5 1.1-2.8Z" fill="none" />
-      </>
-    );
-    default: return null;
-  }
-}
+const BRAND_COLORS = {
+  facebook: { bg: "#1877F2", icon: "#FFFFFF", border: "#1877F2" },
+  instagram: { bg: "linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%)", icon: "#FFFFFF", border: "#ee2a7b" },
+  tiktok: { bg: "#010101", icon: "#FFFFFF", border: "#25F4EE" },
+  viber: { bg: "#7360F2", icon: "#FFFFFF", border: "#7360F2" },
+  whatsapp: { bg: "#25D366", icon: "#FFFFFF", border: "#25D366" },
+};
+
+const BRAND_ICON_COMPONENTS = {
+  facebook: SiFacebook,
+  instagram: SiInstagram,
+  tiktok: SiTiktok,
+  viber: SiViber,
+  whatsapp: SiWhatsapp,
+};
 
 function SocialIcon({ id, href }) {
+  const brand = BRAND_COLORS[id] || { bg: PALETTE.panel, icon: PALETTE.inkMuted, border: PALETTE.panelBorder };
+  const Icon = BRAND_ICON_COMPONENTS[id];
   return (
     <a
       href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" aria-label={id} title={id}
       className="lux-hover"
       style={{
         display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%",
-        border: `1px solid ${PALETTE.panelBorder}`, background: PALETTE.panel, color: PALETTE.inkMuted, flexShrink: 0,
+        border: `1px solid ${brand.border}55`, background: brand.bg, color: brand.icon, flexShrink: 0,
       }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-        <SocialIconArt id={id} />
-      </svg>
+      {Icon && <Icon size={16} color={brand.icon} />}
     </a>
   );
 }
@@ -2468,15 +2454,11 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                 <a href={`tel:${CONTACT_PHONE.replace(/\s/g, "")}`} style={{ color: PALETTE.inkMuted, textDecoration: "none" }}>{CONTACT_PHONE}</a>
                 <a href={VIBER_LINK} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                    <SocialIconArt id="viber" />
-                  </svg>
+                  <SiViber size={14} color={BRAND_COLORS.viber.bg} />
                   Пиши ни във Viber
                 </a>
                 <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                    <SocialIconArt id="whatsapp" />
-                  </svg>
+                  <SiWhatsapp size={14} color={BRAND_COLORS.whatsapp.bg} />
                   Пиши ни в WhatsApp
                 </a>
                 <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: PALETTE.inkMuted }}>{INQUIRY_EMAIL}</a>
