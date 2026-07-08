@@ -73,9 +73,11 @@ export default async function handler(req, res) {
     const customerEmail = session?.customer_details?.email || session?.customer_email || null;
 
     if (inquiryId) {
+      let voucherCodeUsed = null;
       try {
         const { data } = await supabase.from("payments").select("data").eq("id", inquiryId).maybeSingle();
         const current = data?.data || {};
+        voucherCodeUsed = current.voucherCode || null;
         await supabase.from("payments").upsert({
           id: inquiryId,
           data: { ...current, paid: true, status: "paid", updatedAt: Date.now() },
@@ -83,6 +85,26 @@ export default async function handler(req, res) {
         });
       } catch (e) {
         console.error("Webhook: неуспешно обновяване в Supabase:", e.message);
+      }
+
+      // Маркираме ваучера като използван едва СЕГА — след реално платено
+      // плащане, не само при клик на "Потвърди офертата". Проверяваме и
+      // дали вече не е бил използван, за да не се задейства повторно при
+      // случаен дублиран webhook от Stripe.
+      if (voucherCodeUsed) {
+        try {
+          const { data: voucherRow } = await supabase.from("vouchers").select("data").eq("id", voucherCodeUsed).maybeSingle();
+          const voucherData = voucherRow?.data || null;
+          if (voucherData && !voucherData.used) {
+            await supabase.from("vouchers").upsert({
+              id: voucherCodeUsed,
+              data: { ...voucherData, used: true, usedAt: Date.now() },
+              updated_at: new Date().toISOString(),
+            });
+          }
+        } catch (e) {
+          console.error("Webhook: неуспешно маркиране на ваучера:", e.message);
+        }
       }
 
       // Извличаме и името на клиента (ако го имаме от запитването), за по-личен тон.

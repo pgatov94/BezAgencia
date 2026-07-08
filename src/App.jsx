@@ -841,6 +841,7 @@ export default function BezAgenciaLuxuryApp() {
   // ── Публични отзиви (показани в края на страница Отзиви) ────────────
   const [publicReviews, setPublicReviews] = useState([]);
   const [publicReviewsLoading, setPublicReviewsLoading] = useState(false);
+  const [publicReviewsError, setPublicReviewsError] = useState("");
 
 
 
@@ -1123,15 +1124,26 @@ export default function BezAgenciaLuxuryApp() {
       let commission = Math.max(total * 0.05, 50);
 
       const code = offerDiscountCode.trim().toUpperCase();
+      let appliedVoucherCode = null;
       if (code && offerDiscountStatus === "applied") {
-        commission = commission * (1 - offerDiscountPercent / 100);
+        // Проверяваме отново точно преди потвърждение — да не позволим употреба,
+        // ако кодът е бил използван от друг междувременно.
         try {
           const v = await db.get(`voucher:${code}`, true);
           const voucherData = v?.value ? JSON.parse(v.value) : null;
-          if (voucherData && !voucherData.used) {
-            await db.set(`voucher:${code}`, JSON.stringify({ ...voucherData, used: true, usedAt: Date.now() }), true);
+          if (!voucherData || voucherData.used) {
+            setOfferDiscountStatus(voucherData ? "used" : "invalid");
+            setOfferConfirmError("Кодът вече не е валиден — провери го отново.");
+            setOfferConfirmStatus("error");
+            return;
           }
-        } catch { /* не е критично, продължаваме с плащането */ }
+        } catch {
+          setOfferConfirmError("Неуспешна проверка на кода. Опитай отново.");
+          setOfferConfirmStatus("error");
+          return;
+        }
+        commission = commission * (1 - offerDiscountPercent / 100);
+        appliedVoucherCode = code;
       } else if (code && offerDiscountStatus !== "applied") {
         setOfferConfirmError('Натисни „Приложи отстъпка", за да провериш кода, преди да потвърдиш.');
         setOfferConfirmStatus("error");
@@ -1140,7 +1152,9 @@ export default function BezAgenciaLuxuryApp() {
 
       commission = Math.round(commission * 100) / 100;
 
-      const setResult = await db.set(`payment:${offerViewId}`, JSON.stringify({ amount: commission, status: "pending", paid: false, updatedAt: Date.now() }), true);
+      const setResult = await db.set(`payment:${offerViewId}`, JSON.stringify({
+        amount: commission, status: "pending", paid: false, voucherCode: appliedVoucherCode, updatedAt: Date.now(),
+      }), true);
       if (!setResult) {
         setOfferConfirmError("Възникна проблем при запазването. Опитай отново.");
         setOfferConfirmStatus("error");
@@ -1169,6 +1183,7 @@ export default function BezAgenciaLuxuryApp() {
   /* ── Публични отзиви — зареждане за показ в края на страница Отзиви ── */
   const loadPublicReviews = async () => {
     setPublicReviewsLoading(true);
+    setPublicReviewsError("");
     try {
       const res = await db.list("review:", true);
       const keys = res?.keys || [];
@@ -1176,7 +1191,10 @@ export default function BezAgenciaLuxuryApp() {
         try { const r = await db.get(k, true); return JSON.parse(r.value); } catch { return null; }
       }));
       setPublicReviews(items.filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-    } catch { setPublicReviews([]); }
+    } catch (e) {
+      setPublicReviews([]);
+      setPublicReviewsError((e && e.message) || "Неизвестна грешка при зареждане на отзивите.");
+    }
     setPublicReviewsLoading(false);
   };
 
@@ -2487,9 +2505,22 @@ export default function BezAgenciaLuxuryApp() {
           )}
 
           <div style={{ marginTop: 44, paddingTop: 28, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
-            <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, margin: "0 0 16px" }}>Какво споделят другите пътешественици</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+              <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, margin: 0 }}>Какво споделят другите пътешественици</h3>
+              <button onClick={loadPublicReviews} className="lux-hover" style={{
+                display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
+                borderRadius: 10, padding: "6px 12px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 11.5, color: PALETTE.inkMuted, cursor: "pointer",
+              }}>
+                <RotateCcw size={12} /> Презареди
+              </button>
+            </div>
             {publicReviewsLoading && <p style={{ fontSize: 13, color: PALETTE.inkMuted }}>Зареждам отзиви…</p>}
-            {!publicReviewsLoading && publicReviews.length === 0 && (
+            {publicReviewsError && (
+              <div style={{ background: "rgba(226,105,74,0.08)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 12, padding: "14px 16px", marginBottom: 12, fontSize: 12.5, color: PALETTE.inkMuted }}>
+                Грешка при зареждане: <strong style={{ color: PALETTE.coralDark }}>{publicReviewsError}</strong>
+              </div>
+            )}
+            {!publicReviewsLoading && !publicReviewsError && publicReviews.length === 0 && (
               <p style={{ fontSize: 13, color: PALETTE.inkMuted }}>Все още няма оставени отзиви — бъди първият!</p>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
