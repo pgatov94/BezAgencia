@@ -8,5 +8,5 @@ export const isSupabaseConfigured =
 
 export const supabase = createClient(
   isSupabaseConfigured ? SUPABASE_URL : "https://placeholder.supabase.co",
-  isSupabaseConfigured ? SUPABASE_ANON_KEY : "placeholder-key"
-);
+  isSupabaseConfigured ? SUPABASE_ANON_KEY : "placeholder-key");
+
