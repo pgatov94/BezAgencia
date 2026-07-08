@@ -1442,7 +1442,6 @@ export default function BezAgenciaLuxuryApp() {
 
       const total = flightPrice + hotelPrice;
       const offerLink = `https://bezagencia.com/?offer=${encodeURIComponent(id)}`;
-      const photosHtml = payload.photos.map((p) => `<img src="${p}" style="width:100%;border-radius:10px;margin-bottom:8px;display:block;" />`).join("");
 
       if (inqInfo?.email) {
         await sendTransactionalEmail({
@@ -1453,7 +1452,7 @@ export default function BezAgenciaLuxuryApp() {
             <p style="margin:0 0 16px;">Готова е персоналната ти оферта по запитване <strong style="color:#D4AF37;">${id}</strong>:</p>
             ${emailSectionHtml("Полет", [["Цена", `${flightPrice} €`], ["Дати", `${f.flightDateFrom || "-"} – ${f.flightDateTo || "-"}`]])}
             ${emailSectionHtml("Нощувки", [["Цена", `${hotelPrice} €`]])}
-            ${photosHtml}
+            <p style="margin:0 0 16px;font-size:13px;color:#8E99AE;">Снимки на настаняването и пълните детайли те очакват на страницата на офертата.</p>
             <p style="margin:16px 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш 2 конкретни опции за настаняване на място.</p>
             <p style="margin:0 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш линкове за входни билети за забележителности и допълнителни екскурзии през GetYourGuide.</p>
             <p style="margin:0 0 20px;font-size:13px;color:#8E99AE;">* След плащане ще получиш информация за трансфер от летището и видовете градски транспорт.</p>
