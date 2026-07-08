@@ -826,6 +826,16 @@ export default function BezAgenciaLuxuryApp() {
   const [payCheckoutStatus, setPayCheckoutStatus] = useState("idle"); // idle | loading | error
   const [payCheckoutError, setPayCheckoutError] = useState("");
 
+  // ── Публичен преглед на лична оферта (страница "offerView", през ?offer=) ──
+  const [offerViewId, setOfferViewId] = useState(null);
+  const [offerData, setOfferData] = useState(null);
+  const [offerInquiry, setOfferInquiry] = useState(null);
+  const [offerLoadStatus, setOfferLoadStatus] = useState("idle"); // idle | loading | found | notfound
+  const [offerDiscountCode, setOfferDiscountCode] = useState("");
+  const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
+  const [offerConfirmError, setOfferConfirmError] = useState("");
+
+
   // ── Отзиви и ваучери — проверка по номер на резервация, дали е реално платено ──
   const [reviewLookupId, setReviewLookupId] = useState("");
   const [reviewStatus, setReviewStatus] = useState("idle"); // idle | loading | eligible | already | notpaid | notfound
@@ -866,6 +876,14 @@ export default function BezAgenciaLuxuryApp() {
     title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "",
   });
   const [adminDealImageError, setAdminDealImageError] = useState("");
+
+  // ── Лична оферта към клиент (Админ → Оферта) ────────────────────────
+  const [adminOfferForm, setAdminOfferForm] = useState({
+    inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""],
+  });
+  const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
+  const [adminOfferSaveStatus, setAdminOfferSaveStatus] = useState("idle"); // idle | saving | sent | error
+
   const [adminDealSaveStatus, setAdminDealSaveStatus] = useState("idle");
   const [editingDealId, setEditingDealId] = useState(null);
 
@@ -1035,6 +1053,15 @@ export default function BezAgenciaLuxuryApp() {
     const params = new URLSearchParams(window.location.search);
     const paid = params.get("paid");
     const inquiry = params.get("inquiry");
+    const offerParam = params.get("offer");
+
+    if (offerParam) {
+      setPage("offerView");
+      window.history.replaceState({}, "", window.location.pathname);
+      loadOfferView(offerParam);
+      return;
+    }
+
     if (paid && inquiry) {
       setModalPage(null);
       setPage("dashboard");
@@ -1047,6 +1074,79 @@ export default function BezAgenciaLuxuryApp() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadOfferView = async (id) => {
+    const cleanId = id.trim().toUpperCase();
+    setOfferViewId(cleanId);
+    setOfferLoadStatus("loading");
+    try {
+      const o = await db.get(`offer:${cleanId}`, true);
+      if (!o?.value) { setOfferLoadStatus("notfound"); return; }
+      setOfferData(JSON.parse(o.value));
+      try {
+        const inq = await db.get(`inquiry:${cleanId}`, true);
+        setOfferInquiry(inq?.value ? JSON.parse(inq.value) : null);
+      } catch { setOfferInquiry(null); }
+      setOfferLoadStatus("found");
+    } catch { setOfferLoadStatus("notfound"); }
+  };
+
+  const handleConfirmOffer = async () => {
+    if (!offerData || !offerViewId) return;
+    setOfferConfirmStatus("checking"); setOfferConfirmError("");
+    try {
+      const total = (Number(offerData.flightPrice) || 0) + (Number(offerData.hotelPrice) || 0);
+      let commission = Math.max(total * 0.05, 50);
+
+      const code = offerDiscountCode.trim().toUpperCase();
+      if (code) {
+        let voucherData = null;
+        try {
+          const v = await db.get(`voucher:${code}`, true);
+          voucherData = v?.value ? JSON.parse(v.value) : null;
+        } catch { voucherData = null; }
+
+        if (!voucherData) {
+          setOfferConfirmError("Невалиден код за отстъпка.");
+          setOfferConfirmStatus("error");
+          return;
+        }
+        if (voucherData.used) {
+          setOfferConfirmError("Този код вече е използван.");
+          setOfferConfirmStatus("error");
+          return;
+        }
+        commission = commission * (1 - (voucherData.percent || 10) / 100);
+        await db.set(`voucher:${code}`, JSON.stringify({ ...voucherData, used: true, usedAt: Date.now() }), true);
+      }
+
+      commission = Math.round(commission * 100) / 100;
+
+      const setResult = await db.set(`payment:${offerViewId}`, JSON.stringify({ amount: commission, status: "pending", paid: false, updatedAt: Date.now() }), true);
+      if (!setResult) {
+        setOfferConfirmError("Възникна проблем при запазването. Опитай отново.");
+        setOfferConfirmStatus("error");
+        return;
+      }
+
+      setOfferConfirmStatus("redirecting");
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: commission, inquiryId: offerViewId, email: offerInquiry?.email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setOfferConfirmError(data.error || "Неуспешно създаване на плащането.");
+        setOfferConfirmStatus("error");
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      setOfferConfirmError(e.message || "Проблем с връзката.");
+      setOfferConfirmStatus("error");
+    }
+  };
 
   /* ── Отзиви: проверка дали номерът реално отговаря на платено пътуване ── */
   const handleReviewLookup = async () => {
@@ -1139,7 +1239,7 @@ export default function BezAgenciaLuxuryApp() {
     if (page === "admin" && adminAuthed) {
       if (adminTab === "payments") loadAdminPayments();
       if (adminTab === "deals") loadDeals();
-      if (adminTab === "contacts") loadAdminContacts();
+      if (adminTab === "contacts" || adminTab === "offer" || adminTab === "email") loadAdminContacts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, adminAuthed, adminTab]);
@@ -1282,6 +1382,97 @@ export default function BezAgenciaLuxuryApp() {
       }
     }
     setAdminDealImageError("В клипборда няма снимка — копирай изображение и опитай пак.");
+  };
+
+  /* ── Лична оферта (Админ → Оферта): снимки на настаняването, 3 слота ── */
+  const processOfferImageFile = (index, file) => {
+    if (!file) return;
+    setAdminOfferImageErrors((errs) => { const n = [...errs]; n[index] = ""; return n; });
+    if (!file.type?.startsWith("image/")) {
+      setAdminOfferImageErrors((errs) => { const n = [...errs]; n[index] = "Постави или избери файл със снимка."; return n; });
+      return;
+    }
+    if (file.size > 3.5 * 1024 * 1024) {
+      setAdminOfferImageErrors((errs) => { const n = [...errs]; n[index] = "Снимката е твърде голяма (макс. ~3.5MB)."; return n; });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setAdminOfferForm((f) => {
+      const photos = [...f.photos]; photos[index] = reader.result; return { ...f, photos };
+    });
+    reader.onerror = () => setAdminOfferImageErrors((errs) => { const n = [...errs]; n[index] = "Неуспешно зареждане, опитай пак."; return n; });
+    reader.readAsDataURL(file);
+  };
+  const handleOfferImageFile = (index, e) => processOfferImageFile(index, e.target.files?.[0]);
+  const handleOfferImagePaste = (index, e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type?.startsWith("image/")) {
+        e.preventDefault();
+        processOfferImageFile(index, item.getAsFile());
+        return;
+      }
+    }
+    setAdminOfferImageErrors((errs) => { const n = [...errs]; n[index] = "В клипборда няма снимка."; return n; });
+  };
+  const removeOfferImage = (index) => setAdminOfferForm((f) => {
+    const photos = [...f.photos]; photos[index] = ""; return { ...f, photos };
+  });
+
+  const handleSendOffer = async () => {
+    const f = adminOfferForm;
+    const id = f.inquiryId.trim().toUpperCase();
+    if (!id || !f.flightPrice || !f.hotelPrice) return;
+    setAdminOfferSaveStatus("saving");
+    try {
+      const flightPrice = Number(f.flightPrice);
+      const hotelPrice = Number(f.hotelPrice);
+      const payload = {
+        inquiryId: id, flightPrice, hotelPrice,
+        flightDateFrom: f.flightDateFrom || null, flightDateTo: f.flightDateTo || null,
+        photos: f.photos.filter(Boolean),
+        createdAt: Date.now(),
+      };
+      const setResult = await db.set(`offer:${id}`, JSON.stringify(payload), true);
+      if (!setResult) { setAdminOfferSaveStatus("error"); return; }
+
+      let inqInfo = null;
+      try { const r = await db.get(`inquiry:${id}`, true); inqInfo = r?.value ? JSON.parse(r.value) : null; } catch {}
+
+      const total = flightPrice + hotelPrice;
+      const offerLink = `https://bezagencia.com/?offer=${encodeURIComponent(id)}`;
+      const photosHtml = payload.photos.map((p) => `<img src="${p}" style="width:100%;border-radius:10px;margin-bottom:8px;display:block;" />`).join("");
+
+      if (inqInfo?.email) {
+        await sendTransactionalEmail({
+          to: inqInfo.email,
+          subject: `Твоята персонална оферта — запитване ${id}`,
+          html: emailWrap("Оферта готова", `
+            <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
+            <p style="margin:0 0 16px;">Готова е персоналната ти оферта по запитване <strong style="color:#D4AF37;">${id}</strong>:</p>
+            ${emailSectionHtml("Полет", [["Цена", `${flightPrice} €`], ["Дати", `${f.flightDateFrom || "-"} – ${f.flightDateTo || "-"}`]])}
+            ${emailSectionHtml("Нощувки", [["Цена", `${hotelPrice} €`]])}
+            ${photosHtml}
+            <p style="margin:16px 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш 2 конкретни опции за настаняване на място.</p>
+            <p style="margin:0 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш линкове за входни билети за забележителности и допълнителни екскурзии през GetYourGuide.</p>
+            <p style="margin:0 0 20px;font-size:13px;color:#8E99AE;">* След плащане ще получиш информация за трансфер от летището и видовете градски транспорт.</p>
+            <p style="text-align:center;margin:0;">
+              <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;">Виж и потвърди офертата</a>
+            </p>
+          `),
+        });
+      }
+      await sendTransactionalEmail({
+        to: INQUIRY_EMAIL,
+        subject: `Изпратена оферта по запитване ${id}`,
+        html: emailWrap("Оферта изпратена", `<p style="margin:0;">Изпратена е оферта на стойност ${total} € по запитване ${id}.</p>`),
+      });
+
+      setAdminOfferSaveStatus("sent");
+      setAdminOfferForm({ inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""] });
+      setAdminOfferImageErrors(["", "", ""]);
+    } catch { setAdminOfferSaveStatus("error"); }
   };
 
   const handleAdminSaveDeal = async () => {
@@ -2200,6 +2391,80 @@ export default function BezAgenciaLuxuryApp() {
         );
       })()}
 
+      {/* ── СТРАНИЦА: ПРЕГЛЕД НА ЛИЧНА ОФЕРТА (през ?offer=) ─────────────── */}
+      {page === "offerView" && (
+        <section className="page-enter" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 24px 90px" }}>
+          <BackBtn onClick={goHome} />
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+            <Send size={13} /> Твоята оферта
+          </div>
+
+          {offerLoadStatus === "loading" && <p style={{ fontSize: 13.5, color: PALETTE.inkMuted }}>Зареждам офертата…</p>}
+          {offerLoadStatus === "notfound" && (
+            <div style={{ background: "rgba(226,105,74,0.08)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 14, padding: "18px 20px", fontSize: 13.5, color: PALETTE.inkMuted, lineHeight: 1.6 }}>
+              Не открихме оферта с този номер. Провери линка от имейла или ни пиши на {INQUIRY_EMAIL}.
+            </div>
+          )}
+
+          {offerLoadStatus === "found" && offerData && (() => {
+            const total = (Number(offerData.flightPrice) || 0) + (Number(offerData.hotelPrice) || 0);
+            const baseCommission = Math.max(total * 0.05, 50);
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: 0 }}>
+                  {offerInquiry?.city ? `${offerInquiry.city}, ${offerInquiry.country}` : `Запитване ${offerViewId}`}
+                </h2>
+                {offerInquiry?.name && <p style={{ fontSize: 13, color: PALETTE.inkMuted, margin: 0 }}>За {offerInquiry.name} · номер {offerViewId}</p>}
+
+                {offerData.photos?.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(offerData.photos.length, 3)}, 1fr)`, gap: 8 }}>
+                    {offerData.photos.map((p, i) => (
+                      <img key={i} src={p} alt="" style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12, border: `1px solid ${PALETTE.panelBorder}` }} />
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <SummaryRow label="Цена на полет" value={`${offerData.flightPrice} €`} />
+                  <SummaryRow label="Дати на полет" value={`${offerData.flightDateFrom || "-"} – ${offerData.flightDateTo || "-"}`} />
+                  <SummaryRow label="Цена на нощувки" value={`${offerData.hotelPrice} €`} />
+                  <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, marginTop: 4, paddingTop: 8 }}>
+                    <SummaryRow label="Обща стойност" value={<span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{total} €</span>} />
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: PALETTE.inkMuted, lineHeight: 1.6 }}>
+                  <span>* След плащане ще получиш 2 конкретни опции за настаняване на място.</span>
+                  <span>* След плащане ще получиш линкове за входни билети за забележителности и допълнителни екскурзии през GetYourGuide.</span>
+                  <span>* След плащане ще получиш информация за трансфер от летището и видовете градски транспорт.</span>
+                </div>
+
+                <Field label="Код за отстъпка (ако имаш от отзив)">
+                  <input value={offerDiscountCode} onChange={(e) => setOfferDiscountCode(e.target.value)} placeholder="напр. VIP10-ABCDE" style={inputStyle} />
+                </Field>
+
+                <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
+                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>Дължима комисионна сега</div>
+                  <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldBright, marginBottom: 6 }}>
+                    {Math.round(baseCommission)} €
+                  </div>
+                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: 0 }}>5% от стойността на пътуването, минимум 50 € — комисионна за услугата, не цената на самото пътуване. Ако въведеш валиден код за отстъпка, ще се приложи автоматично при потвърждение.</p>
+                </div>
+
+                <button onClick={handleConfirmOffer} disabled={offerConfirmStatus === "checking" || offerConfirmStatus === "redirecting"} className="lux-btn" style={{
+                  background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12,
+                  padding: "16px 30px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}>
+                  <Check size={18} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : "Потвърди офертата"}
+                </button>
+                {offerConfirmStatus === "error" && <p style={{ fontSize: 12.5, color: PALETTE.coralDark, margin: 0 }}>{offerConfirmError}</p>}
+              </div>
+            );
+          })()}
+        </section>
+      )}
+
       {/* ── СТРАНИЦА: АДМИН ───────────────────────────────────────────── */}
       {page === "admin" && (
         <section className="page-enter" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 90px" }}>
@@ -2225,6 +2490,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 26, borderBottom: `1px solid ${PALETTE.panelBorder}`, paddingBottom: 4, justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <AdminTabBtn active={adminTab === "payments"} onClick={() => setAdminTab("payments")} icon={<Wallet size={14} />} label="Плащания" />
+                  <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={14} />} label="Оферта" />
                   <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={14} />} label="Оферти" />
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={14} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={14} />} label="Анализи" />
@@ -2276,6 +2542,89 @@ export default function BezAgenciaLuxuryApp() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {adminTab === "offer" && (
+                <div>
+                  <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Изпрати лична оферта</h3>
+                  <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 13, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
+                    Клиентът получава имейл с линк, на който вижда офертата и може да я потвърди с плащане (5% комисионна, минимум 50 €).
+                  </p>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 12 }}>
+                    <select value={adminOfferForm.inquiryId} onChange={(e) => setAdminOfferForm((f) => ({ ...f, inquiryId: e.target.value }))} style={{ ...selectStyle, gridColumn: "1 / -1" }}>
+                      <option value="">Избери запитване</option>
+                      {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
+                    </select>
+                    <input type="number" value={adminOfferForm.flightPrice} onChange={(e) => setAdminOfferForm((f) => ({ ...f, flightPrice: e.target.value }))} placeholder="Цена на полет €" style={inputStyle} />
+                    <input type="number" value={adminOfferForm.hotelPrice} onChange={(e) => setAdminOfferForm((f) => ({ ...f, hotelPrice: e.target.value }))} placeholder="Цена на нощувки €" style={inputStyle} />
+                    <Field label="Дата на полет от">
+                      <input type="date" value={adminOfferForm.flightDateFrom} onChange={(e) => setAdminOfferForm((f) => ({ ...f, flightDateFrom: e.target.value }))} style={inputStyle} />
+                    </Field>
+                    <Field label="Дата на полет до">
+                      <input type="date" value={adminOfferForm.flightDateTo} onChange={(e) => setAdminOfferForm((f) => ({ ...f, flightDateTo: e.target.value }))} style={inputStyle} />
+                    </Field>
+                  </div>
+
+                  {(adminOfferForm.flightPrice || adminOfferForm.hotelPrice) && (
+                    <p style={{ fontSize: 12.5, color: PALETTE.inkMuted, margin: "0 0 16px" }}>
+                      Обща стойност на пътуването: <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{(Number(adminOfferForm.flightPrice) || 0) + (Number(adminOfferForm.hotelPrice) || 0)} €</span>
+                      {" "}→ комисионна (5%, мин. 50 €): <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{Math.max(((Number(adminOfferForm.flightPrice) || 0) + (Number(adminOfferForm.hotelPrice) || 0)) * 0.05, 50).toFixed(0)} €</span>
+                    </p>
+                  )}
+
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 8 }}>Снимки на настаняването (до 3)</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
+                    {[0, 1, 2].map((idx) => (
+                      <div key={idx}>
+                        <div
+                          tabIndex={0}
+                          onPaste={(e) => handleOfferImagePaste(idx, e)}
+                          className="lux-hover lux-paste-zone"
+                          style={{
+                            border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 12, padding: "10px", outline: "none",
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minHeight: 90, justifyContent: "center",
+                          }}
+                        >
+                          {adminOfferForm.photos[idx] ? (
+                            <div style={{ position: "relative" }}>
+                              <img src={adminOfferForm.photos[idx]} alt="" style={{ width: "100%", maxWidth: 130, height: 70, objectFit: "cover", borderRadius: 8 }} />
+                              <button onClick={() => removeOfferImage(idx)} style={{
+                                position: "absolute", top: -6, right: -6, background: PALETTE.coralDark, border: "none", borderRadius: "50%",
+                                width: 18, height: 18, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                              }}><X size={11} /></button>
+                            </div>
+                          ) : (
+                            <>
+                              <label className="lux-hover" style={{
+                                display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", background: PALETTE.panel,
+                                border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: PALETTE.ink, fontWeight: 600,
+                              }}>
+                                <Plus size={12} /> Снимка {idx + 1}
+                                <input type="file" accept="image/*" onChange={(e) => handleOfferImageFile(idx, e)} style={{ display: "none" }} />
+                              </label>
+                              <span style={{ fontSize: 10, color: PALETTE.inkFaint, textAlign: "center" }}>или кликни и Ctrl+V</span>
+                            </>
+                          )}
+                        </div>
+                        {adminOfferImageErrors[idx] && <p style={{ fontSize: 10.5, color: PALETTE.coralDark, marginTop: 4 }}>{adminOfferImageErrors[idx]}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 12, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
+                    В имейла автоматично се добавят пояснения, че след плащане клиентът получава: 2 опции за настаняване, линкове за входни билети/екскурзии през GetYourGuide, и информация за трансфери и градски транспорт.
+                  </div>
+
+                  <button onClick={handleSendOffer} disabled={!adminOfferForm.inquiryId || !adminOfferForm.flightPrice || !adminOfferForm.hotelPrice || adminOfferSaveStatus === "saving"} className="lux-btn" style={{
+                    background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "12px 22px",
+                    fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
+                  }}>
+                    <Send size={15} /> {adminOfferSaveStatus === "saving" ? "Изпращам…" : "Изпрати оферта"}
+                  </button>
+                  {adminOfferSaveStatus === "sent" && <p style={{ fontSize: 12.5, color: PALETTE.jungle, marginTop: 10 }}>Изпратено успешно.</p>}
+                  {adminOfferSaveStatus === "error" && <p style={{ fontSize: 12.5, color: PALETTE.coralDark, marginTop: 10 }}>Възникна грешка — провери дали Supabase/Resend са свързани.</p>}
                 </div>
               )}
 

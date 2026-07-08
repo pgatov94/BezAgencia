@@ -14,6 +14,7 @@ import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
 const TABLE_MAP = {
   deal: "deals",
+  offer: "offers",
   payment: "payments",
   inquiry: "inquiries",
   review: "reviews",

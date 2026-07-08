@@ -9,6 +9,12 @@ create table if not exists deals (
   updated_at timestamptz default now()
 );
 
+create table if not exists offers (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+
 create table if not exists payments (
   id text primary key,
   data jsonb not null,
