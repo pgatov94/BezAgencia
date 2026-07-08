@@ -1133,7 +1133,7 @@ export default function BezAgenciaLuxuryApp() {
           }
         } catch { /* не е критично, продължаваме с плащането */ }
       } else if (code && offerDiscountStatus !== "applied") {
-        setOfferConfirmError("Натисни „Приложи отстъпка", за да провериш кода, преди да потвърдиш.");
+        setOfferConfirmError('Натисни „Приложи отстъпка", за да провериш кода, преди да потвърдиш.');
         setOfferConfirmStatus("error");
         return;
       }
