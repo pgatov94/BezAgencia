@@ -1528,7 +1528,7 @@ export default function BezAgenciaLuxuryApp() {
         await sendTransactionalEmail({
           to: inqInfo.email,
           subject: `Офертата ти е готова — запитване ${id}`,
-          html: emailWrap("Оферта готова", `
+          html: emailWrap("Офертата е готова", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
             <p style="margin:0 0 24px;">Офертата ти по запитване <strong style="color:#D4AF37;">${id}</strong> е готова за преглед — цени, дати, снимки на настаняването и начин на плащане те очакват на страницата.</p>
             <p style="text-align:center;margin:0;">
