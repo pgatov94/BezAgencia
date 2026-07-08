@@ -895,6 +895,7 @@ export default function BezAgenciaLuxuryApp() {
   const [adminSelectedInquiry, setAdminSelectedInquiry] = useState(null); // пълните данни от запитването на клиента
   const [adminSelectedInquiryPaid, setAdminSelectedInquiryPaid] = useState(false);
   const [adminSelectedInquiryStatus, setAdminSelectedInquiryStatus] = useState("none"); // none | awaiting_payment | paid
+  const [adminOffersIds, setAdminOffersIds] = useState(new Set());
   const [adminSelectedInquiryLoading, setAdminSelectedInquiryLoading] = useState(false);
 
   const [adminDealSaveStatus, setAdminDealSaveStatus] = useState("idle");
@@ -1318,6 +1319,7 @@ export default function BezAgenciaLuxuryApp() {
       if (adminTab === "payments") loadAdminPayments();
       if (adminTab === "deals") loadDeals();
       if (adminTab === "contacts" || adminTab === "offer" || adminTab === "email") loadAdminContacts();
+      if (adminTab === "offer") { loadAdminOffersIds(); loadAdminPayments(); }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, modalPage, adminAuthed, adminTab]);
@@ -1511,34 +1513,36 @@ export default function BezAgenciaLuxuryApp() {
     const photos = [...f.photos]; photos[index] = ""; return { ...f, photos };
   });
 
-  const handleSelectOfferInquiry = async (id) => {
+  const loadAdminOffersIds = async () => {
+    try {
+      const res = await db.list("offer:", true);
+      const keys = res?.keys || [];
+      setAdminOffersIds(new Set(keys.map((k) => k.replace("offer:", ""))));
+    } catch { setAdminOffersIds(new Set()); }
+  };
+
+  // Синхронно смята статуса на конвейера за дадено запитване, използвайки вече
+  // заредените adminPayments/adminOffersIds — вижда се веднага за всички
+  // запитвания в падащото меню, без да чакаме отделна заявка при избор.
+  const getInquiryPipelineStatus = (id) => {
+    const payment = adminPayments.find((p) => p.key === `payment:${id}`);
+    if (payment?.paid) return "paid";
+    if (adminOffersIds.has(id)) return "awaiting_payment";
+    return "none";
+  };
+  const pipelineStatusLabel = (status) =>
+    status === "paid" ? "✓ Чака пълна оферта" : status === "awaiting_payment" ? "Чака плащане" : "Чака кратка оферта";
+
+  const handleSelectOfferInquiry = (id) => {
     setAdminOfferForm((f) => ({ ...f, inquiryId: id }));
-    setAdminSelectedInquiry(null);
-    setAdminSelectedInquiryPaid(false);
-    setAdminSelectedInquiryStatus("none");
-    if (!id) return;
-    setAdminSelectedInquiryLoading(true);
-    try {
-      const r = await db.get(`inquiry:${id}`, true);
-      setAdminSelectedInquiry(r?.value ? JSON.parse(r.value) : null);
-    } catch { setAdminSelectedInquiry(null); }
-
-    let hasOffer = false;
-    try {
-      const o = await db.get(`offer:${id}`, true);
-      hasOffer = !!o?.value;
-    } catch { hasOffer = false; }
-
-    let isPaid = false;
-    try {
-      const p = await db.get(`payment:${id}`, true);
-      const pData = p?.value ? JSON.parse(p.value) : null;
-      isPaid = !!pData?.paid;
-    } catch { isPaid = false; }
-
-    setAdminSelectedInquiryPaid(isPaid);
-    setAdminSelectedInquiryStatus(isPaid ? "paid" : hasOffer ? "awaiting_payment" : "none");
-    setAdminSelectedInquiryLoading(false);
+    if (!id) {
+      setAdminSelectedInquiry(null);
+      setAdminSelectedInquiryStatus("none");
+      return;
+    }
+    const contact = adminContacts.find((c) => c.id === id) || null;
+    setAdminSelectedInquiry(contact);
+    setAdminSelectedInquiryStatus(getInquiryPipelineStatus(id));
   };
 
   const handleSendOffer = async () => {
@@ -2807,9 +2811,13 @@ export default function BezAgenciaLuxuryApp() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
                       <select value={adminOfferForm.inquiryId} onChange={(e) => handleSelectOfferInquiry(e.target.value)} style={{ ...selectStyle, flex: 1 }}>
                         <option value="">Избери запитване</option>
-                        {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
+                        {adminContacts.map((c) => (
+                          <option key={c.key} value={c.id}>
+                            {c.id} — {c.name} ({c.city}, {c.country}) · {pipelineStatusLabel(getInquiryPipelineStatus(c.id))}
+                          </option>
+                        ))}
                       </select>
-                      {adminOfferForm.inquiryId && !adminSelectedInquiryLoading && (
+                      {adminOfferForm.inquiryId && (
                         <span style={{
                           fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, borderRadius: 20, padding: "7px 14px",
                           color: adminSelectedInquiryStatus === "paid" ? PALETTE.jungle : adminSelectedInquiryStatus === "awaiting_payment" ? PALETTE.oceanBright : PALETTE.goldBright,
@@ -2823,32 +2831,27 @@ export default function BezAgenciaLuxuryApp() {
 
                     {adminOfferForm.inquiryId && (
                       <div style={{ gridColumn: "1 / -1", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
-                        {adminSelectedInquiryLoading && <p style={{ fontSize: 12.5, color: PALETTE.inkMuted, margin: 0 }}>Зареждам данните на клиента…</p>}
-                        {!adminSelectedInquiryLoading && (
-                          <>
-                            <div style={{ marginBottom: adminSelectedInquiry ? 10 : 0 }}>
-                              <span style={{ fontSize: 12, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
-                            </div>
-                            {adminSelectedInquiry ? (
-                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 12.5 }}>
-                                <SummaryRow label="Телефон" value={adminSelectedInquiry.phone || "-"} />
-                                <SummaryRow label="Летище" value={adminSelectedInquiry.departure || "-"} />
-                                <SummaryRow label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
-                                <SummaryRow label="Бюджет" value={adminSelectedInquiry.budgetPerPerson ? `${adminSelectedInquiry.budgetPerPerson} €` : "-"} />
-                                <SummaryRow label="Период" value={adminSelectedInquiry.findLowestPrice ? `Гъвкав — ${adminSelectedInquiry.lowestPriceMonth || "-"}` : `${adminSelectedInquiry.dateFrom || "-"} – ${adminSelectedInquiry.dateTo || "-"}`} />
-                                <SummaryRow label="Цел" value={adminSelectedInquiry.visitPurpose || "-"} />
-                                <SummaryRow label="Тип почивка" value={adminSelectedInquiry.vacationType || "-"} />
-                                <SummaryRow label="Настаняване" value={adminSelectedInquiry.accommodationTypes?.length ? adminSelectedInquiry.accommodationTypes.join(", ") : "-"} />
-                                {adminSelectedInquiry.comment && (
-                                  <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
-                                    <SummaryRow label="Коментар" value={adminSelectedInquiry.comment} />
-                                  </div>
-                                )}
+                        <div style={{ marginBottom: adminSelectedInquiry ? 10 : 0 }}>
+                          <span style={{ fontSize: 12, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
+                        </div>
+                        {adminSelectedInquiry ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 12.5 }}>
+                            <SummaryRow label="Телефон" value={adminSelectedInquiry.phone || "-"} />
+                            <SummaryRow label="Летище" value={adminSelectedInquiry.departure || "-"} />
+                            <SummaryRow label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
+                            <SummaryRow label="Бюджет" value={adminSelectedInquiry.budgetPerPerson ? `${adminSelectedInquiry.budgetPerPerson} €` : "-"} />
+                            <SummaryRow label="Период" value={adminSelectedInquiry.findLowestPrice ? `Гъвкав — ${adminSelectedInquiry.lowestPriceMonth || "-"}` : `${adminSelectedInquiry.dateFrom || "-"} – ${adminSelectedInquiry.dateTo || "-"}`} />
+                            <SummaryRow label="Цел" value={adminSelectedInquiry.visitPurpose || "-"} />
+                            <SummaryRow label="Тип почивка" value={adminSelectedInquiry.vacationType || "-"} />
+                            <SummaryRow label="Настаняване" value={adminSelectedInquiry.accommodationTypes?.length ? adminSelectedInquiry.accommodationTypes.join(", ") : "-"} />
+                            {adminSelectedInquiry.comment && (
+                              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                                <SummaryRow label="Коментар" value={adminSelectedInquiry.comment} />
                               </div>
-                            ) : (
-                              <p style={{ fontSize: 12, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
                             )}
-                          </>
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 12, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
                         )}
                       </div>
                     )}
