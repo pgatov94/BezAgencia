@@ -1303,7 +1303,7 @@ export default function BezAgenciaLuxuryApp() {
   };
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+      if (e.ctrlKey && e.altKey && (e.key === "A" || e.key === "a")) {
         e.preventDefault();
         setPage("admin");
       }
