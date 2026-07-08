@@ -2791,23 +2791,25 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 12 }}>
-                    <select value={adminOfferForm.inquiryId} onChange={(e) => handleSelectOfferInquiry(e.target.value)} style={{ ...selectStyle, gridColumn: "1 / -1" }}>
-                      <option value="">Избери запитване</option>
-                      {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
-                    </select>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
+                      <select value={adminOfferForm.inquiryId} onChange={(e) => handleSelectOfferInquiry(e.target.value)} style={{ ...selectStyle, flex: 1 }}>
+                        <option value="">Избери запитване</option>
+                        {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
+                      </select>
+                      {adminSelectedInquiryPaid && (
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: PALETTE.jungle, background: "rgba(46,158,118,0.14)", border: `1px solid ${PALETTE.jungle}`, borderRadius: 20, padding: "7px 14px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                          ✓ Платено
+                        </span>
+                      )}
+                    </div>
 
                     {adminOfferForm.inquiryId && (
                       <div style={{ gridColumn: "1 / -1", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
                         {adminSelectedInquiryLoading && <p style={{ fontSize: 12.5, color: PALETTE.inkMuted, margin: 0 }}>Зареждам данните на клиента…</p>}
                         {!adminSelectedInquiryLoading && (
                           <>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: adminSelectedInquiry ? 10 : 0, flexWrap: "wrap", gap: 8 }}>
+                            <div style={{ marginBottom: adminSelectedInquiry ? 10 : 0 }}>
                               <span style={{ fontSize: 12, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
-                              {adminSelectedInquiryPaid && (
-                                <span style={{ fontSize: 11.5, fontWeight: 700, color: PALETTE.jungle, background: "rgba(46,158,118,0.14)", border: `1px solid ${PALETTE.jungle}`, borderRadius: 20, padding: "3px 10px" }}>
-                                  ✓ Платено
-                                </span>
-                              )}
                             </div>
                             {adminSelectedInquiry ? (
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 12.5 }}>
