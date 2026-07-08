@@ -24,6 +24,21 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Някои имейл клиенти (напр. abv.bg / Samsung Email) рендират HTML-само
+  // писма грешно — показват ги като прикачен файл вместо вградено съдържание.
+  // За съвместимост винаги пращаме и обикновена текстова версия като fallback.
+  const text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
   try {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -38,6 +53,7 @@ export default async function handler(req, res) {
         reply_to: replyTo || undefined,
         subject,
         html,
+        text,
       }),
     });
 
