@@ -836,7 +836,7 @@ export default function BezAgenciaLuxuryApp() {
   const [offerConfirmError, setOfferConfirmError] = useState("");
   const [offerDiscountStatus, setOfferDiscountStatus] = useState("idle"); // idle | checking | applied | invalid | used
   const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null); // индекс в offerData.photos, или null ако е затворен
 
   // ── Публични отзиви (показани в края на страница Отзиви) ────────────
   const [publicReviews, setPublicReviews] = useState([]);
@@ -1362,6 +1362,19 @@ export default function BezAgenciaLuxuryApp() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Навигация в lightbox-а на снимките със стрелки на клавиатурата.
+  useEffect(() => {
+    if (lightboxIndex === null || !offerData?.photos?.length) return;
+    const total = offerData.photos.length;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i - 1 + total) % total);
+      if (e.key === "ArrowRight") setLightboxIndex((i) => (i + 1) % total);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxIndex, offerData]);
+
   const handleAdminSavePayment = async () => {
     const id = adminIdInput.trim().toUpperCase();
     const amt = Number(adminAmountInput);
@@ -1769,24 +1782,55 @@ export default function BezAgenciaLuxuryApp() {
         <CardSecurityModal onClose={() => setShowCardSecurity(false)} />
       )}
 
-      {/* ── LIGHTBOX: снимка на цял екран (оферта) ───────────────────── */}
-      {lightboxImage && (
-        <div
-          onClick={() => setLightboxImage(null)}
-          style={{
-            position: "fixed", inset: 0, zIndex: 60, background: "rgba(6,8,16,0.92)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "center", justifyContent: "center", padding: 24, cursor: "zoom-out",
-          }}
-        >
-          <button onClick={() => setLightboxImage(null)} style={{
-            position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.08)", border: `1px solid ${PALETTE.panelBorder}`,
-            borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.ink,
-          }}>
-            <X size={20} />
-          </button>
-          <img src={lightboxImage} alt="" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
-        </div>
-      )}
+      {/* ── LIGHTBOX: снимка на цял екран, с навигация ляво/дясно (оферта) ── */}
+      {lightboxIndex !== null && offerData?.photos?.length > 0 && (() => {
+        const photos = offerData.photos;
+        const goPrev = () => setLightboxIndex((i) => (i - 1 + photos.length) % photos.length);
+        const goNext = () => setLightboxIndex((i) => (i + 1) % photos.length);
+        return (
+          <div
+            onClick={() => setLightboxIndex(null)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 60, background: "rgba(6,8,16,0.92)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center", padding: 24, cursor: "zoom-out",
+            }}
+          >
+            <button onClick={() => setLightboxIndex(null)} style={{
+              position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.08)", border: `1px solid ${PALETTE.panelBorder}`,
+              borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.ink, zIndex: 2,
+            }}>
+              <X size={20} />
+            </button>
+
+            {photos.length > 1 && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); goPrev(); }} style={{
+                  position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.08)",
+                  border: `1px solid ${PALETTE.panelBorder}`, borderRadius: "50%", width: 44, height: 44, display: "flex",
+                  alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.ink, zIndex: 2,
+                }}>
+                  <ChevronLeft size={22} />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); goNext(); }} style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.08)",
+                  border: `1px solid ${PALETTE.panelBorder}`, borderRadius: "50%", width: 44, height: 44, display: "flex",
+                  alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.ink, zIndex: 2,
+                }}>
+                  <ChevronRight size={22} />
+                </button>
+                <div style={{
+                  position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,0.08)",
+                  border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "5px 14px", fontSize: 12.5, color: PALETTE.ink, zIndex: 2,
+                }}>
+                  {lightboxIndex + 1} / {photos.length}
+                </div>
+              </>
+            )}
+
+            <img src={photos[lightboxIndex]} alt="" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+          </div>
+        );
+      })()}
 
       {/* ── СТРАНИЦА: НАЧАЛО ──────────────────────────────────────── */}
       {page === "home" && (
@@ -2506,7 +2550,7 @@ export default function BezAgenciaLuxuryApp() {
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(offerData.photos.length, 3)}, 1fr)`, gap: 8 }}>
                     {offerData.photos.map((p, i) => (
                       <img
-                        key={i} src={p} alt="" onClick={() => setLightboxImage(p)}
+                        key={i} src={p} alt="" onClick={() => setLightboxIndex(i)}
                         style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12, border: `1px solid ${PALETTE.panelBorder}`, cursor: "zoom-in" }}
                       />
                     ))}
