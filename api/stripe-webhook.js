@@ -7,6 +7,9 @@
 
 import crypto from "crypto";
 import { supabase } from "../src/supabaseClient.js";
+import { sendEmail, emailWrap } from "./_lib/email.js";
+
+const INQUIRY_EMAIL = "pgatov94@gmail.com"; // смени, ако смениш и в src/App.jsx
 
 export const config = {
   api: {
@@ -66,6 +69,8 @@ export default async function handler(req, res) {
   if (event.type === "checkout.session.completed") {
     const session = event.data?.object;
     const inquiryId = session?.metadata?.inquiryId;
+    const amount = session?.amount_total ? (session.amount_total / 100).toFixed(0) : null;
+    const customerEmail = session?.customer_details?.email || session?.customer_email || null;
 
     if (inquiryId) {
       try {
@@ -79,6 +84,36 @@ export default async function handler(req, res) {
       } catch (e) {
         console.error("Webhook: неуспешно обновяване в Supabase:", e.message);
       }
+
+      // Извличаме и името на клиента (ако го имаме от запитването), за по-личен тон.
+      let customerName = "";
+      try {
+        const { data: inqData } = await supabase.from("inquiries").select("data").eq("id", inquiryId).maybeSingle();
+        customerName = inqData?.data?.name || "";
+      } catch { /* не е критично */ }
+
+      const sumText = amount ? `${amount} €` : "";
+
+      if (customerEmail) {
+        await sendEmail({
+          to: customerEmail,
+          subject: `Плащането по запитване ${inquiryId} е потвърдено`,
+          html: emailWrap("Плащане потвърдено", `
+            <p style="margin:0 0 10px;">Здравей ${customerName || ""},</p>
+            <p style="margin:0 0 10px;">Плащането ти по запитване <strong style="color:#D4AF37;">${inquiryId}</strong>${sumText ? ` на стойност <strong style="color:#D4AF37;">${sumText}</strong>` : ""} е потвърдено успешно.</p>
+            <p style="margin:0;">В най-кратки срокове ще получиш цялата налична информация за предстоящото пътуване (билети, настаняване и детайли) на този имейл.</p>
+          `),
+        });
+      }
+
+      await sendEmail({
+        to: INQUIRY_EMAIL,
+        subject: `Ново плащане по запитване ${inquiryId}`,
+        html: emailWrap("Плащане потвърдено", `
+          <p style="margin:0 0 10px;">Клиент${customerName ? ` ${customerName}` : ""} плати по запитване <strong style="color:#D4AF37;">${inquiryId}</strong>${sumText ? ` — сума ${sumText}` : ""}.</p>
+          ${customerEmail ? `<p style="margin:0;">Имейл на клиента: ${customerEmail}</p>` : ""}
+        `),
+      });
     }
   }
 
