@@ -892,6 +892,9 @@ export default function BezAgenciaLuxuryApp() {
   });
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
   const [adminOfferSaveStatus, setAdminOfferSaveStatus] = useState("idle"); // idle | saving | sent | error
+  const [adminSelectedInquiry, setAdminSelectedInquiry] = useState(null); // пълните данни от запитването на клиента
+  const [adminSelectedInquiryPaid, setAdminSelectedInquiryPaid] = useState(false);
+  const [adminSelectedInquiryLoading, setAdminSelectedInquiryLoading] = useState(false);
 
   const [adminDealSaveStatus, setAdminDealSaveStatus] = useState("idle");
   const [editingDealId, setEditingDealId] = useState(null);
@@ -1012,7 +1015,13 @@ export default function BezAgenciaLuxuryApp() {
       try {
         await db.set(
           `inquiry:${id}`,
-          JSON.stringify({ name, email, city: city?.name, country: country?.name, createdAt: Date.now() }),
+          JSON.stringify({
+            name, email, phone, city: city?.name, country: country?.name, departure: departure?.name,
+            adults, childrenCount, childrenAges, budgetPerPerson,
+            dateFrom, dateTo, approxDates, findLowestPrice, lowestPriceMonth,
+            visitPurpose, vacationType, accommodationTypes, comment,
+            createdAt: Date.now(),
+          }),
           true
         );
       } catch { /* не е критично */ }
@@ -1500,6 +1509,24 @@ export default function BezAgenciaLuxuryApp() {
   const removeOfferImage = (index) => setAdminOfferForm((f) => {
     const photos = [...f.photos]; photos[index] = ""; return { ...f, photos };
   });
+
+  const handleSelectOfferInquiry = async (id) => {
+    setAdminOfferForm((f) => ({ ...f, inquiryId: id }));
+    setAdminSelectedInquiry(null);
+    setAdminSelectedInquiryPaid(false);
+    if (!id) return;
+    setAdminSelectedInquiryLoading(true);
+    try {
+      const r = await db.get(`inquiry:${id}`, true);
+      setAdminSelectedInquiry(r?.value ? JSON.parse(r.value) : null);
+    } catch { setAdminSelectedInquiry(null); }
+    try {
+      const p = await db.get(`payment:${id}`, true);
+      const pData = p?.value ? JSON.parse(p.value) : null;
+      setAdminSelectedInquiryPaid(!!pData?.paid);
+    } catch { setAdminSelectedInquiryPaid(false); }
+    setAdminSelectedInquiryLoading(false);
+  };
 
   const handleSendOffer = async () => {
     const f = adminOfferForm;
@@ -2701,7 +2728,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 26, borderBottom: `1px solid ${PALETTE.panelBorder}`, paddingBottom: 4, justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <AdminTabBtn active={adminTab === "payments"} onClick={() => setAdminTab("payments")} icon={<Wallet size={14} />} label="Плащания" />
-                  <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={14} />} label="Оферта" />
+                  <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={14} />} label="Запитвания" />
                   <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={14} />} label="Оферти" />
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={14} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={14} />} label="Анализи" />
@@ -2764,10 +2791,48 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 12 }}>
-                    <select value={adminOfferForm.inquiryId} onChange={(e) => setAdminOfferForm((f) => ({ ...f, inquiryId: e.target.value }))} style={{ ...selectStyle, gridColumn: "1 / -1" }}>
+                    <select value={adminOfferForm.inquiryId} onChange={(e) => handleSelectOfferInquiry(e.target.value)} style={{ ...selectStyle, gridColumn: "1 / -1" }}>
                       <option value="">Избери запитване</option>
                       {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.city}, {c.country})</option>)}
                     </select>
+
+                    {adminOfferForm.inquiryId && (
+                      <div style={{ gridColumn: "1 / -1", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
+                        {adminSelectedInquiryLoading && <p style={{ fontSize: 12.5, color: PALETTE.inkMuted, margin: 0 }}>Зареждам данните на клиента…</p>}
+                        {!adminSelectedInquiryLoading && (
+                          <>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: adminSelectedInquiry ? 10 : 0, flexWrap: "wrap", gap: 8 }}>
+                              <span style={{ fontSize: 12, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
+                              {adminSelectedInquiryPaid && (
+                                <span style={{ fontSize: 11.5, fontWeight: 700, color: PALETTE.jungle, background: "rgba(46,158,118,0.14)", border: `1px solid ${PALETTE.jungle}`, borderRadius: 20, padding: "3px 10px" }}>
+                                  ✓ Платено
+                                </span>
+                              )}
+                            </div>
+                            {adminSelectedInquiry ? (
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 12.5 }}>
+                                <SummaryRow label="Телефон" value={adminSelectedInquiry.phone || "-"} />
+                                <SummaryRow label="Летище" value={adminSelectedInquiry.departure || "-"} />
+                                <SummaryRow label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
+                                <SummaryRow label="Бюджет" value={adminSelectedInquiry.budgetPerPerson ? `${adminSelectedInquiry.budgetPerPerson} €` : "-"} />
+                                <SummaryRow label="Период" value={adminSelectedInquiry.findLowestPrice ? `Гъвкав — ${adminSelectedInquiry.lowestPriceMonth || "-"}` : `${adminSelectedInquiry.dateFrom || "-"} – ${adminSelectedInquiry.dateTo || "-"}`} />
+                                <SummaryRow label="Цел" value={adminSelectedInquiry.visitPurpose || "-"} />
+                                <SummaryRow label="Тип почивка" value={adminSelectedInquiry.vacationType || "-"} />
+                                <SummaryRow label="Настаняване" value={adminSelectedInquiry.accommodationTypes?.length ? adminSelectedInquiry.accommodationTypes.join(", ") : "-"} />
+                                {adminSelectedInquiry.comment && (
+                                  <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                                    <SummaryRow label="Коментар" value={adminSelectedInquiry.comment} />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p style={{ fontSize: 12, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     <input type="number" value={adminOfferForm.flightPrice} onChange={(e) => setAdminOfferForm((f) => ({ ...f, flightPrice: e.target.value }))} placeholder="Цена на полет €" style={inputStyle} />
                     <input type="number" value={adminOfferForm.hotelPrice} onChange={(e) => setAdminOfferForm((f) => ({ ...f, hotelPrice: e.target.value }))} placeholder="Цена на нощувки €" style={inputStyle} />
                     <Field label="Дата на полет от">
