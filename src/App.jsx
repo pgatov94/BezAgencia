@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
-import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon,
@@ -3137,13 +3137,19 @@ export default function BezAgenciaLuxuryApp() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20 }}>
-            {["Visa", "Mastercard", "Maestro"].map((label) => (
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            {[
+              { label: "Visa", Icon: SiVisa, color: "#1A1F71" },
+              { label: "Mastercard", Icon: SiMastercard, color: "#EB001B" },
+              { label: "Apple Pay", Icon: SiApplepay, color: "#FFFFFF" },
+              { label: "Google Pay", Icon: SiGooglepay, color: "#FFFFFF" },
+              { label: "Revolut", Icon: SiRevolut, color: "#0075EB" },
+            ].map(({ label, Icon, color }) => (
               <span key={label} style={{
                 display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
                 borderRadius: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 700, color: PALETTE.inkMuted, letterSpacing: 0.5,
               }}>
-                <CreditCard size={13} color={PALETTE.oceanBright} /> {label}
+                <Icon size={14} color={color} /> {label}
               </span>
             ))}
           </div>
