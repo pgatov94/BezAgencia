@@ -1446,18 +1446,12 @@ export default function BezAgenciaLuxuryApp() {
       if (inqInfo?.email) {
         await sendTransactionalEmail({
           to: inqInfo.email,
-          subject: `Твоята персонална оферта — запитване ${id}`,
+          subject: `Офертата ти е готова — запитване ${id}`,
           html: emailWrap("Оферта готова", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
-            <p style="margin:0 0 16px;">Готова е персоналната ти оферта по запитване <strong style="color:#D4AF37;">${id}</strong>:</p>
-            ${emailSectionHtml("Полет", [["Цена", `${flightPrice} €`], ["Дати", `${f.flightDateFrom || "-"} – ${f.flightDateTo || "-"}`]])}
-            ${emailSectionHtml("Нощувки", [["Цена", `${hotelPrice} €`]])}
-            <p style="margin:0 0 16px;font-size:13px;color:#8E99AE;">Снимки на настаняването и пълните детайли те очакват на страницата на офертата.</p>
-            <p style="margin:16px 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш 2 конкретни опции за настаняване на място.</p>
-            <p style="margin:0 0 6px;font-size:13px;color:#8E99AE;">* След плащане ще получиш линкове за входни билети за забележителности и допълнителни екскурзии през GetYourGuide.</p>
-            <p style="margin:0 0 20px;font-size:13px;color:#8E99AE;">* След плащане ще получиш информация за трансфер от летището и видовете градски транспорт.</p>
+            <p style="margin:0 0 24px;">Офертата ти по запитване <strong style="color:#D4AF37;">${id}</strong> е готова за преглед — цени, дати, снимки на настаняването и начин на плащане те очакват на страницата.</p>
             <p style="text-align:center;margin:0;">
-              <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;">Виж и потвърди офертата</a>
+              <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Прегледай и потвърди офертата</a>
             </p>
           `),
         });
