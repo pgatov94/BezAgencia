@@ -2184,7 +2184,7 @@ export default function BezAgenciaLuxuryApp() {
 
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "10px 24px 90px", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }} className="ba-grid">
             {[
-              { icon: <Tag size={20} />, title: "Оферти", text: "Светкавични намаления, обновявани от нас.", action: () => setModalPage("deals") },
+              { icon: <Tag size={20} />, title: "Оферти", text: "Светкавични намаления, обновявани периодично.", action: () => setModalPage("deals") },
               { icon: <ShieldCheck size={20} />, title: "Как работи платформата?", text: "Плащаш комисионна само ако решиш да пътуваш — 5%, минимум 50 €.", action: () => setShowAbout(true) },
             ].map((c, i) => (
               <button key={i} onClick={c.action} className="lux-hover" style={{
@@ -2694,7 +2694,7 @@ export default function BezAgenciaLuxuryApp() {
         const dashboardContent = (
         <>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-            <Euro size={15} /> Плащания
+            <ClipboardCheck size={15} /> Статус на оферта
           </div>
           <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Провери статус по номер</h2>
           <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 22px" }}>Въведи номера, който получи при подаване на запитването (напр. BA-20260701-1234).</p>
