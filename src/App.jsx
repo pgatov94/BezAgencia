@@ -3344,7 +3344,7 @@ export default function BezAgenciaLuxuryApp() {
               />
               <button onClick={handleNewsletterSubscribe} disabled={newsletterStatus === "sending"} className="lux-btn" style={{
                 background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "9px 18px",
-                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 13.5.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
+                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 13.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
               }}>
                 Абониране
               </button>
