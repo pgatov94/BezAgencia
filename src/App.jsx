@@ -948,6 +948,48 @@ export default function BezAgenciaLuxuryApp() {
   const goHome = () => { setPage("home"); setShowAbout(false); setModalPage(null); };
   const goWizard = () => { setPage("wizard"); if (step === 6) resetWizard(); };
 
+  /* ── Синхронизация с браузърната история ──────────────────────────────
+     Всяка промяна на страница/стъпка/модал се записва като запис в
+     историята на браузъра. Така бутонът "назад" на браузъра връща
+     потребителя на предишния ВЪТРЕШЕН изглед на сайта (напр. предишна
+     стъпка отформата), вместо веднага да го извежда към сайта, който е
+     гледал преди bezagencia.com. Едва след като се изчерпат вътрешните
+     стъпки, "назад" ще излезе към предишния сайт — точно както се очаква. */
+  const historyInitialized = useRef(false);
+  const isPoppingState = useRef(false);
+
+  useEffect(() => {
+    const snapshot = { page, step, modalPage, showAbout, showCardSecurity };
+
+    if (!historyInitialized.current) {
+      historyInitialized.current = true;
+      window.history.replaceState(snapshot, "");
+      return;
+    }
+
+    if (isPoppingState.current) {
+      isPoppingState.current = false;
+      return;
+    }
+
+    window.history.pushState(snapshot, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, step, modalPage, showAbout, showCardSecurity]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      isPoppingState.current = true;
+      const s = e.state || {};
+      setPage(s.page ?? "home");
+      setStep(s.step ?? 1);
+      setModalPage(s.modalPage ?? null);
+      setShowAbout(!!s.showAbout);
+      setShowCardSecurity(!!s.showCardSecurity);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   /* ── "Искам тази оферта" — пренася данните от офертата директно на стъпка 4 ── */
   const handleWantThisDeal = (deal) => {
     resetWizard();
