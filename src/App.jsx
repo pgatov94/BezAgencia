@@ -1135,17 +1135,29 @@ export default function BezAgenciaLuxuryApp() {
     }
   };
 
-  /* ── Връщане от Stripe (успешно или отказано плащане) ────────────────── */
+  /* ── Връщане от Stripe (успешно или отказано плащане) / линк от имейл за отзив ── */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const paid = params.get("paid");
     const inquiry = params.get("inquiry");
     const offerParam = params.get("offer");
+    const reviewParam = params.get("review");
 
     if (offerParam) {
       setPage("offerView");
       window.history.replaceState({}, "", window.location.pathname);
       loadOfferView(offerParam);
+      return;
+    }
+
+    if (reviewParam) {
+      const cleanId = reviewParam.trim().toUpperCase();
+      setModalPage(null);
+      setPage("reviews");
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => {
+        handleReviewLookup(cleanId);
+      }, 0);
       return;
     }
 
@@ -1277,9 +1289,10 @@ export default function BezAgenciaLuxuryApp() {
   };
 
   /* ── Отзиви: проверка дали номерът реално отговаря на платено пътуване ── */
-  const handleReviewLookup = async () => {
-    const id = reviewLookupId.trim().toUpperCase();
+  const handleReviewLookup = async (idOverride) => {
+    const id = (idOverride || reviewLookupId).trim().toUpperCase();
     if (!id) return;
+    if (idOverride) setReviewLookupId(id);
     setReviewStatus("loading");
     setReviewInquiryInfo(null); setReviewPaymentInfo(null); setExistingVoucherCode(null);
     setReviewSubmitStatus("idle"); setReviewVoucherCode(null);
