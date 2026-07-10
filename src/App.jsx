@@ -822,6 +822,7 @@ export default function BezAgenciaLuxuryApp() {
   const [comment, setComment] = useState("");
 
   const [inquiryId, setInquiryId] = useState(null);
+  const [editingInquiryId, setEditingInquiryId] = useState(null);
   const [sendStatus, setSendStatus] = useState("idle");
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
@@ -951,7 +952,7 @@ export default function BezAgenciaLuxuryApp() {
     setBudgetPerPerson(""); setDateFrom(""); setDateTo(""); setApproxDates(false);
     setFindLowestPrice(true); setLowestPriceMonth("");
     setVisitPurpose(""); setVacationType(""); setAccommodationTypes(["Нямам претенции"]);
-    setComment(""); setInquiryId(null); setSendStatus("idle"); setShowValidationErrors(false);
+    setComment(""); setInquiryId(null); setSendStatus("idle"); setShowValidationErrors(false); setEditingInquiryId(null);
   };
 
   const goHome = () => { setPage("home"); setShowAbout(false); setModalPage(null); };
@@ -1051,6 +1052,7 @@ export default function BezAgenciaLuxuryApp() {
     setModalPage(null);
     setPage("wizard");
     setStep(4);
+    setEditingInquiryId(offerViewId);
     setOfferEditRequestStatus("idle");
   };
 
@@ -1125,7 +1127,8 @@ export default function BezAgenciaLuxuryApp() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-    const id = genInquiryId();
+    const isEdit = !!editingInquiryId;
+    const id = editingInquiryId || genInquiryId();
     setInquiryId(id);
     setStep(6);
     setSendStatus("sending");
@@ -1134,12 +1137,14 @@ export default function BezAgenciaLuxuryApp() {
       const html = buildInquiryEmailHtml(id);
       const customerOk = await sendTransactionalEmail({
         to: email,
-        subject: `Запитване ${id} — получено`,
+        subject: isEdit ? `Запитване ${id} — коригирани данни получени` : `Запитване ${id} — получено`,
         html,
       });
       await sendTransactionalEmail({
         to: INQUIRY_EMAIL,
-        subject: `Ново запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`,
+        subject: isEdit
+          ? `Клиент коригира запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`
+          : `Ново запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`,
         html,
         replyTo: email,
       });
@@ -1157,6 +1162,7 @@ export default function BezAgenciaLuxuryApp() {
           true
         );
       } catch { /* не е критично */ }
+      setEditingInquiryId(null);
     } catch { setSendStatus("error"); }
   };
 
