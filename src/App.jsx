@@ -1502,9 +1502,21 @@ export default function BezAgenciaLuxuryApp() {
         const remembered = localStorage.getItem("admin_remember");
         if (remembered) { setAdminAuthed(true); setAdminPasscodeInput(remembered); }
       } catch { /* няма запазен вход — показваме формата за парола */ }
+      try {
+        if (localStorage.getItem("ba_last_page") === "admin") setPage("admin");
+      } catch { /* нищо да възстановим — оставаме на началния екран */ }
       setAdminAuthChecked(true);
     })();
   }, []);
+
+  // Помни дали последно сме били в Админ панела, за да не ни връща
+  // обратно към началния екран при обикновено презареждане на страницата.
+  useEffect(() => {
+    try {
+      if (page === "admin") localStorage.setItem("ba_last_page", "admin");
+      else localStorage.removeItem("ba_last_page");
+    } catch { /* не е критично, ако localStorage не е достъпен */ }
+  }, [page]);
 
   // Скрит достъп до Админ панела — не е видим никъде в интерфейса за клиенти.
   // Отваря се само с Ctrl+Shift+A (Cmd+Shift+A на Mac) или с 5 бързи клика върху текста на футъра.
