@@ -1821,7 +1821,11 @@ export default function BezAgenciaLuxuryApp() {
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .page-enter { animation: fadeSlideIn .7s var(--ease) both; }
 
-        @keyframes heroKenBurns {
+        .ba-hero-section { min-height: 78vh; }
+        @media (max-width: 640px) {
+          .ba-hero-section { min-height: 46vh; }
+          .ba-hero-photo { background-position: 55% 42% !important; }
+        }
           0% { transform: scale(1) translate(0, 0); }
           50% { transform: scale(1.09) translate(-1.5%, -1%); }
           100% { transform: scale(1) translate(0, 0); }
@@ -2015,7 +2019,7 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── СТРАНИЦА: НАЧАЛО ──────────────────────────────────────── */}
       {page === "home" && (
         <div className="page-enter">
-          <section style={{ position: "relative", overflow: "hidden", minHeight: "78vh" }}>
+          <section className="ba-hero-section" style={{ position: "relative", overflow: "hidden" }}>
             <div className="ba-hero-photo" style={{
               position: "absolute", inset: 0,
               backgroundImage: "url(/hero-beach.png)", backgroundSize: "cover", backgroundPosition: "68% 38%",
@@ -2112,6 +2116,11 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
                   {(r.city || r.country) && <div style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 6 }}>{r.city}{r.city && r.country ? ", " : ""}{r.country}</div>}
                   <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: 0, lineHeight: 1.6 }}>{r.text}</p>
+                  {r.createdAt && (
+                    <div style={{ fontSize: 12, color: PALETTE.inkFaint, marginTop: 8 }}>
+                      {new Date(r.createdAt).toLocaleDateString("bg-BG", { day: "numeric", month: "long", year: "numeric" })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2756,6 +2765,11 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
                   {(r.city || r.country) && <div style={{ fontSize: 11.5, color: PALETTE.inkFaint, marginBottom: 6 }}>{r.city}{r.city && r.country ? ", " : ""}{r.country}</div>}
                   <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: 0, lineHeight: 1.6 }}>{r.text}</p>
+                  {r.createdAt && (
+                    <div style={{ fontSize: 12, color: PALETTE.inkFaint, marginTop: 8 }}>
+                      {new Date(r.createdAt).toLocaleDateString("bg-BG", { day: "numeric", month: "long", year: "numeric" })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
