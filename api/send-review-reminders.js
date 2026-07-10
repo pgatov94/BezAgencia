@@ -64,7 +64,7 @@ export default async function handler(req, res) {
             <p style="text-align:center;margin:0 0 22px;">
               <a href="${link}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Остави отзив</a>
             </p>
-            <p style="margin:0;font-size:12.5px;color:#8E99AE;">Номерът на резервацията (${p.id}) вече е попълнен автоматично, когато отвориш линка.</p>
+            <p style="margin:0;font-size:14.5px;color:#8E99AE;">Номерът на резервацията (${p.id}) вече е попълнен автоматично, когато отвориш линка.</p>
             `
           ),
         });

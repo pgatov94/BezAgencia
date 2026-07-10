@@ -98,6 +98,26 @@ export const db = {
     return { keys: (data || []).map((r) => `${p}:${r.id}`), prefix, shared: true };
   },
 
+  // Зарежда ВСИЧКИ записи от префикса с ЕДНА заявка (вместо list + по едно
+  // get на всеки резултат) — много по-бързо за списъци (Оферти, Отзиви и
+  // т.н.), защото няма нужда от N допълнителни отделни заявки.
+  // Връща масив от { key, value } (value е JSON.stringify-нат текст,
+  // както при get/set, за да заменя list+get комбинацията без промяна
+  // другаде в кода).
+  async listAll(prefix) {
+    if (!isSupabaseConfigured) {
+      throw new Error(NOT_CONFIGURED_MSG);
+    }
+    const p = prefix.replace(/:$/, "");
+    const table = TABLE_MAP[p];
+    if (!table) return [];
+    const { data, error } = await supabase.from(table).select("id, data");
+    if (error) {
+      throw new Error("Storage listAll failed: " + error.message);
+    }
+    return (data || []).map((r) => ({ key: `${p}:${r.id}`, value: JSON.stringify(r.data), shared: true }));
+  },
+
   async delete(key) {
     if (!isSupabaseConfigured) {
       console.error(NOT_CONFIGURED_MSG);

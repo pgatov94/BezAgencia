@@ -1,5 +1,6 @@
 // Споделена помощна функция за изпращане на имейли през Resend — ползва се
-// от api/stripe-webhook.js (директно, сървър до сървър, без HTTP заобикалка).
+// от api/stripe-webhook.js и другите serverless функции (директно, сървър
+// до сървър, без HTTP заобикалка).
 
 export async function sendEmail({ to, subject, html, replyTo }) {
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -7,6 +8,7 @@ export async function sendEmail({ to, subject, html, replyTo }) {
     console.error("sendEmail: липсва RESEND_API_KEY");
     return false;
   }
+
   const text = html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<br\s*\/?>/gi, "\n")
@@ -18,6 +20,7 @@ export async function sendEmail({ to, subject, html, replyTo }) {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
   try {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -44,6 +47,8 @@ export async function sendEmail({ to, subject, html, replyTo }) {
 // Същата визуална обвивка с логото, ползвана и в клиентската част (App.jsx),
 // пресъздадена тук като чист JS (без JSX), за да може да се ползва в
 // сървърна функция.
+// ПРОМЯНА: основният текст в тялото на имейла е увеличен от 14px на 16px,
+// защото беше твърде дребен и трудно четим.
 export function emailWrap(title, bodyHtml) {
   return `
   <div style="background:#0A0E17;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;">
@@ -52,7 +57,7 @@ export function emailWrap(title, bodyHtml) {
         <img src="https://bezagencia.com/logo.png" alt="БезАгенция" style="height:56px;width:auto;display:inline-block;" />
       </div>
       ${title ? `<div style="text-align:center;color:#D4AF37;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:18px;">${title}</div>` : ""}
-      <div style="padding:0 28px 30px;color:#EEF1F6;font-size:14px;line-height:1.7;">
+      <div style="padding:0 28px 30px;color:#EEF1F6;font-size:16px;line-height:1.7;">
         ${bodyHtml}
       </div>
       <div style="text-align:center;padding:16px;border-top:1px solid #232b3d;color:#8E99AE;font-size:11px;">

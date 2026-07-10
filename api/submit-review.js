@@ -83,7 +83,7 @@ export default async function handler(req, res) {
           <p style="text-align:center;margin:0 0 20px;">
             <span style="display:inline-block;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;font-weight:700;font-size:20px;letter-spacing:1px;padding:14px 22px;border-radius:10px;">${code}</span>
           </p>
-          <p style="margin:0;font-size:13px;color:#8E99AE;">Спомени кода при следващото си запитване или го въведи в полето за код за отстъпка, когато получиш персонална оферта.</p>
+          <p style="margin:0;font-size:15px;color:#8E99AE;">Спомени кода при следващото си запитване или го въведи в полето за код за отстъпка, когато получиш персонална оферта.</p>
         `),
       });
     }
