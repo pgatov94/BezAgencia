@@ -1987,8 +1987,7 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── СТРАНИЦА: НАЧАЛО ──────────────────────────────────────── */}
       {page === "home" && (
         <div className="page-enter">
-          <section style={{ position: "relative", overflow: "hidden", minHeight: "78vh", background: `linear-gradient(180deg, ${PALETTE.bgDeep} 0%, ${PALETTE.bg} 70%)` }}>
-            <WorldMapBackground />
+          <section style={{ position: "relative", overflow: "hidden", minHeight: "78vh", backgroundImage: `linear-gradient(180deg, rgba(6,8,16,0) 0%, ${PALETTE.bgDeep} 92%), url(/hero-beach.png)`, backgroundSize: "cover", backgroundPosition: "center" }}>
             <div style={{ position: "absolute", inset: 0, background: "rgba(6,8,16,0.35)", pointerEvents: "none" }} />
             <div style={{
               position: "absolute", inset: 0,
