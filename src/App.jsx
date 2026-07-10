@@ -24,7 +24,7 @@ const PALETTE = {
   panelSolid: "#141B2B",
   panelBorder: "rgba(255,255,255,0.09)",
   panelBorderHover: "rgba(212,175,55,0.5)",
-  ink: "#EEF1F6",
+  ink: "#F0CB63",
   inkMuted: "#8E99AE",
   inkFaint: "#5C6579",
   gold: "#D4AF37",
@@ -2140,7 +2140,7 @@ export default function BezAgenciaLuxuryApp() {
                       <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(6,8,16,0.15) 30%, rgba(6,8,16,0.94) 100%)` }} />
                       <div style={{ position: "absolute", top: 10, right: 10, background: "rgba(10,14,23,0.75)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 6, padding: "2px 7px", fontWeight: 700, fontSize: 10.5, color: PALETTE.goldBright, letterSpacing: 1 }}>{c.id.toUpperCase()}</div>
                       <div style={{ position: "absolute", left: 14, right: 14, bottom: 12, textAlign: "left" }}>
-                        <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 17, color: "#fff" }}>{c.name}</div>
+                        <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 17, color: PALETTE.goldBright }}>{c.name}</div>
                         <div style={{ fontSize: 11, color: PALETTE.inkMuted }}>{c.cities.length} {c.cities.length === 1 ? "дестинация" : "дестинации"}</div>
                       </div>
                     </button>
