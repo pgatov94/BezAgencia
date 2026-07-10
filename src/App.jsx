@@ -271,7 +271,7 @@ function SocialIcon({ id, href }) {
         border: `1px solid ${brand.border}55`, background: brand.bg, color: brand.icon, flexShrink: 0,
       }}
     >
-      {Icon && <Icon size={16} color={brand.icon} />}
+      {Icon && <Icon size={18} color={brand.icon} />}
     </a>
   );
 }
@@ -416,7 +416,7 @@ function StepDots({ step }) {
             width: 27, height: 27, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
             background: i <= step ? PALETTE.gold : "transparent",
             border: `1.5px solid ${i <= step ? PALETTE.gold : PALETTE.panelBorder}`,
-            color: i <= step ? PALETTE.bgDeep : PALETTE.inkFaint, fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14,
+            color: i <= step ? PALETTE.bgDeep : PALETTE.inkFaint, fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5,
             transition: "all .5s var(--ease)",
             boxShadow: i <= step ? "0 0 14px rgba(212,175,55,0.45)" : "none",
           }}>
@@ -435,7 +435,7 @@ function BackBtn({ onClick }) {
       display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer",
       fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.oceanBright, padding: "4px 0 20px",
     }}>
-      <ChevronLeft size={16} /> Назад
+      <ChevronLeft size={18} /> Назад
     </button>
   );
 }
@@ -1918,9 +1918,9 @@ export default function BezAgenciaLuxuryApp() {
         </div>
 
         <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          <NavBtn active={page === "home"} onClick={goHome} icon={<HomeIcon size={14} />} label="Начало" />
-          <NavBtn active={page === "deals"} onClick={() => { setModalPage(null); setPage("deals"); }} icon={<Percent size={14} />} label="Оферти" />
-          <NavBtn active={page === "dashboard"} onClick={() => { setModalPage(null); setPage("dashboard"); }} icon={<Euro size={14} />} label="Плащания" />
+          <NavBtn active={page === "home"} onClick={goHome} icon={<HomeIcon size={16} />} label="Начало" />
+          <NavBtn active={page === "deals"} onClick={() => { setModalPage(null); setPage("deals"); }} icon={<Percent size={16} />} label="Оферти" />
+          <NavBtn active={page === "dashboard"} onClick={() => { setModalPage(null); setPage("dashboard"); }} icon={<Euro size={16} />} label="Плащания" />
         </nav>
       </header>
 
@@ -1972,7 +1972,7 @@ export default function BezAgenciaLuxuryApp() {
                 </button>
                 <div style={{
                   position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,0.08)",
-                  border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "5px 14px", fontSize: 14.5, color: PALETTE.ink, zIndex: 2,
+                  border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "5px 14px", fontSize: 16, color: PALETTE.ink, zIndex: 2,
                 }}>
                   {lightboxIndex + 1} / {photos.length}
                 </div>
@@ -2025,7 +2025,7 @@ export default function BezAgenciaLuxuryApp() {
                     background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 10px", backdropFilter: "blur(6px)",
                   }}>
                     <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.gold, marginBottom: 6 }}>{n}</div>
-                    <div style={{ fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14.5, color: PALETTE.ink }}>{t}</div>
+                    <div style={{ fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 16, color: PALETTE.ink }}>{t}</div>
                   </div>
                 ))}
               </div>
@@ -2036,7 +2036,7 @@ export default function BezAgenciaLuxuryApp() {
                   padding: "16px 34px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
                   display: "inline-flex", alignItems: "center", gap: 8,
                 }}>
-                  Да започваме <ChevronRight size={18} />
+                  Да започваме <ChevronRight size={20} />
                 </button>
               </div>
             </div>
@@ -2044,8 +2044,8 @@ export default function BezAgenciaLuxuryApp() {
 
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "10px 24px 90px", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }} className="ba-grid">
             {[
-              { icon: <Tag size={18} />, title: "Оферти", text: "Светкавични намаления и last-minute цени, обновявани от нас.", action: () => setModalPage("deals") },
-              { icon: <ShieldCheck size={18} />, title: "Как работи платформата?", text: "Плащаш комисионна само ако решиш да пътуваш — 5%, минимум 50 €.", action: () => setShowAbout(true) },
+              { icon: <Tag size={20} />, title: "Оферти", text: "Светкавични намаления и last-minute цени, обновявани от нас.", action: () => setModalPage("deals") },
+              { icon: <ShieldCheck size={20} />, title: "Как работи платформата?", text: "Плащаш комисионна само ако решиш да пътуваш — 5%, минимум 50 €.", action: () => setShowAbout(true) },
             ].map((c, i) => (
               <button key={i} onClick={c.action} className="lux-hover" style={{
                 textAlign: "left", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16,
@@ -2073,7 +2073,7 @@ export default function BezAgenciaLuxuryApp() {
                     <span style={{ fontWeight: 700, fontSize: 15.5, color: PALETTE.ink }}>{r.name}</span>
                     <span style={{ display: "flex", gap: 1 }}>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} size={13} fill={n <= r.rating ? PALETTE.goldBright : "none"} color={n <= r.rating ? PALETTE.goldBright : PALETTE.panelBorder} strokeWidth={1.5} />
+                        <Star key={n} size={15} fill={n <= r.rating ? PALETTE.goldBright : "none"} color={n <= r.rating ? PALETTE.goldBright : PALETTE.panelBorder} strokeWidth={1.5} />
                       ))}
                     </span>
                   </div>
@@ -2093,7 +2093,7 @@ export default function BezAgenciaLuxuryApp() {
             <div style={{ background: PALETTE.panel, borderBottom: `1px solid ${PALETTE.panelBorder}` }}>
               <div style={{ maxWidth: 700, margin: "0 auto", padding: "12px 20px", display: "flex", alignItems: "center", gap: 14 }}>
                 <RouteField label="От" value={departure?.name || "—"} />
-                <ChevronRight size={16} color={PALETTE.gold} style={{ flexShrink: 0 }} />
+                <ChevronRight size={18} color={PALETTE.gold} style={{ flexShrink: 0 }} />
                 <RouteField label="До" value={city ? `${city.name}, ${country?.name}` : country ? country.name : "Дестинация"} muted />
               </div>
             </div>
@@ -2111,7 +2111,7 @@ export default function BezAgenciaLuxuryApp() {
                     cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, fontFamily: "Work Sans, sans-serif",
                   }}>
                     <Plane size={22} color={PALETTE.oceanBright} style={{ transform: "rotate(-30deg)" }} />
-                    <span style={{ fontWeight: 600, fontSize: 14.5, color: PALETTE.ink }}>{d.name}</span>
+                    <span style={{ fontWeight: 600, fontSize: 16, color: PALETTE.ink }}>{d.name}</span>
                   </button>
                 ))}
               </div>
@@ -2126,7 +2126,7 @@ export default function BezAgenciaLuxuryApp() {
                 Тръгвате от {departure?.name} · само дестинации с директни полети на Ryanair и Wizz Air
               </p>
               {availableCountries.length === 0 ? (
-                <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "32px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 14, lineHeight: 1.7 }}>
+                <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "32px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5, lineHeight: 1.7 }}>
                   Все още подготвяме директните дестинации за {departure?.name}. Засега имаме пълни данни само за полети от София.
                 </div>
               ) : (
@@ -2181,7 +2181,7 @@ export default function BezAgenciaLuxuryApp() {
               <BackBtn onClick={() => setStep(3)} />
               <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Завърши запитването</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 24px" }}>
-                <MapPin size={14} color={PALETTE.oceanBright} />
+                <MapPin size={16} color={PALETTE.oceanBright} />
                 <span style={{ fontSize: 15.5, color: PALETTE.inkMuted }}>{city.name}, {country?.name} · от {departure?.name}</span>
               </div>
 
@@ -2286,7 +2286,7 @@ export default function BezAgenciaLuxuryApp() {
                 padding: "16px 30px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5,
                 cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
               }}>
-                <Mail size={17} /> Преглед на запитването
+                <Mail size={19} /> Преглед на запитването
               </button>
               {showValidationErrors && !canSubmit && (
                 <p style={{ fontSize: 13.5, color: PALETTE.coralDark, marginTop: 10, fontWeight: 600 }}>Моля, попълни всички задължителни полета, отбелязани по-горе с червено.</p>
@@ -2303,13 +2303,13 @@ export default function BezAgenciaLuxuryApp() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>Дестинация</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>Дестинация</div>
                   <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 18, color: PALETTE.ink, marginBottom: 4 }}>{city.name}, {country?.name}</div>
-                  <div style={{ fontSize: 14.5, color: PALETTE.inkMuted }}>Полет от {departure?.name}</div>
+                  <div style={{ fontSize: 16, color: PALETTE.inkMuted }}>Полет от {departure?.name}</div>
                 </div>
 
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Пътуващи и бюджет</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Пътуващи и бюджет</div>
                   <SummaryRow label="Възрастни" value={adults} />
                   {childrenCount > 0 && <SummaryRow label="Деца" value={`${childrenCount} (${childrenAges.join(", ")})`} />}
                   <SummaryRow label="Общ бюджет" value={`${budgetPerPerson} €`} />
@@ -2317,7 +2317,7 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
 
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Предпочитания</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Предпочитания</div>
                   <SummaryRow label="Цел" value={visitPurpose || "-"} />
                   <SummaryRow label="Тип почивка" value={vacationType || "-"} />
                   <SummaryRow label="Настаняване" value={accommodationTypes.length ? accommodationTypes.join(", ") : "-"} />
@@ -2325,7 +2325,7 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
 
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Контакти</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 2 }}>Контакти</div>
                   <SummaryRow label="Име" value={name} />
                   <SummaryRow label="Имейл" value={email} />
                   <SummaryRow label="Телефон" value={phone} />
@@ -2335,17 +2335,17 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", gap: 12, marginTop: 26, flexWrap: "wrap" }}>
                 <button onClick={() => setStep(4)} className="lux-hover" style={{
                   background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.ink, borderRadius: 12,
-                  padding: "15px 24px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14, cursor: "pointer",
+                  padding: "15px 24px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, cursor: "pointer",
                   display: "inline-flex", alignItems: "center", gap: 8,
                 }}>
-                  <ChevronLeft size={16} /> Редактирай
+                  <ChevronLeft size={18} /> Редактирай
                 </button>
                 <button onClick={handleSubmit} disabled={!canSubmit} className="lux-btn" style={{
                   background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12,
                   padding: "15px 30px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer",
                   display: "inline-flex", alignItems: "center", gap: 8,
                 }}>
-                  <Check size={17} /> Потвърди и изпрати
+                  <Check size={19} /> Потвърди и изпрати
                 </button>
               </div>
             </section>
@@ -2359,18 +2359,18 @@ export default function BezAgenciaLuxuryApp() {
               <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 8px" }}>
                 {sendStatus === "sent" ? "Запитването е изпратено" : sendStatus === "sending" ? "Изпращане…" : sendStatus === "error" ? "Възникна проблем" : "Запитването е прието"}
               </h2>
-              <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 14, color: PALETTE.inkMuted, margin: "0 0 18px", lineHeight: 1.6 }}>
+              <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 18px", lineHeight: 1.6 }}>
                 Запази си уникалния номер — с него по-късно ще проверяваш статус и плащане в „Плащания". Ще получиш персонална оферта на посочения имейл до 24 часа.
               </p>
 
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 24 }}>
                 <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldBright, letterSpacing: 1 }}>{inquiryId}</span>
                 <button onClick={() => navigator.clipboard?.writeText(inquiryId)} title="Копирай номера" style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 6, cursor: "pointer" }}>
-                  <Copy size={14} color={PALETTE.oceanBright} />
+                  <Copy size={16} color={PALETTE.oceanBright} />
                 </button>
               </div>
 
-              {sendStatus === "sent" && <p style={{ fontSize: 14, color: PALETTE.jungle, fontWeight: 600 }}>Получихме запитването ти. Очаквай персонална оферта до 24 часа на {email || "посочения имейл"}.</p>}
+              {sendStatus === "sent" && <p style={{ fontSize: 15.5, color: PALETTE.jungle, fontWeight: 600 }}>Получихме запитването ти. Очаквай персонална оферта до 24 часа на {email || "посочения имейл"}.</p>}
               {sendStatus === "sending" && <p style={{ fontSize: 15.5, color: PALETTE.inkMuted }}>Изпращаме запитването…</p>}
               {sendStatus === "error" && <p style={{ fontSize: 15.5, color: PALETTE.coralDark }}>Възникна проблем при изпращането. Опитай отново след малко или ни пиши директно на {INQUIRY_EMAIL}.</p>}
 
@@ -2392,8 +2392,8 @@ export default function BezAgenciaLuxuryApp() {
         const dealsContent = (
         <>
           <div style={{ marginBottom: 28 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-              <Tag size={13} /> Оферти
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+              <Tag size={15} /> Оферти
             </div>
             <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 28, color: PALETTE.ink, margin: "0 0 6px" }}>Светкавични намаления и last-minute цени</h2>
           </div>
@@ -2401,9 +2401,9 @@ export default function BezAgenciaLuxuryApp() {
           <div style={{ marginBottom: 18 }}>
             <button onClick={loadDeals} className="lux-hover" style={{
               display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
-              borderRadius: 10, padding: "8px 14px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14.5, color: PALETTE.inkMuted, cursor: "pointer",
+              borderRadius: 10, padding: "8px 14px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 16, color: PALETTE.inkMuted, cursor: "pointer",
             }}>
-              <RotateCcw size={13} /> Презареди офертите
+              <RotateCcw size={15} /> Презареди офертите
             </button>
           </div>
 
@@ -2414,7 +2414,7 @@ export default function BezAgenciaLuxuryApp() {
             </div>
           )}
           {!dealsLoading && !dealsError && deals.length === 0 && (
-            <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "36px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 14 }}>
+            <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "36px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5 }}>
               Все още няма публикувани оферти. Добави ги от Админ → Оферти.
             </div>
           )}
@@ -2430,17 +2430,17 @@ export default function BezAgenciaLuxuryApp() {
                       <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "3px 9px" }}>{tag.label}</span>
                     </div>
                     <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 17, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 14.5, color: PALETTE.inkMuted, marginBottom: 14 }}>
-                      <MapPin size={12} /> {d.city}{d.city && d.country ? ", " : ""}{d.country}
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 16, color: PALETTE.inkMuted, marginBottom: 14 }}>
+                      <MapPin size={14} /> {d.city}{d.city && d.country ? ", " : ""}{d.country}
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6, background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Plane size={12} style={{ transform: "rotate(-30deg)" }} /> Полети{d.departureFrom ? ` от ${d.departureFrom}` : ""}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, color: PALETTE.inkMuted }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Plane size={14} style={{ transform: "rotate(-30deg)" }} /> Полети{d.departureFrom ? ` от ${d.departureFrom}` : ""}</span>
                         <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{d.flightPrice ?? "—"} €</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><HomeIcon size={12} /> Нощувки</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, color: PALETTE.inkMuted }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><HomeIcon size={14} /> Нощувки</span>
                         <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{d.hotelPrice ?? "—"} €</span>
                       </div>
                     </div>
@@ -2449,29 +2449,29 @@ export default function BezAgenciaLuxuryApp() {
                     </p>
 
                     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: d.travelMonth ? 10 : 0 }}>
-                      <span style={{ fontSize: 12, color: PALETTE.inkFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Обща цена</span>
+                      <span style={{ fontSize: 13.5, color: PALETTE.inkFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Обща цена</span>
                       <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 24, color: PALETTE.goldBright }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                     </div>
                     {d.travelMonth && (
                       <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: PALETTE.inkFaint, marginBottom: 14 }}>
-                        <Clock size={12} /> Пътуване през {d.travelMonth}
+                        <Clock size={14} /> Пътуване през {d.travelMonth}
                       </div>
                     )}
 
                     <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: PALETTE.inkFaint, marginBottom: 12 }}>След потвърдено плащане получаваш</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: PALETTE.inkFaint, marginBottom: 12 }}>След потвърдено плащане получаваш</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><HomeIcon size={13} /></div>
-                          <div style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>2 конкретни опции за настаняване</strong> — избираш това, което ти хареса повече.</div>
+                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><HomeIcon size={15} /></div>
+                          <div style={{ fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>2 конкретни опции за настаняване</strong> — избираш това, което ти хареса повече.</div>
                         </div>
                         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><Compass size={13} /></div>
-                          <div style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>Билети за забележителности и екскурзии</strong> — линкове през GetYourGuide.</div>
+                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><Compass size={15} /></div>
+                          <div style={{ fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>Билети за забележителности и екскурзии</strong> — линкове през GetYourGuide.</div>
                         </div>
                         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><Car size={13} /></div>
-                          <div style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>Трансфер от летището и градски транспорт</strong> — как да се придвижваш на място.</div>
+                          <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><Car size={15} /></div>
+                          <div style={{ fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.5 }}><strong style={{ color: PALETTE.ink }}>Трансфер от летището и градски транспорт</strong> — как да се придвижваш на място.</div>
                         </div>
                       </div>
                     </div>
@@ -2481,7 +2481,7 @@ export default function BezAgenciaLuxuryApp() {
                       borderRadius: 10, padding: "11px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     }}>
-                      Искам тази оферта <ChevronRight size={15} />
+                      Искам тази оферта <ChevronRight size={17} />
                     </button>
                   </div>
                 </div>
@@ -2492,9 +2492,9 @@ export default function BezAgenciaLuxuryApp() {
           <div style={{ marginTop: 30 }}>
             <button onClick={() => { setPage("wizard"); resetWizard(); }} className="lux-btn" style={{
               background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12,
-              padding: "14px 26px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "14px 26px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
             }}>
-              Изпрати запитване за твоя оферта <ChevronRight size={16} />
+              Изпрати запитване за твоя оферта <ChevronRight size={18} />
             </button>
           </div>
         </>
@@ -2513,8 +2513,8 @@ export default function BezAgenciaLuxuryApp() {
       {(page === "dashboard" || modalPage === "dashboard") && (() => {
         const dashboardContent = (
         <>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-            <Euro size={13} /> Плащания
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+            <Euro size={15} /> Плащания
           </div>
           <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Провери статус по номер</h2>
           <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 22px" }}>Въведи номера, който получи при подаване на запитването (напр. BA-20260701-1234).</p>
@@ -2523,7 +2523,7 @@ export default function BezAgenciaLuxuryApp() {
             <input value={dashLookupId} onChange={(e) => setDashLookupId(e.target.value)} placeholder="BA-20260701-1234" style={{ ...inputStyle, flex: 1 }} onKeyDown={(e) => e.key === "Enter" && handleDashLookup()} />
             <button onClick={() => handleDashLookup()} disabled={!dashLookupId.trim()} className="lux-btn" style={{
               background: dashLookupId.trim() ? PALETTE.gold : "rgba(255,255,255,0.06)", color: dashLookupId.trim() ? PALETTE.bgDeep : PALETTE.inkFaint,
-              border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: dashLookupId.trim() ? "pointer" : "not-allowed",
+              border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: dashLookupId.trim() ? "pointer" : "not-allowed",
             }}>Провери</button>
           </div>
 
@@ -2533,32 +2533,32 @@ export default function BezAgenciaLuxuryApp() {
           {dashStatus === "found" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
-                <div style={{ fontSize: 11.5, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Пътуване</div>
+                <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Пътуване</div>
                 <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, marginBottom: 4 }}>
                   {dashInquiry?.city || "—"}{dashInquiry?.country ? `, ${dashInquiry.country}` : ""}
                 </div>
-                <div style={{ fontSize: 14.5, color: PALETTE.inkFaint }}>{dashInquiry?.name ? `За ${dashInquiry.name}` : ""}</div>
+                <div style={{ fontSize: 16, color: PALETTE.inkFaint }}>{dashInquiry?.name ? `За ${dashInquiry.name}` : ""}</div>
               </div>
 
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
-                <div style={{ fontSize: 11.5, color: PALETTE.inkMuted, marginBottom: 16, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Статус</div>
+                <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 16, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Статус</div>
                 <TripTimeline hasInquiry={!!dashInquiry} hasPayment={!!dashPayment} paid={!!dashPayment?.paid} />
               </div>
 
               {dashPayment && (
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
-                  <div style={{ fontSize: 11.5, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Плащане</div>
+                  <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Плащане</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
                     <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldBright }}>{dashPayment.amount} €</span>
-                    <span style={{ fontSize: 14.5, color: dashPayment.paid ? PALETTE.jungle : PALETTE.inkMuted, fontWeight: 600 }}>{dashPayment.paid ? "Платено" : "Дължимо"}</span>
+                    <span style={{ fontSize: 16, color: dashPayment.paid ? PALETTE.jungle : PALETTE.inkMuted, fontWeight: 600 }}>{dashPayment.paid ? "Платено" : "Дължимо"}</span>
                   </div>
                   {!dashPayment.paid && (
                     <>
                       <button onClick={handleStripeCheckout} disabled={payCheckoutStatus === "loading"} className="lux-btn" style={{ width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "14px 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                        <CreditCard size={17} /> {payCheckoutStatus === "loading" ? "Зареждане…" : "Плати с Visa / Mastercard"}
+                        <CreditCard size={19} /> {payCheckoutStatus === "loading" ? "Зареждане…" : "Плати с Visa / Mastercard"}
                       </button>
                       {payCheckoutStatus === "error" && (
-                        <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginTop: 10, lineHeight: 1.5 }}>
+                        <p style={{ fontSize: 16, color: PALETTE.coralDark, marginTop: 10, lineHeight: 1.5 }}>
                           {payCheckoutError || "Плащането с карта не е налично в момента."} Пиши на <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: PALETTE.oceanBright, fontWeight: 600 }}>{INQUIRY_EMAIL}</a> с номера си за алтернативен начин на плащане.
                         </p>
                       )}
@@ -2584,8 +2584,8 @@ export default function BezAgenciaLuxuryApp() {
       {(page === "reviews" || modalPage === "reviews") && (() => {
         const reviewsContent = (
         <>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-            <Star size={13} /> Отзиви
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+            <Star size={15} /> Отзиви
           </div>
           <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Сподели преживяването си</h2>
           <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 22px", lineHeight: 1.6 }}>
@@ -2598,7 +2598,7 @@ export default function BezAgenciaLuxuryApp() {
               <input value={reviewLookupId} onChange={(e) => setReviewLookupId(e.target.value)} placeholder="BA-20260701-1234" style={{ ...inputStyle, flex: 1 }} onKeyDown={(e) => e.key === "Enter" && handleReviewLookup()} />
               <button onClick={handleReviewLookup} disabled={!reviewLookupId.trim()} className="lux-btn" style={{
                 background: reviewLookupId.trim() ? PALETTE.gold : "rgba(255,255,255,0.06)", color: reviewLookupId.trim() ? PALETTE.bgDeep : PALETTE.inkFaint,
-                border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: reviewLookupId.trim() ? "pointer" : "not-allowed",
+                border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: reviewLookupId.trim() ? "pointer" : "not-allowed",
               }}>Провери</button>
             </div>
           )}
@@ -2623,17 +2623,17 @@ export default function BezAgenciaLuxuryApp() {
               {existingVoucherCode ? (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(212,175,55,0.1)", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 10, padding: "10px 16px" }}>
                   <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 18, color: PALETTE.goldBright, letterSpacing: 1 }}>{existingVoucherCode}</span>
-                  <button onClick={() => navigator.clipboard?.writeText(existingVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 5, cursor: "pointer" }}><Copy size={13} color={PALETTE.oceanBright} /></button>
+                  <button onClick={() => navigator.clipboard?.writeText(existingVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 5, cursor: "pointer" }}><Copy size={15} color={PALETTE.oceanBright} /></button>
                 </div>
               ) : (
-                <p style={{ fontSize: 14.5, color: PALETTE.inkFaint }}>Пиши ни на {INQUIRY_EMAIL} с номера на резервацията, за да ти изпратим кода.</p>
+                <p style={{ fontSize: 16, color: PALETTE.inkFaint }}>Пиши ни на {INQUIRY_EMAIL} с номера на резервацията, за да ти изпратим кода.</p>
               )}
             </div>
           )}
 
           {reviewStatus === "eligible" && reviewSubmitStatus !== "done" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "14px 16px", fontSize: 14.5, color: PALETTE.inkMuted }}>
+              <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "14px 16px", fontSize: 16, color: PALETTE.inkMuted }}>
                 Проверено платено пътуване {reviewInquiryInfo?.city ? `до ${reviewInquiryInfo.city}` : ""}{reviewInquiryInfo?.country ? `, ${reviewInquiryInfo.country}` : ""} — номер {reviewLookupId.trim().toUpperCase()}.
               </div>
 
@@ -2658,12 +2658,12 @@ export default function BezAgenciaLuxuryApp() {
               <button onClick={handleSubmitReview} disabled={!reviewText.trim() || reviewSubmitStatus === "saving"} className="lux-btn" style={{
                 background: reviewText.trim() ? `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})` : "rgba(255,255,255,0.06)",
                 color: reviewText.trim() ? PALETTE.bgDeep : PALETTE.inkFaint, border: "none", borderRadius: 12, padding: "15px 26px",
-                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14.5, cursor: reviewText.trim() ? "pointer" : "not-allowed",
+                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 16, cursor: reviewText.trim() ? "pointer" : "not-allowed",
                 display: "inline-flex", alignItems: "center", gap: 8,
               }}>
-                <Star size={16} /> {reviewSubmitStatus === "saving" ? "Изпращане…" : "Изпрати отзив и получи ваучер"}
+                <Star size={18} /> {reviewSubmitStatus === "saving" ? "Изпращане…" : "Изпрати отзив и получи ваучер"}
               </button>
-              {reviewSubmitStatus === "error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark }}>Възникна проблем, опитай отново.</p>}
+              {reviewSubmitStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark }}>Възникна проблем, опитай отново.</p>}
             </div>
           )}
 
@@ -2678,12 +2678,12 @@ export default function BezAgenciaLuxuryApp() {
               </p>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 12, background: "rgba(212,175,55,0.1)", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 14, padding: "16px 26px", marginBottom: 24 }}>
                 <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldBright, letterSpacing: 1 }}>{reviewVoucherCode}</span>
-                <button onClick={() => navigator.clipboard?.writeText(reviewVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 6, cursor: "pointer" }}><Copy size={14} color={PALETTE.oceanBright} /></button>
+                <button onClick={() => navigator.clipboard?.writeText(reviewVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 6, cursor: "pointer" }}><Copy size={16} color={PALETTE.oceanBright} /></button>
               </div>
               <div>
                 <button onClick={() => { setModalPage(null); setPage("wizard"); resetWizard(); }} className="lux-btn" style={{
                   background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12,
-                  padding: "14px 26px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer",
+                  padding: "14px 26px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
                 }}>
                   Ново запитване с ваучера
                 </button>
@@ -2698,12 +2698,12 @@ export default function BezAgenciaLuxuryApp() {
                 display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
                 borderRadius: 10, padding: "6px 12px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 11.5, color: PALETTE.inkMuted, cursor: "pointer",
               }}>
-                <RotateCcw size={12} /> Презареди
+                <RotateCcw size={14} /> Презареди
               </button>
             </div>
             {publicReviewsLoading && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам отзиви…</p>}
             {publicReviewsError && (
-              <div style={{ background: "rgba(226,105,74,0.08)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 12, padding: "14px 16px", marginBottom: 12, fontSize: 14.5, color: PALETTE.inkMuted }}>
+              <div style={{ background: "rgba(226,105,74,0.08)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 12, padding: "14px 16px", marginBottom: 12, fontSize: 16, color: PALETTE.inkMuted }}>
                 Грешка при зареждане: <strong style={{ color: PALETTE.coralDark }}>{publicReviewsError}</strong>
               </div>
             )}
@@ -2717,7 +2717,7 @@ export default function BezAgenciaLuxuryApp() {
                     <span style={{ fontWeight: 700, fontSize: 15.5, color: PALETTE.ink }}>{r.name}</span>
                     <span style={{ display: "flex", gap: 1 }}>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} size={13} fill={n <= r.rating ? PALETTE.goldBright : "none"} color={n <= r.rating ? PALETTE.goldBright : PALETTE.panelBorder} strokeWidth={1.5} />
+                        <Star key={n} size={15} fill={n <= r.rating ? PALETTE.goldBright : "none"} color={n <= r.rating ? PALETTE.goldBright : PALETTE.panelBorder} strokeWidth={1.5} />
                       ))}
                     </span>
                   </div>
@@ -2743,8 +2743,8 @@ export default function BezAgenciaLuxuryApp() {
       {page === "offerView" && (
         <section className="page-enter" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 24px 90px" }}>
           <BackBtn onClick={goHome} />
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-            <Send size={13} /> Твоята оферта
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+            <Send size={15} /> Твоята оферта
           </div>
 
           {offerLoadStatus === "loading" && <p style={{ fontSize: 15.5, color: PALETTE.inkMuted }}>Зареждам офертата…</p>}
@@ -2785,22 +2785,22 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
 
                 <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 14 }}>След потвърдено плащане получаваш</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 14 }}>След потвърдено плащане получаваш</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><HomeIcon size={15} /></div>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><HomeIcon size={17} /></div>
                       <div style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                         <strong style={{ color: PALETTE.ink }}>2 конкретни опции за настаняване</strong> — избираш това, което ти хареса повече.
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Compass size={15} /></div>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Compass size={17} /></div>
                       <div style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                         <strong style={{ color: PALETTE.ink }}>Билети за забележителности и екскурзии</strong> — линкове през GetYourGuide.
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Car size={15} /></div>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Car size={17} /></div>
                       <div style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                         <strong style={{ color: PALETTE.ink }}>Трансфер от летището и градски транспорт</strong> — как да се придвижваш на място.
                       </div>
@@ -2827,13 +2827,13 @@ export default function BezAgenciaLuxuryApp() {
                       {offerDiscountStatus === "checking" ? "Проверявам…" : "Приложи отстъпка"}
                     </button>
                   </div>
-                  {offerDiscountStatus === "applied" && <p style={{ fontSize: 14, color: PALETTE.jungle, margin: "6px 0 0" }}>Кодът е валиден — {offerDiscountPercent}% отстъпка е приложена ✓</p>}
-                  {offerDiscountStatus === "invalid" && <p style={{ fontSize: 14, color: PALETTE.coralDark, margin: "6px 0 0" }}>Невалиден код за отстъпка.</p>}
-                  {offerDiscountStatus === "used" && <p style={{ fontSize: 14, color: PALETTE.coralDark, margin: "6px 0 0" }}>Този код вече е използван.</p>}
+                  {offerDiscountStatus === "applied" && <p style={{ fontSize: 15.5, color: PALETTE.jungle, margin: "6px 0 0" }}>Кодът е валиден — {offerDiscountPercent}% отстъпка е приложена ✓</p>}
+                  {offerDiscountStatus === "invalid" && <p style={{ fontSize: 15.5, color: PALETTE.coralDark, margin: "6px 0 0" }}>Невалиден код за отстъпка.</p>}
+                  {offerDiscountStatus === "used" && <p style={{ fontSize: 15.5, color: PALETTE.coralDark, margin: "6px 0 0" }}>Този код вече е използван.</p>}
                 </Field>
 
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
-                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>Дължима комисионна сега</div>
+                  <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>Дължима комисионна сега</div>
                   {offerDiscountStatus === "applied" ? (
                     <>
                       <div style={{ fontSize: 15, color: PALETTE.inkFaint, textDecoration: "line-through", marginBottom: 2 }}>{Math.round(baseCommission)} €</div>
@@ -2854,9 +2854,9 @@ export default function BezAgenciaLuxuryApp() {
                   padding: "16px 30px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}>
-                  <Check size={18} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : "Потвърди офертата"}
+                  <Check size={20} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : "Потвърди офертата"}
                 </button>
-                {offerConfirmStatus === "error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark, margin: 0 }}>{offerConfirmError}</p>}
+                {offerConfirmStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, margin: 0 }}>{offerConfirmError}</p>}
               </div>
             );
           })()}
@@ -2870,11 +2870,11 @@ export default function BezAgenciaLuxuryApp() {
           {!adminAuthed ? (
             <div style={{ maxWidth: 380, margin: "0 auto" }}>
               <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 22, color: PALETTE.ink, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                <Lock size={19} /> Админ достъп
+                <Lock size={21} /> Админ достъп
               </h2>
               <div style={{ display: "flex", gap: 10 }}>
                 <input type="password" value={adminPasscodeInput} onChange={(e) => setAdminPasscodeInput(e.target.value)} placeholder="Парола" style={{ ...inputStyle, flex: 1 }} onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()} />
-                <button onClick={handleAdminLogin} className="lux-btn" style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Влез</button>
+                <button onClick={handleAdminLogin} className="lux-btn" style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer" }}>Влез</button>
               </div>
               <div style={{ marginTop: 12 }}>
                 <LuxCheckbox checked={rememberAdmin} onChange={(e) => setRememberAdmin(e.target.checked)}>
@@ -2887,14 +2887,14 @@ export default function BezAgenciaLuxuryApp() {
             <>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 26, borderBottom: `1px solid ${PALETTE.panelBorder}`, paddingBottom: 4, justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <AdminTabBtn active={adminTab === "payments"} onClick={() => setAdminTab("payments")} icon={<Wallet size={14} />} label="Плащания" />
-                  <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={14} />} label="Запитвания" />
-                  <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={14} />} label="Оферти" />
-                  <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={14} />} label="Контакти" />
-                  <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={14} />} label="Анализи" />
-                  <AdminTabBtn active={adminTab === "email"} onClick={() => setAdminTab("email")} icon={<MailCheck size={14} />} label="Имейл" />
+                  <AdminTabBtn active={adminTab === "payments"} onClick={() => setAdminTab("payments")} icon={<Wallet size={16} />} label="Плащания" />
+                  <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={16} />} label="Запитвания" />
+                  <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={16} />} label="Оферти" />
+                  <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
+                  <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
+                  <AdminTabBtn active={adminTab === "email"} onClick={() => setAdminTab("email")} icon={<MailCheck size={16} />} label="Имейл" />
                 </div>
-                <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14, color: PALETTE.inkFaint, padding: "6px 4px" }}>
+                <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkFaint, padding: "6px 4px" }}>
                   Изход
                 </button>
               </div>
@@ -2914,14 +2914,14 @@ export default function BezAgenciaLuxuryApp() {
                     <input type="number" value={adminAmountInput} onChange={(e) => setAdminAmountInput(e.target.value)} placeholder="Сума в €" style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
                     <button onClick={handleAdminSavePayment} disabled={!adminIdInput.trim() || !adminAmountInput} className="lux-btn" style={{
                       background: adminIdInput.trim() && adminAmountInput ? PALETTE.gold : "rgba(255,255,255,0.06)", color: adminIdInput.trim() && adminAmountInput ? PALETTE.bgDeep : PALETTE.inkFaint,
-                      border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: adminIdInput.trim() && adminAmountInput ? "pointer" : "not-allowed",
+                      border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: adminIdInput.trim() && adminAmountInput ? "pointer" : "not-allowed",
                     }}>Запази</button>
                   </div>
-                  {adminSaveStatus === "saved" && <p style={{ fontSize: 14.5, color: PALETTE.jungle, marginBottom: 4 }}>Записано.</p>}
-                  {adminSaveStatus === "error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginBottom: 14 }}>Грешка при запис, опитай отново.</p>}
-                  {adminNotifyStatus === "notified" && <p style={{ fontSize: 14.5, color: PALETTE.jungle, marginBottom: 14 }}>Клиентът е известен по имейл.</p>}
-                  {adminNotifyStatus === "no-email" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginBottom: 14 }}>Няма запазен имейл за този номер — извести ръчно.</p>}
-                  {adminNotifyStatus === "notify-error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginBottom: 14 }}>Сумата е записана, но известието не се изпрати.</p>}
+                  {adminSaveStatus === "saved" && <p style={{ fontSize: 16, color: PALETTE.jungle, marginBottom: 4 }}>Записано.</p>}
+                  {adminSaveStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginBottom: 14 }}>Грешка при запис, опитай отново.</p>}
+                  {adminNotifyStatus === "notified" && <p style={{ fontSize: 16, color: PALETTE.jungle, marginBottom: 14 }}>Клиентът е известен по имейл.</p>}
+                  {adminNotifyStatus === "no-email" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginBottom: 14 }}>Няма запазен имейл за този номер — извести ръчно.</p>}
+                  {adminNotifyStatus === "notify-error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginBottom: 14 }}>Сумата е записана, но известието не се изпрати.</p>}
 
                   <h4 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: "26px 0 12px" }}>Всички зададени суми</h4>
                   {adminPaymentsLoading && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам…</p>}
@@ -2965,7 +2965,7 @@ export default function BezAgenciaLuxuryApp() {
                             const c = adminContacts.find((x) => x.id === adminOfferForm.inquiryId);
                             return c ? `${c.id} — ${c.name} (${c.city}, ${c.country})` : adminOfferForm.inquiryId;
                           })() : "Избери запитване"}
-                          <ChevronRight size={14} style={{ transform: inquiryDropdownOpen ? "rotate(-90deg)" : "rotate(90deg)", transition: "transform .2s", flexShrink: 0, marginLeft: 8 }} />
+                          <ChevronRight size={16} style={{ transform: inquiryDropdownOpen ? "rotate(-90deg)" : "rotate(90deg)", transition: "transform .2s", flexShrink: 0, marginLeft: 8 }} />
                         </button>
                         {adminOfferForm.inquiryId && (() => {
                           const info = pipelineStatusInfo(adminSelectedInquiryStatus);
@@ -3007,7 +3007,7 @@ export default function BezAgenciaLuxuryApp() {
                                 }}
                               >
                                 <span style={{ color: PALETTE.ink }}>{c.id} — {c.name} ({c.city}, {c.country})</span>
-                                <span style={{ color: info.color, fontWeight: info.bold ? 800 : 700, fontSize: 14, whiteSpace: "nowrap" }}>{info.label}</span>
+                                <span style={{ color: info.color, fontWeight: info.bold ? 800 : 700, fontSize: 15.5, whiteSpace: "nowrap" }}>{info.label}</span>
                               </div>
                             );
                           })}
@@ -3018,10 +3018,10 @@ export default function BezAgenciaLuxuryApp() {
                     {adminOfferForm.inquiryId && (
                       <div style={{ gridColumn: "1 / -1", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
                         <div style={{ marginBottom: adminSelectedInquiry ? 10 : 0 }}>
-                          <span style={{ fontSize: 12, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
+                          <span style={{ fontSize: 13.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
                         </div>
                         {adminSelectedInquiry ? (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 14.5 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 16 }}>
                             <SummaryRow label="Телефон" value={adminSelectedInquiry.phone || "-"} />
                             <SummaryRow label="Летище" value={adminSelectedInquiry.departure || "-"} />
                             <SummaryRow label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
@@ -3037,7 +3037,7 @@ export default function BezAgenciaLuxuryApp() {
                             )}
                           </div>
                         ) : (
-                          <p style={{ fontSize: 14, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
+                          <p style={{ fontSize: 15.5, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
                         )}
                         {adminSelectedInquiryStatus === "paid" && (
                           <button
@@ -3045,11 +3045,11 @@ export default function BezAgenciaLuxuryApp() {
                             className="lux-hover"
                             style={{
                               marginTop: 14, background: "rgba(46,158,118,0.12)", border: `1px solid ${PALETTE.jungle}`, color: PALETTE.jungle,
-                              borderRadius: 10, padding: "9px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14.5, cursor: "pointer",
+                              borderRadius: 10, padding: "9px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer",
                               display: "inline-flex", alignItems: "center", gap: 6,
                             }}
                           >
-                            <Check size={14} /> Маркирай пълната оферта като изпратена
+                            <Check size={16} /> Маркирай пълната оферта като изпратена
                           </button>
                         )}
                       </div>
@@ -3066,13 +3066,13 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
 
                   {(adminOfferForm.flightPrice || adminOfferForm.hotelPrice) && (
-                    <p style={{ fontSize: 14.5, color: PALETTE.inkMuted, margin: "0 0 16px" }}>
+                    <p style={{ fontSize: 16, color: PALETTE.inkMuted, margin: "0 0 16px" }}>
                       Обща стойност на пътуването: <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{(Number(adminOfferForm.flightPrice) || 0) + (Number(adminOfferForm.hotelPrice) || 0)} €</span>
                       {" "}→ комисионна (5%, мин. 50 €): <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{Math.max(((Number(adminOfferForm.flightPrice) || 0) + (Number(adminOfferForm.hotelPrice) || 0)) * 0.05, 50).toFixed(0)} €</span>
                     </p>
                   )}
 
-                  <div style={{ fontSize: 14.5, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 8 }}>Снимки на настаняването (до 3)</div>
+                  <div style={{ fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 8 }}>Снимки на настаняването (до 3)</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
                     {[0, 1, 2].map((idx) => (
                       <div key={idx}>
@@ -3091,7 +3091,7 @@ export default function BezAgenciaLuxuryApp() {
                               <button onClick={() => removeOfferImage(idx)} style={{
                                 position: "absolute", top: -6, right: -6, background: PALETTE.coralDark, border: "none", borderRadius: "50%",
                                 width: 18, height: 18, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                              }}><X size={11} /></button>
+                              }}><X size={13} /></button>
                             </div>
                           ) : (
                             <>
@@ -3099,7 +3099,7 @@ export default function BezAgenciaLuxuryApp() {
                                 display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", background: PALETTE.panel,
                                 border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: PALETTE.ink, fontWeight: 600,
                               }}>
-                                <Plus size={12} /> Снимка {idx + 1}
+                                <Plus size={14} /> Снимка {idx + 1}
                                 <input type="file" accept="image/*" onChange={(e) => handleOfferImageFile(idx, e)} style={{ display: "none" }} />
                               </label>
                               <span style={{ fontSize: 10, color: PALETTE.inkFaint, textAlign: "center" }}>или кликни и Ctrl+V</span>
@@ -3111,18 +3111,18 @@ export default function BezAgenciaLuxuryApp() {
                     ))}
                   </div>
 
-                  <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 14, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
+                  <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 15.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
                     В имейла автоматично се добавят пояснения, че след плащане клиентът получава: 2 опции за настаняване, линкове за входни билети/екскурзии през GetYourGuide, и информация за трансфери и градски транспорт.
                   </div>
 
                   <button onClick={handleSendOffer} disabled={!adminOfferForm.inquiryId || !adminOfferForm.flightPrice || !adminOfferForm.hotelPrice || adminOfferSaveStatus === "saving"} className="lux-btn" style={{
                     background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "12px 22px",
-                    fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
+                    fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
                   }}>
-                    <Send size={15} /> {adminOfferSaveStatus === "saving" ? "Изпращам…" : "Изпрати оферта"}
+                    <Send size={17} /> {adminOfferSaveStatus === "saving" ? "Изпращам…" : "Изпрати оферта"}
                   </button>
-                  {adminOfferSaveStatus === "sent" && <p style={{ fontSize: 14.5, color: PALETTE.jungle, marginTop: 10 }}>Изпратено успешно.</p>}
-                  {adminOfferSaveStatus === "error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginTop: 10 }}>Възникна грешка — провери дали Supabase/Resend са свързани.</p>}
+                  {adminOfferSaveStatus === "sent" && <p style={{ fontSize: 16, color: PALETTE.jungle, marginTop: 10 }}>Изпратено успешно.</p>}
+                  {adminOfferSaveStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginTop: 10 }}>Възникна грешка — провери дали Supabase/Resend са свързани.</p>}
                 </div>
               )}
 
@@ -3149,7 +3149,7 @@ export default function BezAgenciaLuxuryApp() {
                     </select>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14.5, color: PALETTE.inkMuted, fontWeight: 600 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600 }}>
                     Снимка на дестинацията (незадължително — заменя векторната илюстрация)
                     <div
                       tabIndex={0}
@@ -3164,10 +3164,10 @@ export default function BezAgenciaLuxuryApp() {
                         display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", background: PALETTE.panel,
                         border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "9px 16px", fontSize: 15, color: PALETTE.ink, fontWeight: 600,
                       }}>
-                        <Plus size={14} /> Избери снимка
+                        <Plus size={16} /> Избери снимка
                         <input type="file" accept="image/*" onChange={handleAdminDealImage} style={{ display: "none" }} />
                       </label>
-                      <span style={{ fontSize: 14, color: PALETTE.inkFaint, fontWeight: 400 }}>
+                      <span style={{ fontSize: 15.5, color: PALETTE.inkFaint, fontWeight: 400 }}>
                         или кликни тук и постави с <strong style={{ color: PALETTE.inkMuted }}>Ctrl+V</strong> (Cmd+V на Mac)
                       </span>
                       {adminDealForm.imageDataUrl && (
@@ -3176,7 +3176,7 @@ export default function BezAgenciaLuxuryApp() {
                           <button onClick={() => setAdminDealForm((f) => ({ ...f, imageDataUrl: "" }))} style={{
                             position: "absolute", top: -6, right: -6, background: PALETTE.coralDark, border: "none", borderRadius: "50%",
                             width: 18, height: 18, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                          }}><X size={11} /></button>
+                          }}><X size={13} /></button>
                         </div>
                       )}
                     </div>
@@ -3187,13 +3187,13 @@ export default function BezAgenciaLuxuryApp() {
                     Цената на полетите е ориентировъчна — авиокомпаниите я променят динамично, затова се показва бележка за това и в публичната страница.
                   </p>
                   {(adminDealForm.flightPrice || adminDealForm.hotelPrice) && (
-                    <p style={{ fontSize: 14.5, color: PALETTE.inkMuted, margin: "0 0 12px" }}>
+                    <p style={{ fontSize: 16, color: PALETTE.inkMuted, margin: "0 0 12px" }}>
                       Обща цена: <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{(Number(adminDealForm.flightPrice) || 0) + (Number(adminDealForm.hotelPrice) || 0)} €</span>
                     </p>
                   )}
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button onClick={handleAdminSaveDeal} className="lux-btn" style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "10px 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      {editingDealId ? <Check size={15} /> : <Plus size={15} />} {editingDealId ? "Запази промените" : "Публикувай оферта"}
+                      {editingDealId ? <Check size={17} /> : <Plus size={17} />} {editingDealId ? "Запази промените" : "Публикувай оферта"}
                     </button>
                     {editingDealId && (
                       <button onClick={handleCancelEditDeal} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15, color: PALETTE.inkMuted, cursor: "pointer" }}>
@@ -3201,9 +3201,9 @@ export default function BezAgenciaLuxuryApp() {
                       </button>
                     )}
                   </div>
-                  {adminDealSaveStatus === "saved" && <p style={{ fontSize: 14.5, color: PALETTE.jungle, marginTop: 8 }}>{editingDealId ? "Записано." : "Публикувано."}</p>}
+                  {adminDealSaveStatus === "saved" && <p style={{ fontSize: 16, color: PALETTE.jungle, marginTop: 8 }}>{editingDealId ? "Записано." : "Публикувано."}</p>}
                   {adminDealSaveStatus === "error" && (
-                    <p style={{ fontSize: 14.5, color: PALETTE.coralDark, marginTop: 8 }}>
+                    <p style={{ fontSize: 16, color: PALETTE.coralDark, marginTop: 8 }}>
                       {!isSupabaseConfigured
                         ? "Supabase все още не е свързан — сложи истинските SUPABASE_URL и SUPABASE_ANON_KEY в src/supabaseClient.js (README.md, Стъпка 1-2)."
                         : "Записът не се потвърди от базата данни — провери връзката или дали таблиците са създадени (sql/schema.sql). Опитай отново."}
@@ -3219,8 +3219,8 @@ export default function BezAgenciaLuxuryApp() {
                         <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{d.departureFrom ? `от ${d.departureFrom} · ` : ""}✈ {d.flightPrice ?? "—"} € · 🏨 {d.hotelPrice ?? "—"} €</span>
                         <span style={{ fontFamily: "Fraunces, serif", fontWeight: 700, color: PALETTE.goldBright }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <button onClick={() => handleEditDeal(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.oceanBright }} title="Редактирай"><Search size={13} /></button>
-                          <button onClick={() => handleDeleteDeal(d.id)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.coralDark }} title="Изтрий"><Trash2 size={13} /></button>
+                          <button onClick={() => handleEditDeal(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.oceanBright }} title="Редактирай"><Search size={15} /></button>
+                          <button onClick={() => handleDeleteDeal(d.id)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.coralDark }} title="Изтрий"><Trash2 size={15} /></button>
                         </div>
                       </div>
                     ))}
@@ -3243,7 +3243,7 @@ export default function BezAgenciaLuxuryApp() {
                           <span style={{ fontWeight: 700, fontSize: 15, color: PALETTE.ink }}>{c.name || "(без име)"}</span>
                           <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{c.id}</span>
                         </div>
-                        <div style={{ fontSize: 14, color: PALETTE.inkMuted, marginTop: 2 }}>{c.email} · {c.city}{c.city && c.country ? ", " : ""}{c.country}</div>
+                        <div style={{ fontSize: 15.5, color: PALETTE.inkMuted, marginTop: 2 }}>{c.email} · {c.city}{c.city && c.country ? ", " : ""}{c.country}</div>
                       </div>
                     ))}
                     {!adminContactsLoading && adminContacts.length === 0 && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма запитвания.</p>}
@@ -3255,12 +3255,12 @@ export default function BezAgenciaLuxuryApp() {
                 <div>
                   <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 18px" }}>Обобщение</h3>
                   <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-                    <StatCard icon={<Users size={16} />} label="Запитвания" value={analytics.inquiriesCount} />
-                    <StatCard icon={<Tag size={16} />} label="Активни оферти" value={analytics.dealsCount} />
-                    <StatCard icon={<Wallet size={16} />} label="Зададени плащания" value={analytics.paymentsCount} />
-                    <StatCard icon={<TrendingUp size={16} />} label="Платена сума" value={`${analytics.paidSum} €`} accent />
-                    <StatCard icon={<Clock size={16} />} label="Очаквано плащане" value={`${analytics.pendingSum} €`} />
-                    <StatCard icon={<Percent size={16} />} label="Комисионна (5%, приблизително)" value={`${analytics.estimatedCommission} €`} accent />
+                    <StatCard icon={<Users size={18} />} label="Запитвания" value={analytics.inquiriesCount} />
+                    <StatCard icon={<Tag size={18} />} label="Активни оферти" value={analytics.dealsCount} />
+                    <StatCard icon={<Wallet size={18} />} label="Зададени плащания" value={analytics.paymentsCount} />
+                    <StatCard icon={<TrendingUp size={18} />} label="Платена сума" value={`${analytics.paidSum} €`} accent />
+                    <StatCard icon={<Clock size={18} />} label="Очаквано плащане" value={`${analytics.pendingSum} €`} />
+                    <StatCard icon={<Percent size={18} />} label="Комисионна (5%, приблизително)" value={`${analytics.estimatedCommission} €`} accent />
                   </div>
                   <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
                     Тези числа са реални, изчислени от записите в „Плащания" и „Контакти" — не са симулирани. По-задълбочена аналитика
@@ -3286,9 +3286,9 @@ export default function BezAgenciaLuxuryApp() {
                       border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: adminEmailTargetId ? "pointer" : "not-allowed",
                     }}>Изпрати</button>
                   </div>
-                  {adminEmailStatus === "sending" && <p style={{ fontSize: 14.5, color: PALETTE.inkMuted }}>Изпращам…</p>}
-                  {adminEmailStatus === "sent" && <p style={{ fontSize: 14.5, color: PALETTE.jungle }}>Изпратено.</p>}
-                  {adminEmailStatus === "error" && <p style={{ fontSize: 14.5, color: PALETTE.coralDark }}>Грешка при изпращане.</p>}
+                  {adminEmailStatus === "sending" && <p style={{ fontSize: 16, color: PALETTE.inkMuted }}>Изпращам…</p>}
+                  {adminEmailStatus === "sent" && <p style={{ fontSize: 16, color: PALETTE.jungle }}>Изпратено.</p>}
+                  {adminEmailStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark }}>Грешка при изпращане.</p>}
                 </div>
               )}
             </>
@@ -3304,29 +3304,29 @@ export default function BezAgenciaLuxuryApp() {
 
           <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 28, marginBottom: 36 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Контакти</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Контакти</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                 <a href={`tel:${CONTACT_PHONE.replace(/\s/g, "")}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <Phone size={15} color={PALETTE.goldBright} />
+                  <Phone size={17} color={PALETTE.goldBright} />
                   {CONTACT_PHONE}
                 </a>
                 <a href={VIBER_LINK} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <SiViber size={15} color={BRAND_COLORS.viber.bg} />
+                  <SiViber size={17} color={BRAND_COLORS.viber.bg} />
                   Пиши ми във Viber
                 </a>
                 <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <SiWhatsapp size={15} color={BRAND_COLORS.whatsapp.bg} />
+                  <SiWhatsapp size={17} color={BRAND_COLORS.whatsapp.bg} />
                   Пиши ми в WhatsApp
                 </a>
                 <a href={`mailto:${INQUIRY_EMAIL}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <Mail size={15} color={PALETTE.goldBright} />
+                  <Mail size={17} color={PALETTE.goldBright} />
                   {INQUIRY_EMAIL}
                 </a>
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Банка</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Банка</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                 <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{BANK_INFO.bankName}</span>
                 <span>{BANK_INFO.companyName}</span>
@@ -3335,7 +3335,7 @@ export default function BezAgenciaLuxuryApp() {
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Абонирай се</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Абонирай се</div>
               <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 12px", lineHeight: 1.5 }}>Получавай първи новите ни оферти.</p>
               <input
                 type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)}
@@ -3344,16 +3344,16 @@ export default function BezAgenciaLuxuryApp() {
               />
               <button onClick={handleNewsletterSubscribe} disabled={newsletterStatus === "sending"} className="lux-btn" style={{
                 background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "9px 18px",
-                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 12.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
+                fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 13.5.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
               }}>
                 Абониране
               </button>
-              {newsletterStatus === "sent" && <p style={{ fontSize: 14, color: PALETTE.jungle, marginTop: 8 }}>Абонира се успешно!</p>}
-              {newsletterStatus === "error" && <p style={{ fontSize: 14, color: PALETTE.coralDark, marginTop: 8 }}>Въведи валиден имейл.</p>}
+              {newsletterStatus === "sent" && <p style={{ fontSize: 15.5, color: PALETTE.jungle, marginTop: 8 }}>Абонира се успешно!</p>}
+              {newsletterStatus === "error" && <p style={{ fontSize: 15.5, color: PALETTE.coralDark, marginTop: 8 }}>Въведи валиден имейл.</p>}
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Полезни връзки</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Полезни връзки</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 15 }}>
                 <button onClick={goHome} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Начало</button>
                 <button onClick={() => { setModalPage(null); setPage("deals"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Оферти</button>
@@ -3375,7 +3375,7 @@ export default function BezAgenciaLuxuryApp() {
                 display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
                 borderRadius: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 700, color: PALETTE.inkMuted, letterSpacing: 0.5,
               }}>
-                <Icon size={14} color={color} /> {label}
+                <Icon size={16} color={color} /> {label}
               </span>
             ))}
           </div>
@@ -3384,11 +3384,11 @@ export default function BezAgenciaLuxuryApp() {
           </p>
 
           <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: 22, textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 22, flexWrap: "wrap", marginBottom: 18, fontSize: 14.5 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 22, flexWrap: "wrap", marginBottom: 18, fontSize: 16 }}>
               <button onClick={() => setShowAbout(true)} className="lux-link" style={{ background: "none", border: "none", color: PALETTE.inkMuted, cursor: "pointer" }}>За нас</button>
               <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: PALETTE.inkMuted, textDecoration: "none" }}>Контакти</a>
               <span title="Очаквайте скоро" style={{ color: PALETTE.inkFaint, cursor: "default" }}>Общи условия за ползване</span>
-              <button onClick={() => setShowCardSecurity(true)} className="lux-link" style={{ background: "none", border: "none", color: PALETTE.inkMuted, cursor: "pointer", fontSize: 14.5 }}>Защита на картови данни</button>
+              <button onClick={() => setShowCardSecurity(true)} className="lux-link" style={{ background: "none", border: "none", color: PALETTE.inkMuted, cursor: "pointer", fontSize: 16 }}>Защита на картови данни</button>
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14 }}>
@@ -3398,7 +3398,7 @@ export default function BezAgenciaLuxuryApp() {
               <SocialIcon id="instagram" href={SOCIAL_LINKS.instagram} />
               <SocialIcon id="tiktok" href={SOCIAL_LINKS.tiktok} />
             </div>
-            <p onClick={handleFooterSecretClick} style={{ fontFamily: "Work Sans, sans-serif", fontSize: 14, color: PALETTE.inkFaint, margin: 0, cursor: "default", userSelect: "none" }}>БезАгенция — бюджетни екскурзии без агенция</p>
+            <p onClick={handleFooterSecretClick} style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkFaint, margin: 0, cursor: "default", userSelect: "none" }}>БезАгенция — бюджетни екскурзии без агенция</p>
           </div>
         </div>
       </footer>
@@ -3428,7 +3428,7 @@ function AdminTabBtn({ active, onClick, icon, label }) {
     <button onClick={onClick} className="lux-nav-item" style={{
       display: "flex", alignItems: "center", gap: 6, background: active ? "rgba(212,175,55,0.10)" : "transparent",
       border: "none", borderBottom: `2px solid ${active ? PALETTE.gold : "transparent"}`, borderRadius: "6px 6px 0 0", padding: "8px 12px",
-      color: active ? PALETTE.goldBright : PALETTE.inkMuted, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14.5, cursor: "pointer",
+      color: active ? PALETTE.goldBright : PALETTE.inkMuted, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 16, cursor: "pointer",
     }}>
       {icon}{label}
     </button>
@@ -3472,7 +3472,7 @@ function TripTimeline({ hasInquiry, hasPayment, paid }) {
               background: s.done ? PALETTE.gold : "transparent", border: `1.5px solid ${s.done ? PALETTE.gold : PALETTE.panelBorder}`,
               color: s.done ? PALETTE.bgDeep : PALETTE.inkFaint, flexShrink: 0,
             }}>
-              {s.done ? <Check size={12} /> : null}
+              {s.done ? <Check size={14} /> : null}
             </div>
             {i < steps.length - 1 && <div style={{ width: 1.5, flex: 1, minHeight: 22, background: steps[i + 1].done ? PALETTE.gold : PALETTE.panelBorder }} />}
           </div>
@@ -3488,7 +3488,7 @@ function PageModalShell({ onClose, children, maxWidth = 760 }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(6,8,16,0.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto" }}>
       <div className="page-enter" style={{ maxWidth, width: "100%", margin: "48px 20px", background: PALETTE.panelSolid, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "36px 32px", position: "relative" }}>
         <button onClick={onClose} className="lux-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkMuted, padding: 0, marginBottom: 22 }}>
-          <X size={16} /> Затвори
+          <X size={18} /> Затвори
         </button>
         {children}
       </div>
@@ -3501,10 +3501,10 @@ function AboutModal({ onClose, onStart }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(6,8,16,0.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto" }}>
       <div className="page-enter" style={{ maxWidth: 700, width: "100%", margin: "48px 20px", background: PALETTE.panelSolid, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "36px 32px", position: "relative" }}>
         <button onClick={onClose} className="lux-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkMuted, padding: 0, marginBottom: 22 }}>
-          <X size={16} /> Затвори
+          <X size={18} /> Затвори
         </button>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
-          <Compass size={13} /> За мен и за платформата
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
+          <Compass size={15} /> За мен и за платформата
         </div>
         <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink, lineHeight: 1.25, margin: "0 0 16px" }}>
           Не съм туристическа агенция — аз съм личният ти консултант по пътувания
@@ -3518,16 +3518,16 @@ function AboutModal({ onClose, onStart }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 30 }}>
           {[
-            { icon: <Send size={17} />, title: "1. Изпращаш запитване", text: "Кратка форма в 4 стъпки — дестинация, бюджет, дати и предпочитания." },
-            { icon: <Search size={17} />, title: "2. Аз се ровя из мрежата", text: "Търся най-изгодните билети и чисто настаняване, съобразени с бюджета ти." },
-            { icon: <Mail size={17} />, title: "3. Персонална оферта до 24 часа", text: "Изпращам ти готово предложение по имейл — билети + нощувки." },
-            { icon: <Percent size={17} />, title: "4. Плащаш само ако ти хареса", text: "Комисионна 5% от стойността, минимум 50 €. Никакво предплащане преди това." },
+            { icon: <Send size={19} />, title: "1. Изпращаш запитване", text: "Кратка форма в 4 стъпки — дестинация, бюджет, дати и предпочитания." },
+            { icon: <Search size={19} />, title: "2. Аз се ровя из мрежата", text: "Търся най-изгодните билети и чисто настаняване, съобразени с бюджета ти." },
+            { icon: <Mail size={19} />, title: "3. Персонална оферта до 24 часа", text: "Изпращам ти готово предложение по имейл — билети + нощувки." },
+            { icon: <Percent size={19} />, title: "4. Плащаш само ако ти хареса", text: "Комисионна 5% от стойността, минимум 50 €. Никакво предплащане преди това." },
             {
-              icon: <Check size={17} />, title: "5. Получаваш всичко нужно",
+              icon: <Check size={19} />, title: "5. Получаваш всичко нужно",
               text: "Линкове за резервация и плащане, плюс инфо за трансфери и добри места.",
               extra: (
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: 14.5, color: PALETTE.inkMuted }}>
+                  <span style={{ fontSize: 16, color: PALETTE.inkMuted }}>
                     Плюс лични препоръки за преживявания на място (турове, билети за забележителности, екскурзии) през{" "}
                     <a href="https://www.getyourguide.com" target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.goldBright, fontWeight: 600 }}>
                       GetYourGuide
@@ -3552,7 +3552,7 @@ function AboutModal({ onClose, onStart }) {
           background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "15px 30px",
           fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
         }}>
-          Изпрати запитване <ChevronRight size={17} />
+          Изпрати запитване <ChevronRight size={19} />
         </button>
       </div>
     </div>
@@ -3565,7 +3565,7 @@ function LuxCheckbox({ checked, onChange, disabled, children, bold }) {
       display: "flex", alignItems: "center", gap: 10, fontSize: 15, color: PALETTE.inkMuted, cursor: disabled ? "not-allowed" : "pointer",
     }}>
       <input type="checkbox" className="lux-check-input" checked={checked} disabled={disabled} onChange={onChange} />
-      <span className="lux-check-box"><Check size={13} color={PALETTE.bgDeep} strokeWidth={3} /></span>
+      <span className="lux-check-box"><Check size={15} color={PALETTE.bgDeep} strokeWidth={3} /></span>
       <span style={bold ? { fontWeight: 700, color: PALETTE.ink } : undefined}>{children}</span>
     </label>
   );
@@ -3574,7 +3574,7 @@ function LuxCheckbox({ checked, onChange, disabled, children, bold }) {
 function LuxChip({ active, onClick, label }) {
   return (
     <button type="button" onClick={onClick} className={`lux-chip${active ? " active" : ""}`}>
-      <span className="chip-dot"><Check size={11} strokeWidth={3} /></span>
+      <span className="chip-dot"><Check size={13} strokeWidth={3} /></span>
       {label}
     </button>
   );
@@ -3585,15 +3585,15 @@ function CardSecurityModal({ onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(6,8,16,0.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto" }}>
       <div className="page-enter" style={{ maxWidth: 700, width: "100%", margin: "48px 20px", background: PALETTE.panelSolid, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "36px 32px", position: "relative" }}>
         <button onClick={onClose} className="lux-link" style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkMuted, padding: 0, marginBottom: 22 }}>
-          <X size={16} /> Затвори
+          <X size={18} /> Затвори
         </button>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 11.5, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
-          <Lock size={13} /> Защита на картови данни
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 13, color: PALETTE.goldBright, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
+          <Lock size={15} /> Защита на картови данни
         </div>
         <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, lineHeight: 1.3, margin: "0 0 18px" }}>
           Политика за осигуряване на защита на картови данни
         </h2>
-        <div style={{ fontFamily: "Work Sans, sans-serif", fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>
           <p style={{ margin: 0 }}>
             „БезАгенция“ ЕООД взема предпазни мерки – административни и технически, за да защити личната информация на потребителя от загуба, кражба и злоупотреба, както и от неупълномощени достъп, разкриване, промяна или унищожаване.
           </p>
@@ -3628,7 +3628,7 @@ function SummaryRow({ label, value }) {
 
 function Field({ label, children, style, error }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14.5, color: error ? PALETTE.coralDark : PALETTE.inkMuted, fontWeight: 600, ...style }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 16, color: error ? PALETTE.coralDark : PALETTE.inkMuted, fontWeight: 600, ...style }}>
       {label}
       <div style={error ? { borderRadius: 10, boxShadow: `0 0 0 1.5px ${PALETTE.coralDark}` } : undefined}>
         {children}
@@ -3639,7 +3639,7 @@ function Field({ label, children, style, error }) {
 
 const inputStyle = {
   width: "100%", padding: "11px 13px", borderRadius: 10, border: `1px solid ${PALETTE.panelBorder}`,
-  fontSize: 14, color: PALETTE.ink, outline: "none", background: "rgba(255,255,255,0.04)",
+  fontSize: 15.5, color: PALETTE.ink, outline: "none", background: "rgba(255,255,255,0.04)",
 };
 const disabledInputStyle = { background: "rgba(255,255,255,0.02)", color: PALETTE.inkFaint, cursor: "not-allowed" };
 const selectStyle = { ...inputStyle, cursor: "pointer", appearance: "auto" };
