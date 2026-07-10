@@ -5,7 +5,7 @@ import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMaste
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
-  Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3,
+  Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
   MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car,
 } from "lucide-react";
 
@@ -2055,7 +2055,7 @@ export default function BezAgenciaLuxuryApp() {
         <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           <NavBtn active={page === "home"} onClick={goHome} icon={<HomeIcon size={16} />} label="Начало" />
           <NavBtn active={page === "deals"} onClick={() => { setModalPage(null); setPage("deals"); }} icon={<Percent size={16} />} label="Оферти" />
-          <NavBtn active={page === "dashboard"} onClick={() => { setModalPage(null); setPage("dashboard"); }} icon={<Euro size={16} />} label="Плащания" />
+          <NavBtn active={page === "dashboard"} onClick={() => { setModalPage(null); setPage("dashboard"); }} icon={<ClipboardCheck size={16} />} label="Статус на оферта" />
         </nav>
       </header>
 
