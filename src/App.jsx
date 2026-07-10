@@ -905,6 +905,7 @@ export default function BezAgenciaLuxuryApp() {
   const [adminSelectedInquiryStatus, setAdminSelectedInquiryStatus] = useState("none"); // none | awaiting_payment | paid
   const [adminOffersIds, setAdminOffersIds] = useState(new Set());
   const [inquiryDropdownOpen, setInquiryDropdownOpen] = useState(false);
+  const [adminOfferSearchId, setAdminOfferSearchId] = useState("");
   const inquiryDropdownRef = useRef(null);
   const [adminSelectedInquiryLoading, setAdminSelectedInquiryLoading] = useState(false);
 
@@ -913,8 +914,6 @@ export default function BezAgenciaLuxuryApp() {
 
   const [adminContacts, setAdminContacts] = useState([]);
   const [adminContactsLoading, setAdminContactsLoading] = useState(false);
-  const [adminEmailTargetId, setAdminEmailTargetId] = useState("");
-  const [adminEmailStatus, setAdminEmailStatus] = useState("idle");
 
   /* ── Помощни изчисления, наследени от съществуващата логика ───────── */
   const availableCountries = useMemo(() => {
@@ -1250,8 +1249,16 @@ export default function BezAgenciaLuxuryApp() {
 
       commission = Math.round(commission * 100) / 100;
 
+      let existingPaymentData = {};
+      try {
+        const existing = await db.get(`payment:${offerViewId}`, true);
+        existingPaymentData = existing?.value ? JSON.parse(existing.value) : {};
+      } catch { /* ако няма съществуващ запис, продължаваме с празен обект */ }
+
       const setResult = await db.set(`payment:${offerViewId}`, JSON.stringify({
+        ...existingPaymentData,
         amount: commission, status: "pending", paid: false, voucherCode: appliedVoucherCode, updatedAt: Date.now(),
+        offerSentAt: existingPaymentData.offerSentAt || Date.now(),
       }), true);
       if (!setResult) {
         setOfferConfirmError("Възникна проблем при запазването. Опитай отново.");
@@ -1389,7 +1396,7 @@ export default function BezAgenciaLuxuryApp() {
     if (page === "admin" && adminAuthed) {
       if (adminTab === "payments") loadAdminPayments();
       if (adminTab === "deals") loadDeals();
-      if (adminTab === "contacts" || adminTab === "offer" || adminTab === "email") loadAdminContacts();
+      if (adminTab === "contacts" || adminTab === "offer") loadAdminContacts();
       if (adminTab === "offer") { loadAdminOffersIds(); loadAdminPayments(); }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1770,24 +1777,6 @@ export default function BezAgenciaLuxuryApp() {
       setAdminContacts(items.filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch { setAdminContacts([]); }
     setAdminContactsLoading(false);
-  };
-
-  const handleSendReminder = async () => {
-    const c = adminContacts.find((x) => x.id === adminEmailTargetId);
-    if (!c) { setAdminEmailStatus("error"); return; }
-    setAdminEmailStatus("sending");
-    try {
-      const ok = await sendTransactionalEmail({
-        to: c.email,
-        subject: `Напомняне по запитване ${c.id}`,
-        html: emailWrap("Напомняне", `
-          <p style="margin:0 0 10px;">Здравей ${c.name || ""},</p>
-          <p style="margin:0 0 10px;">Пишем ти за твоето запитване за ${c.city || ""}, ${c.country || ""} (номер ${c.id}).</p>
-          <p style="margin:0;">Ако вече не се интересуваш, просто игнорирай това съобщение.</p>
-        `),
-      });
-      setAdminEmailStatus(ok ? "sent" : "error");
-    } catch { setAdminEmailStatus("error"); }
   };
 
   /* ── Обобщение за анализите — реални числа от вече наличните данни ── */
@@ -2976,7 +2965,6 @@ export default function BezAgenciaLuxuryApp() {
                   <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={16} />} label="Оферти" />
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
-                  <AdminTabBtn active={adminTab === "email"} onClick={() => setAdminTab("email")} icon={<MailCheck size={16} />} label="Имейл" />
                 </div>
                 <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkFaint, padding: "6px 4px" }}>
                   Изход
@@ -3035,6 +3023,34 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 12 }}>
+                    <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <input
+                        value={adminOfferSearchId}
+                        onChange={(e) => setAdminOfferSearchId(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && adminOfferSearchId.trim()) {
+                            handleSelectOfferInquiry(adminOfferSearchId.trim().toUpperCase());
+                            setInquiryDropdownOpen(false);
+                          }
+                        }}
+                        placeholder="Или въведи номер на запитване (напр. BA-...)"
+                        style={{ ...inputStyle, flex: 1, minWidth: 220 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { if (adminOfferSearchId.trim()) { handleSelectOfferInquiry(adminOfferSearchId.trim().toUpperCase()); setInquiryDropdownOpen(false); } }}
+                        disabled={!adminOfferSearchId.trim()}
+                        className="lux-btn"
+                        style={{
+                          background: adminOfferSearchId.trim() ? PALETTE.gold : "rgba(255,255,255,0.06)", color: adminOfferSearchId.trim() ? PALETTE.bgDeep : PALETTE.inkFaint,
+                          border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5,
+                          cursor: adminOfferSearchId.trim() ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        Намери
+                      </button>
+                    </div>
+
                     <div ref={inquiryDropdownRef} style={{ position: "relative", gridColumn: "1 / -1" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <button
@@ -3353,28 +3369,6 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               )}
 
-              {adminTab === "email" && (
-                <div>
-                  <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Изпрати напомняне</h3>
-                  <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
-                    Избери клиент от подадените запитвания и изпрати му еднократно напомняне по имейл. (Истинска автоматизирана
-                    кампания по разписание изисква сървър, който да изпраща на определени интервали — тук изпращането става ръчно, при клик.)
-                  </p>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-                    <select value={adminEmailTargetId} onChange={(e) => setAdminEmailTargetId(e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 220 }}>
-                      <option value="">Избери запитване</option>
-                      {adminContacts.map((c) => <option key={c.key} value={c.id}>{c.id} — {c.name} ({c.email})</option>)}
-                    </select>
-                    <button onClick={handleSendReminder} disabled={!adminEmailTargetId} className="lux-btn" style={{
-                      background: adminEmailTargetId ? PALETTE.gold : "rgba(255,255,255,0.06)", color: adminEmailTargetId ? PALETTE.bgDeep : PALETTE.inkFaint,
-                      border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: adminEmailTargetId ? "pointer" : "not-allowed",
-                    }}>Изпрати</button>
-                  </div>
-                  {adminEmailStatus === "sending" && <p style={{ fontSize: 16, color: PALETTE.inkMuted }}>Изпращам…</p>}
-                  {adminEmailStatus === "sent" && <p style={{ fontSize: 16, color: PALETTE.jungle }}>Изпратено.</p>}
-                  {adminEmailStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark }}>Грешка при изпращане.</p>}
-                </div>
-              )}
             </>
           )}
         </section>

@@ -39,9 +39,18 @@ export default async function handler(req, res) {
         return;
       }
 
+      const { data: existingRow } = await supabaseAdmin.from("payments").select("data").eq("id", id).maybeSingle();
+      const existing = existingRow?.data || {};
+
       await supabaseAdmin.from("payments").upsert({
         id,
-        data: { amount: amt, status: "pending", paid: false, updatedAt: Date.now() },
+        data: {
+          ...existing,
+          amount: amt, status: "pending", paid: false, updatedAt: Date.now(),
+          // offerSentAt се задава само първия път — редакция на цената не
+          // рестартира броенето на дните за автоматичните напомняния.
+          offerSentAt: existing.offerSentAt || Date.now(),
+        },
         updated_at: new Date().toISOString(),
       });
 
