@@ -4,9 +4,15 @@
 //
 // Изисква STRIPE_WEBHOOK_SECRET в Environment Variables (взима се при
 // създаване на webhook endpoint-а в Stripe Dashboard, виж README.md).
+//
+// ПРОМЯНА: вече ползва supabaseAdmin (service role, заобикаля RLS) вместо
+// публичния src/supabaseClient.js — необходимо, защото след включването
+// на Row Level Security публичният ключ вече не може да маркира плащания
+// като платени (нарочно, за да не може посетител да си самопотвърди
+// плащане без реално да е платил).
 
 import crypto from "crypto";
-import { supabase } from "../src/supabaseClient.js";
+import { supabaseAdmin as supabase } from "./_lib/supabaseAdmin.js";
 import { sendEmail, emailWrap } from "./_lib/email.js";
 
 const INQUIRY_EMAIL = "pgatov94@gmail.com"; // смени, ако смениш и в src/App.jsx

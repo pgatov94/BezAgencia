@@ -1313,34 +1313,24 @@ export default function BezAgenciaLuxuryApp() {
     if (!id || !reviewText.trim()) return;
     setReviewSubmitStatus("saving");
     try {
-      const code = genVoucherCode();
-      await db.set(`review:${id}`, JSON.stringify({
-        inquiryId: id, name: reviewName.trim() || "Анонимен клиент", rating: reviewRating, text: reviewText.trim(),
-        city: reviewInquiryInfo?.city || null, country: reviewInquiryInfo?.country || null, createdAt: Date.now(),
-      }), true);
-      await db.set(`payment:${id}`, JSON.stringify({
-        ...reviewPaymentInfo, reviewed: true, voucherCode: code,
-      }), true);
-      await db.set(`voucher:${code}`, JSON.stringify({
-        code, percent: 10, inquiryId: id, createdAt: Date.now(), used: false,
-      }), true);
-
-      if (reviewInquiryInfo?.email) {
-        await sendTransactionalEmail({
-          to: reviewInquiryInfo.email,
-          subject: "Благодарим за отзива! Ето твоя ваучер за 10% отстъпка",
-          html: emailWrap("Ваучер за отстъпка", `
-            <p style="margin:0 0 10px;">Здравей ${reviewInquiryInfo.name || ""},</p>
-            <p style="margin:0 0 20px;">Благодарим ти, че отдели време да оставиш отзив! Ето твоя код за 10% отстъпка от следващото пътуване:</p>
-            <p style="text-align:center;margin:0 0 20px;">
-              <span style="display:inline-block;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);color:#D4AF37;font-weight:700;font-size:20px;letter-spacing:1px;padding:14px 22px;border-radius:10px;">${code}</span>
-            </p>
-            <p style="margin:0;font-size:13px;color:#8E99AE;">Спомени кода при следващото си запитване или го въведи в полето за код за отстъпка, когато получиш персонална оферта.</p>
-          `),
-        });
+      const res = await fetch("/api/submit-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inquiryId: id,
+          name: reviewName.trim() || reviewInquiryInfo?.name || "",
+          rating: reviewRating,
+          text: reviewText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        if (data.error === "already") { setExistingVoucherCode(data.voucherCode || null); setReviewStatus("already"); return; }
+        if (data.error === "notpaid") { setReviewStatus("notpaid"); return; }
+        setReviewSubmitStatus("error");
+        return;
       }
-
-      setReviewVoucherCode(code);
+      setReviewVoucherCode(data.voucherCode);
       setReviewSubmitStatus("done");
       loadPublicReviews();
     } catch { setReviewSubmitStatus("error"); }
@@ -1422,7 +1412,7 @@ export default function BezAgenciaLuxuryApp() {
     if (adminPasscodeInput === ADMIN_PASSCODE) {
       setAdminAuthed(true);
       if (rememberAdmin) {
-        localStorage.setItem("admin_remember", "true");
+        localStorage.setItem("admin_remember", adminPasscodeInput);
       } else {
         localStorage.removeItem("admin_remember");
       }
@@ -1440,7 +1430,7 @@ export default function BezAgenciaLuxuryApp() {
     (async () => {
       try {
         const remembered = localStorage.getItem("admin_remember");
-        if (remembered === "true") setAdminAuthed(true);
+        if (remembered) { setAdminAuthed(true); setAdminPasscodeInput(remembered); }
       } catch { /* няма запазен вход — показваме формата за парола */ }
       setAdminAuthChecked(true);
     })();
@@ -1503,33 +1493,30 @@ export default function BezAgenciaLuxuryApp() {
     if (!id || !amt || amt <= 0) return;
     setAdminSaveStatus("saving"); setAdminNotifyStatus("idle");
     try {
-      await db.set(`payment:${id}`, JSON.stringify({ amount: amt, status: "pending", paid: false, updatedAt: Date.now() }), true);
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: adminPasscodeInput, action: "setPaymentAmount", id, amount: amt }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { setAdminSaveStatus("error"); return; }
       setAdminSaveStatus("saved");
-      try {
-        const rec = await db.get(`inquiry:${id}`, true);
-        const info = rec?.value ? JSON.parse(rec.value) : null;
-        if (info?.email) {
-          const ok = await sendTransactionalEmail({
-            to: info.email,
-            subject: `Може да платиш по запитване ${id}`,
-            html: emailWrap("Плащане", `
-              <p style="margin:0 0 10px;">Здравей ${info.name || ""},</p>
-              <p style="margin:0 0 10px;">Твоята оферта по запитване <strong style="color:#D4AF37;">${id}</strong> вече е готова за плащане.</p>
-              <p style="margin:0 0 14px;font-size:22px;font-weight:700;color:#D4AF37;">${amt} €</p>
-              <p style="margin:0;">Влез на сайта, отвори „Плащания" и въведи номера си, за да платиш с карта.</p>
-            `),
-          });
-          setAdminNotifyStatus(ok ? "notified" : "notify-error");
-        } else setAdminNotifyStatus("no-email");
-      } catch { setAdminNotifyStatus("notify-error"); }
+      setAdminNotifyStatus(data.notifyStatus || "no-email");
       setAdminIdInput(""); setAdminAmountInput(""); loadAdminPayments();
     } catch { setAdminSaveStatus("error"); }
   };
 
   const toggleMarkPaid = async (item) => {
     try {
-      const next = { amount: item.amount, status: item.paid ? "pending" : "paid", paid: !item.paid, updatedAt: Date.now() };
-      await db.set(item.key, JSON.stringify(next), true);
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passcode: adminPasscodeInput, action: "markPaid",
+          id: item.key?.replace("payment:", "") || item.id, amount: item.amount, currentlyPaid: item.paid,
+        }),
+      });
+      if (!res.ok) return;
       loadAdminPayments();
     } catch {}
   };
