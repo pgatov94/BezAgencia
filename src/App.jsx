@@ -3655,7 +3655,7 @@ function NavBtn({ active, onClick, icon, label }) {
       color: active ? PALETTE.goldBright : PALETTE.inkMuted, fontFamily: "Work Sans, sans-serif", cursor: "pointer", minWidth: 60,
     }}>
       {icon}
-      <span style={{ fontSize: icon ? 9.5 : 12.5, fontWeight: 600, letterSpacing: icon ? 0.2 : 0, whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ fontSize: icon ? 9.5 : 12.5, fontWeight: 600, letterSpacing: icon ? 0.2 : 0, textAlign: "center", lineHeight: 1.2, maxWidth: 64 }}>{label}</span>
     </button>
   );
 }
