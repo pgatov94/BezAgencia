@@ -873,6 +873,7 @@ export default function BezAgenciaLuxuryApp() {
   // ── Оферти (Deals) — публично видими, управлявани от админ ───────────
   const [deals, setDeals] = useState([]);
   const [dealsLoading, setDealsLoading] = useState(false);
+  const [dealsFilterDeparture, setDealsFilterDeparture] = useState("");
   const [dealsError, setDealsError] = useState("");
 
   // ── Админ панел ────────────────────────────────────────────────────
@@ -2578,19 +2579,35 @@ export default function BezAgenciaLuxuryApp() {
             <h2 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 28, color: PALETTE.ink, margin: "0 0 6px" }}>Светкавични намаления</h2>
           </div>
 
-          <div style={{ marginBottom: 18 }}>
-            <button onClick={loadDeals} className="lux-hover" style={{
-              display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
-              borderRadius: 10, padding: "8px 14px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 16, color: PALETTE.inkMuted, cursor: "pointer",
-            }}>
-              <RotateCcw size={15} /> Презареди офертите
-            </button>
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: PALETTE.inkFaint, marginBottom: 10 }}>Полет от</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {DEPARTURES.map((dep) => {
+                const isActive = dealsFilterDeparture === dep.name;
+                return (
+                  <button
+                    key={dep.id}
+                    onClick={() => setDealsFilterDeparture(isActive ? "" : dep.name)}
+                    className="lux-hover"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      background: isActive ? "rgba(212,175,55,0.12)" : PALETTE.panel,
+                      border: `1px solid ${isActive ? PALETTE.gold : PALETTE.panelBorder}`,
+                      borderRadius: 10, padding: "8px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 16,
+                      color: isActive ? PALETTE.goldBright : PALETTE.inkMuted, cursor: "pointer",
+                    }}
+                  >
+                    {dep.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {dealsLoading && <p style={{ color: PALETTE.inkMuted, fontSize: 15.5 }}>Зареждам оферти…</p>}
           {dealsError && (
             <div style={{ background: "rgba(226,105,74,0.08)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 14, padding: "16px 18px", marginBottom: 18, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.6 }}>
-              Възникна грешка при зареждане на офертите от базата данни: <strong style={{ color: PALETTE.coralDark }}>{dealsError}</strong>. Натисни „Презареди офертите" по-горе, или провери в Админ панела дали Supabase е свързан.
+              Възникна грешка при зареждане на офертите от базата данни: <strong style={{ color: PALETTE.coralDark }}>{dealsError}</strong>. Провери в Админ панела дали Supabase е свързан.
             </div>
           )}
           {!dealsLoading && !dealsError && deals.length === 0 && (
@@ -2598,9 +2615,14 @@ export default function BezAgenciaLuxuryApp() {
               Все още няма публикувани оферти. Добави ги от Админ → Оферти.
             </div>
           )}
+          {!dealsLoading && !dealsError && deals.length > 0 && deals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).length === 0 && (
+            <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "36px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5 }}>
+              Няма оферти с полет от {dealsFilterDeparture}.
+            </div>
+          )}
 
           <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            {deals.map((d, di) => {
+            {deals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).map((d, di) => {
               const tag = DEAL_TAGS[d.tag] || DEAL_TAGS.flash;
               return (
                 <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, overflow: "hidden" }}>
