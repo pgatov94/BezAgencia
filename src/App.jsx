@@ -849,6 +849,7 @@ export default function BezAgenciaLuxuryApp() {
   const [publicReviews, setPublicReviews] = useState([]);
   const [publicReviewsLoading, setPublicReviewsLoading] = useState(false);
   const [publicReviewsError, setPublicReviewsError] = useState("");
+  const [reviewsPage, setReviewsPage] = useState(0);
 
 
 
@@ -1281,6 +1282,7 @@ export default function BezAgenciaLuxuryApp() {
   const loadPublicReviews = async () => {
     setPublicReviewsLoading(true);
     setPublicReviewsError("");
+    setReviewsPage(0);
     try {
       const items = await db.listAll("review:");
       setPublicReviews(items.map((r) => { try { return JSON.parse(r.value); } catch { return null; } }).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
@@ -2104,7 +2106,7 @@ export default function BezAgenciaLuxuryApp() {
               <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма оставени отзиви — бъди първият!</p>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {publicReviews.map((r, i) => (
+              {publicReviews.slice(reviewsPage * 3, reviewsPage * 3 + 3).map((r, i) => (
                 <div key={i} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                     <span style={{ fontWeight: 700, fontSize: 15.5, color: PALETTE.ink }}>{r.name}</span>
@@ -2124,6 +2126,41 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               ))}
             </div>
+            {publicReviews.length > 3 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 18, marginTop: 18 }}>
+                <button
+                  onClick={() => setReviewsPage((p) => Math.max(0, p - 1))}
+                  disabled={reviewsPage === 0}
+                  className="lux-hover"
+                  style={{
+                    width: 38, height: 38, borderRadius: "50%", border: `1px solid ${PALETTE.panelBorder}`,
+                    background: PALETTE.panel, color: reviewsPage === 0 ? PALETTE.inkFaint : PALETTE.ink,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: reviewsPage === 0 ? "not-allowed" : "pointer",
+                  }}
+                  aria-label="Предишни отзиви"
+                >
+                  <ChevronLeft size={19} />
+                </button>
+                <span style={{ fontSize: 13, color: PALETTE.inkFaint }}>
+                  {reviewsPage + 1} / {Math.ceil(publicReviews.length / 3)}
+                </span>
+                <button
+                  onClick={() => setReviewsPage((p) => Math.min(Math.ceil(publicReviews.length / 3) - 1, p + 1))}
+                  disabled={reviewsPage >= Math.ceil(publicReviews.length / 3) - 1}
+                  className="lux-hover"
+                  style={{
+                    width: 38, height: 38, borderRadius: "50%", border: `1px solid ${PALETTE.panelBorder}`,
+                    background: PALETTE.panel, color: reviewsPage >= Math.ceil(publicReviews.length / 3) - 1 ? PALETTE.inkFaint : PALETTE.ink,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: reviewsPage >= Math.ceil(publicReviews.length / 3) - 1 ? "not-allowed" : "pointer",
+                  }}
+                  aria-label="Следващи отзиви"
+                >
+                  <ChevronRight size={19} />
+                </button>
+              </div>
+            )}
           </section>
         </div>
       )}
