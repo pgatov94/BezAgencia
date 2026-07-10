@@ -2049,7 +2049,7 @@ export default function BezAgenciaLuxuryApp() {
         display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 10,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={goHome}>
-          <img src={LOGO_IMAGE} alt="БезАгенция" style={{ height: 64, width: "auto", display: "block" }} />
+          <img src={LOGO_IMAGE} alt="БезАгенция" style={{ height: 80, width: "auto", display: "block" }} />
         </div>
 
         <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
@@ -3651,8 +3651,9 @@ function NavBtn({ active, onClick, icon, label }) {
     <button onClick={onClick} className="lux-nav-item" title={label} aria-label={label} style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
       background: active ? "rgba(212,175,55,0.10)" : "transparent",
-      border: `1px solid ${active ? "rgba(212,175,55,0.35)" : "transparent"}`, borderRadius: 10, padding: icon ? "7px 12px" : "10px 14px",
-      color: active ? PALETTE.goldBright : PALETTE.inkMuted, fontFamily: "Work Sans, sans-serif", cursor: "pointer", minWidth: 60,
+      border: `1px solid ${active ? "rgba(212,175,55,0.35)" : "transparent"}`, borderRadius: 10,
+      color: active ? PALETTE.goldBright : PALETTE.inkMuted, fontFamily: "Work Sans, sans-serif", cursor: "pointer",
+      width: 74, height: 54, flexShrink: 0,
     }}>
       {icon}
       <span style={{ fontSize: icon ? 9.5 : 12.5, fontWeight: 600, letterSpacing: icon ? 0.2 : 0, textAlign: "center", lineHeight: 1.2, maxWidth: 64 }}>{label}</span>
