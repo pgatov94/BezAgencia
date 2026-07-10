@@ -231,11 +231,17 @@ function FlagArt({ id }) {
   }
 }
 
+const FLAG_CODE_MAP = { uk: "gb" };
 function FlagBadge({ id, style, preserveAspectRatio = "xMidYMid meet" }) {
+  const code = FLAG_CODE_MAP[id] || id;
   return (
-    <svg viewBox="0 0 60 40" preserveAspectRatio={preserveAspectRatio} style={{ display: "block", ...style }}>
-      <FlagArt id={id} />
-    </svg>
+    <img
+      src={`https://flagcdn.com/w160/${code}.png`}
+      srcSet={`https://flagcdn.com/w320/${code}.png 2x`}
+      alt=""
+      loading="lazy"
+      style={{ display: "block", objectFit: preserveAspectRatio === "xMidYMid slice" ? "cover" : "contain", ...style }}
+    />
   );
 }
 
@@ -1815,6 +1821,28 @@ export default function BezAgenciaLuxuryApp() {
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .page-enter { animation: fadeSlideIn .7s var(--ease) both; }
 
+        @keyframes heroKenBurns {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.09) translate(-1.5%, -1%); }
+          100% { transform: scale(1) translate(0, 0); }
+        }
+        .ba-hero-photo { animation: heroKenBurns 34s ease-in-out infinite; }
+
+        @keyframes heroShimmer {
+          0% { background-position: -40% 0; }
+          100% { background-position: 140% 0; }
+        }
+        .ba-hero-shimmer {
+          background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.16) 48%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.16) 52%, transparent 65%);
+          background-size: 250% 100%;
+          animation: heroShimmer 9s linear infinite;
+          mix-blend-mode: overlay;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ba-hero-photo { animation: none; }
+          .ba-hero-shimmer { animation: none; opacity: 0; }
+        }
+
         .lux-hover { transition: transform .5s var(--ease), box-shadow .5s var(--ease), border-color .5s var(--ease), background .5s var(--ease); }
         .lux-hover:hover { transform: translateY(-4px); border-color: ${PALETTE.panelBorderHover}; box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(212,175,55,0.12), 0 0 26px rgba(212,175,55,0.16); }
 
@@ -1987,7 +2015,13 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── СТРАНИЦА: НАЧАЛО ──────────────────────────────────────── */}
       {page === "home" && (
         <div className="page-enter">
-          <section style={{ position: "relative", overflow: "hidden", minHeight: "78vh", backgroundImage: `linear-gradient(180deg, rgba(6,8,16,0) 0%, ${PALETTE.bgDeep} 92%), url(/hero-beach.png)`, backgroundSize: "cover", backgroundPosition: "center" }}>
+          <section style={{ position: "relative", overflow: "hidden", minHeight: "78vh" }}>
+            <div className="ba-hero-photo" style={{
+              position: "absolute", inset: 0,
+              backgroundImage: "url(/hero-beach.png)", backgroundSize: "cover", backgroundPosition: "68% 38%",
+            }} />
+            <div className="ba-hero-shimmer" style={{ position: "absolute", left: "30%", right: 0, top: "20%", bottom: "35%", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(6,8,16,0) 55%, ${PALETTE.bgDeep} 96%)`, pointerEvents: "none" }} />
             <div style={{ position: "absolute", inset: 0, background: "rgba(6,8,16,0.35)", pointerEvents: "none" }} />
             <div style={{
               position: "absolute", inset: 0,
