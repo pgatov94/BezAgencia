@@ -106,6 +106,40 @@ export default async function handler(req, res) {
       return;
     }
 
+    if (action === "deletePayment") {
+      const { id: rawId } = req.body || {};
+      const id = (rawId || "").trim().toUpperCase();
+      if (!id) { res.status(400).json({ error: "Невалидни данни." }); return; }
+      await supabaseAdmin.from("payments").delete().eq("id", id);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "deleteInquiry") {
+      const { id: rawId } = req.body || {};
+      const id = (rawId || "").trim().toUpperCase();
+      if (!id) { res.status(400).json({ error: "Невалидни данни." }); return; }
+      await supabaseAdmin.from("inquiries").delete().eq("id", id);
+      await supabaseAdmin.from("payments").delete().eq("id", id);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "resetCategory") {
+      const { category } = req.body || {};
+      if (category === "inquiries") {
+        await supabaseAdmin.from("inquiries").delete().neq("id", "");
+        await supabaseAdmin.from("payments").delete().neq("id", "");
+      } else if (category === "payments") {
+        await supabaseAdmin.from("payments").delete().neq("id", "");
+      } else {
+        res.status(400).json({ error: "Непозната категория." });
+        return;
+      }
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     res.status(400).json({ error: "Непознато действие." });
   } catch (e) {
     res.status(500).json({ error: e.message || "Неизвестна грешка." });

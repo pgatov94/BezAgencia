@@ -5,7 +5,7 @@ import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMaste
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
-  Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus,
+  Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3,
   MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car,
 } from "lucide-react";
 
@@ -840,6 +840,7 @@ export default function BezAgenciaLuxuryApp() {
   const [offerLoadStatus, setOfferLoadStatus] = useState("idle"); // idle | loading | found | notfound
   const [offerDiscountCode, setOfferDiscountCode] = useState("");
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
+  const [offerEditRequestStatus, setOfferEditRequestStatus] = useState("idle"); // idle | sending
   const [offerConfirmError, setOfferConfirmError] = useState("");
   const [offerDiscountStatus, setOfferDiscountStatus] = useState("idle"); // idle | checking | applied | invalid | used
   const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
@@ -998,6 +999,60 @@ export default function BezAgenciaLuxuryApp() {
   }, []);
 
   /* ── "Искам тази оферта" — пренася данните от офертата директно на стъпка 4 ── */
+  const handleRequestOfferEdit = async () => {
+    if (!offerInquiry || !offerViewId) return;
+    setOfferEditRequestStatus("sending");
+    try {
+      let existing = {};
+      try {
+        const r = await db.get(`payment:${offerViewId}`, true);
+        existing = r?.value ? JSON.parse(r.value) : {};
+      } catch { /* ако няма запис, продължаваме с празен обект */ }
+      await db.set(`payment:${offerViewId}`, JSON.stringify({
+        ...existing, editRequested: true, editRequestedAt: Date.now(),
+      }), true);
+
+      await sendTransactionalEmail({
+        to: INQUIRY_EMAIL,
+        subject: `Клиентът поиска редакция на офертата ${offerViewId}`,
+        html: emailWrap("Оферта върната за редакция", `
+          <p style="margin:0 0 10px;">Клиент${offerInquiry?.name ? ` ${offerInquiry.name}` : ""} поиска редакция на офертата по запитване <strong style="color:#D4AF37;">${offerViewId}</strong>.</p>
+          <p style="margin:0;">Влез в админ панела → „Запитвания", провери отново детайлите и изпрати нова оферта, когато си готов/а.</p>
+        `),
+      });
+    } catch { /* известието не е критично за самото връщане на данните */ }
+
+    const inq = offerInquiry;
+    resetWizard();
+    setName(inq.name || ""); setEmail(inq.email || ""); setPhone(inq.phone || "");
+    const dep = DEPARTURES.find((d) => d.name === inq.departure);
+    if (dep) setDeparture(dep);
+    let foundCountry = null, foundCity = null;
+    for (const c of COUNTRIES) {
+      const matchCity = c.cities.find((ci) => ci.name === inq.city);
+      if (matchCity) { foundCountry = c; foundCity = matchCity; break; }
+    }
+    setCountry(foundCountry || { id: "custom", name: inq.country || "-", cities: [] });
+    setCity(foundCity || { id: "custom", name: inq.city || "-", from: [] });
+    setAdults(inq.adults || 1);
+    setChildrenCount(inq.childrenCount || 0);
+    setChildrenAges(inq.childrenAges || []);
+    setBudgetPerPerson(inq.budgetPerPerson || "");
+    setDateFrom(inq.dateFrom || ""); setDateTo(inq.dateTo || "");
+    setApproxDates(!!inq.approxDates);
+    setFindLowestPrice(!!inq.findLowestPrice);
+    setLowestPriceMonth(inq.lowestPriceMonth || "");
+    setVisitPurpose(inq.visitPurpose || "");
+    setVacationType(inq.vacationType || "");
+    setAccommodationTypes(inq.accommodationTypes || []);
+    setComment(inq.comment || "");
+
+    setModalPage(null);
+    setPage("wizard");
+    setStep(4);
+    setOfferEditRequestStatus("idle");
+  };
+
   const handleWantThisDeal = (deal) => {
     resetWizard();
 
@@ -1529,6 +1584,53 @@ export default function BezAgenciaLuxuryApp() {
     } catch {}
   };
 
+  const handleAdminDeletePayment = async (item) => {
+    const id = item.key?.replace("payment:", "") || item.id;
+    if (!window.confirm(`Изтриване на плащането по запитване ${id}? Това не може да се върне.`)) return;
+    try {
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: adminPasscodeInput, action: "deletePayment", id }),
+      });
+      if (!res.ok) return;
+      loadAdminPayments();
+    } catch {}
+  };
+
+  const handleAdminDeleteInquiry = async (id) => {
+    if (!window.confirm(`Изтриване на запитване ${id} (и свързаното плащане, ако има)? Това не може да се върне.`)) return;
+    try {
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: adminPasscodeInput, action: "deleteInquiry", id }),
+      });
+      if (!res.ok) return;
+      loadAdminContacts();
+      loadAdminPayments();
+    } catch {}
+  };
+
+  const handleAdminResetCategory = async (category, label) => {
+    if (!window.confirm(`Изтриване на ВСИЧКИ записи в „${label}"? Това не може да се върне.`)) return;
+    try {
+      if (category === "deals") {
+        await Promise.all(deals.map((d) => db.delete(`deal:${d.id}`, true)));
+        loadDeals();
+        return;
+      }
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: adminPasscodeInput, action: "resetCategory", category }),
+      });
+      if (!res.ok) return;
+      loadAdminContacts();
+      loadAdminPayments();
+    } catch {}
+  };
+
   /* ── Админ: оферти CRUD ─────────────────────────────────────────── */
   const processDealImageFile = (file) => {
     if (!file) return;
@@ -1615,6 +1717,7 @@ export default function BezAgenciaLuxuryApp() {
     const payment = adminPayments.find((p) => p.key === `payment:${id}`);
     if (payment?.paid && payment?.fullOfferSent) return "ready";
     if (payment?.paid) return "paid";
+    if (payment?.editRequested) return "edit_requested";
     if (adminOffersIds.has(id)) return "awaiting_payment";
     return "none";
   };
@@ -1622,6 +1725,7 @@ export default function BezAgenciaLuxuryApp() {
     switch (status) {
       case "ready": return { label: "Готов за излитане", color: PALETTE.jungle, bold: true };
       case "paid": return { label: "✓ Чака пълна оферта", color: PALETTE.jungle, bold: false };
+      case "edit_requested": return { label: "✎ Върната за редакция", color: PALETTE.coralDark, bold: true };
       case "awaiting_payment": return { label: "Чака плащане", color: PALETTE.coralDark, bold: false };
       default: return { label: "Чака кратка оферта", color: PALETTE.coralDark, bold: false };
     }
@@ -1666,6 +1770,14 @@ export default function BezAgenciaLuxuryApp() {
       };
       const setResult = await db.set(`offer:${id}`, JSON.stringify(payload), true);
       if (!setResult) { setAdminOfferSaveStatus("error"); return; }
+
+      try {
+        const existingPay = await db.get(`payment:${id}`, true);
+        const existingPayData = existingPay?.value ? JSON.parse(existingPay.value) : null;
+        if (existingPayData?.editRequested) {
+          await db.set(`payment:${id}`, JSON.stringify({ ...existingPayData, editRequested: false }), true);
+        }
+      } catch { /* не е критично */ }
 
       let inqInfo = null;
       try { const r = await db.get(`inquiry:${id}`, true); inqInfo = r?.value ? JSON.parse(r.value) : null; } catch {}
@@ -2930,6 +3042,19 @@ export default function BezAgenciaLuxuryApp() {
                   <Check size={20} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : "Потвърди офертата"}
                 </button>
                 {offerConfirmStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, margin: 0 }}>{offerConfirmError}</p>}
+
+                <button
+                  onClick={handleRequestOfferEdit}
+                  disabled={offerEditRequestStatus === "sending"}
+                  className="lux-hover"
+                  style={{
+                    background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.inkMuted, borderRadius: 10,
+                    padding: "9px 18px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 13.5, cursor: offerEditRequestStatus === "sending" ? "wait" : "pointer",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, alignSelf: "center",
+                  }}
+                >
+                  <Edit3 size={14} /> {offerEditRequestStatus === "sending" ? "Изпращам…" : "Редактирай оферта"}
+                </button>
               </div>
             );
           })()}
@@ -3009,6 +3134,9 @@ export default function BezAgenciaLuxuryApp() {
                           border: `1px solid ${item.paid ? PALETTE.jungle : PALETTE.panelBorder}`,
                           color: item.paid ? PALETTE.jungle : PALETTE.inkMuted,
                         }}>{item.paid ? "Платено ✓" : "Маркирай платено"}</button>
+                        <button onClick={() => handleAdminDeletePayment(item)} title="Изтрий" style={{
+                          background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.coralDark,
+                        }}><Trash2 size={15} /></button>
                       </div>
                     ))}
                   </div>
@@ -3107,7 +3235,14 @@ export default function BezAgenciaLuxuryApp() {
                                 }}
                               >
                                 <span style={{ color: PALETTE.ink }}>{c.id} — {c.name} ({c.city}, {c.country})</span>
-                                <span style={{ color: info.color, fontWeight: info.bold ? 800 : 700, fontSize: 15.5, whiteSpace: "nowrap" }}>{info.label}</span>
+                                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ color: info.color, fontWeight: info.bold ? 800 : 700, fontSize: 15.5, whiteSpace: "nowrap" }}>{info.label}</span>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleAdminDeleteInquiry(c.id); }}
+                                    title="Изтрий"
+                                    style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 6, padding: "3px 6px", cursor: "pointer", color: PALETTE.coralDark, flexShrink: 0 }}
+                                  ><Trash2 size={13} /></button>
+                                </span>
                               </div>
                             );
                           })}
@@ -3172,9 +3307,9 @@ export default function BezAgenciaLuxuryApp() {
                     </p>
                   )}
 
-                  <div style={{ fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 8 }}>Снимки на настаняването (до 3)</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
-                    {[0, 1, 2].map((idx) => (
+                  <div style={{ fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 8 }}>Снимки на настаняването</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 10 }}>
+                    {adminOfferForm.photos.map((_, idx) => (
                       <div key={idx}>
                         <div
                           tabIndex={0}
@@ -3209,7 +3344,25 @@ export default function BezAgenciaLuxuryApp() {
                         {adminOfferImageErrors[idx] && <p style={{ fontSize: 10.5, color: PALETTE.coralDark, marginTop: 4 }}>{adminOfferImageErrors[idx]}</p>}
                       </div>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminOfferForm((f) => ({ ...f, photos: [...f.photos, ""] }));
+                        setAdminOfferImageErrors((errs) => [...errs, ""]);
+                      }}
+                      className="lux-hover"
+                      style={{
+                        border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 12, minHeight: 90,
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                        background: "none", cursor: "pointer", color: PALETTE.inkFaint,
+                      }}
+                      aria-label="Добави още една снимка"
+                    >
+                      <Plus size={20} />
+                      <span style={{ fontSize: 11.5 }}>Добави снимка</span>
+                    </button>
                   </div>
+                  <div style={{ marginBottom: 10 }} />
 
                   <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 15.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
                     В имейла автоматично се добавят пояснения, че след плащане клиентът получава: 2 опции за настаняване, линкове за входни билети/екскурзии през GetYourGuide, и информация за трансфери и градски транспорт.
@@ -3341,7 +3494,12 @@ export default function BezAgenciaLuxuryApp() {
                       <div key={c.key} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
                           <span style={{ fontWeight: 700, fontSize: 15, color: PALETTE.ink }}>{c.name || "(без име)"}</span>
-                          <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{c.id}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{c.id}</span>
+                            <button onClick={() => handleAdminDeleteInquiry(c.id)} title="Изтрий" style={{
+                              background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 6, padding: "3px 6px", cursor: "pointer", color: PALETTE.coralDark,
+                            }}><Trash2 size={13} /></button>
+                          </div>
                         </div>
                         <div style={{ fontSize: 15.5, color: PALETTE.inkMuted, marginTop: 2 }}>{c.email} · {c.city}{c.city && c.country ? ", " : ""}{c.country}</div>
                       </div>
@@ -3355,16 +3513,17 @@ export default function BezAgenciaLuxuryApp() {
                 <div>
                   <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 18px" }}>Обобщение</h3>
                   <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-                    <StatCard icon={<Users size={18} />} label="Запитвания" value={analytics.inquiriesCount} />
-                    <StatCard icon={<Tag size={18} />} label="Активни оферти" value={analytics.dealsCount} />
-                    <StatCard icon={<Wallet size={18} />} label="Зададени плащания" value={analytics.paymentsCount} />
+                    <StatCard icon={<Users size={18} />} label="Запитвания" value={analytics.inquiriesCount} onReset={() => handleAdminResetCategory("inquiries", "Запитвания")} resetTitle="Изтрий всички запитвания" />
+                    <StatCard icon={<Tag size={18} />} label="Активни оферти" value={analytics.dealsCount} onReset={() => handleAdminResetCategory("deals", "Активни оферти")} resetTitle="Изтрий всички оферти" />
+                    <StatCard icon={<Wallet size={18} />} label="Зададени плащания" value={analytics.paymentsCount} onReset={() => handleAdminResetCategory("payments", "Зададени плащания")} resetTitle="Изтрий всички плащания" />
                     <StatCard icon={<TrendingUp size={18} />} label="Платена сума" value={`${analytics.paidSum} €`} accent />
                     <StatCard icon={<Clock size={18} />} label="Очаквано плащане" value={`${analytics.pendingSum} €`} />
                     <StatCard icon={<Percent size={18} />} label="Комисионна (5%, приблизително)" value={`${analytics.estimatedCommission} €`} accent />
                   </div>
                   <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
-                    Тези числа са реални, изчислени от записите в „Плащания" и „Контакти" — не са симулирани. По-задълбочена аналитика
-                    (конверсия, LTV, разбивка по канал) би изисквала допълнителни таблици и логика за проследяване, отвъд текущата база.
+                    Тези числа са реални, изчислени от записите в „Плащания" и „Контакти" — не са симулирани. Иконата ↺ на картата
+                    трайно изтрива всички записи от съответната категория (не само нулира число за показ) — „Платена сума", „Очаквано
+                    плащане" и „Комисионна" се пресмятат от същите данни като „Зададени плащания", затова нямат отделен бутон.
                   </p>
                 </div>
               )}
@@ -3522,9 +3681,21 @@ function RouteField({ label, value, muted }) {
   );
 }
 
-function StatCard({ icon, label, value, accent }) {
+function StatCard({ icon, label, value, accent, onReset, resetTitle }) {
   return (
-    <div className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+    <div className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px", position: "relative" }}>
+      {onReset && (
+        <button
+          onClick={onReset}
+          title={resetTitle || "Нулирай"}
+          style={{
+            position: "absolute", top: 10, right: 10, background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 6,
+            width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: PALETTE.inkFaint,
+          }}
+        >
+          <RotateCcw size={12} />
+        </button>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8, color: accent ? PALETTE.goldBright : PALETTE.oceanBright, marginBottom: 10 }}>{icon}</div>
       <div style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 22, color: accent ? PALETTE.goldBright : PALETTE.ink, marginBottom: 4 }}>{value}</div>
       <div style={{ fontSize: 11.5, color: PALETTE.inkMuted }}>{label}</div>
