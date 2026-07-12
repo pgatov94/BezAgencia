@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
@@ -1803,9 +1802,12 @@ export default function BezAgenciaLuxuryApp() {
     } catch { /* показваме нищо специално, но не чупим UI-а */ }
   };
 
-  const handleSelectOfferInquiry = (id) => {
-    setAdminOfferForm((f) => ({ ...f, inquiryId: id }));
+  const handleSelectOfferInquiry = async (id) => {
     if (!id) {
+      setAdminOfferForm((f) => ({
+        inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
+      }));
+      setAdminOfferImageErrors(["", "", ""]);
       setAdminSelectedInquiry(null);
       setAdminSelectedInquiryStatus("none");
       return;
@@ -1813,6 +1815,33 @@ export default function BezAgenciaLuxuryApp() {
     const contact = adminContacts.find((c) => c.id === id) || null;
     setAdminSelectedInquiry(contact);
     setAdminSelectedInquiryStatus(getInquiryPipelineStatus(id));
+
+    // Ако вече има изпратена оферта по това запитване (статус "Чака плащане"
+    // или "Чака пълна оферта"), зареждаме точно това, което е изпратено,
+    // вместо да показваме празна форма — за да можеш да видиш/коригираш.
+    let existingOffer = null;
+    try {
+      const r = await db.get(`offer:${id}`, true);
+      existingOffer = r?.value ? JSON.parse(r.value) : null;
+    } catch { /* няма запазена оферта — оставяме формата празна */ }
+
+    if (existingOffer) {
+      setAdminOfferForm({
+        inquiryId: id,
+        flightPrice: existingOffer.flightPrice != null ? String(existingOffer.flightPrice) : "",
+        hotelPrice: existingOffer.hotelPrice != null ? String(existingOffer.hotelPrice) : "",
+        flightDateFrom: existingOffer.flightDateFrom || "",
+        flightDateTo: existingOffer.flightDateTo || "",
+        photos: existingOffer.photos?.length ? [...existingOffer.photos, "", "", ""].slice(0, Math.max(3, existingOffer.photos.length)) : ["", "", ""],
+        adminLinks: existingOffer.adminLinks?.length ? existingOffer.adminLinks : [""],
+      });
+      setAdminOfferImageErrors(new Array(Math.max(3, existingOffer.photos?.length || 0)).fill(""));
+    } else {
+      setAdminOfferForm({
+        inquiryId: id, flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
+      });
+      setAdminOfferImageErrors(["", "", ""]);
+    }
   };
 
   const handleSendOffer = async () => {
