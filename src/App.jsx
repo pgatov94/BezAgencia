@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
@@ -912,7 +913,7 @@ export default function BezAgenciaLuxuryApp() {
 
   // ── Лична оферта към клиент (Админ → Оферта) ────────────────────────
   const [adminOfferForm, setAdminOfferForm] = useState({
-    inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""],
+    inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
   });
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
   const [adminOfferSaveStatus, setAdminOfferSaveStatus] = useState("idle"); // idle | saving | sent | error
@@ -1826,6 +1827,7 @@ export default function BezAgenciaLuxuryApp() {
         inquiryId: id, flightPrice, hotelPrice,
         flightDateFrom: f.flightDateFrom || null, flightDateTo: f.flightDateTo || null,
         photos: f.photos.filter(Boolean),
+        adminLinks: f.adminLinks.filter(Boolean),
         createdAt: Date.now(),
       };
       const setResult = await db.set(`offer:${id}`, JSON.stringify(payload), true);
@@ -1865,7 +1867,7 @@ export default function BezAgenciaLuxuryApp() {
       });
 
       setAdminOfferSaveStatus("sent");
-      setAdminOfferForm({ inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""] });
+      setAdminOfferForm({ inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""] });
       setAdminOfferImageErrors(["", "", ""]);
     } catch { setAdminOfferSaveStatus("error"); }
   };
@@ -3503,6 +3505,46 @@ export default function BezAgenciaLuxuryApp() {
                     </button>
                   </div>
                   <div style={{ marginBottom: 10 }} />
+
+                  <div style={{ fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                    Вътрешни линкове <Lock size={13} color={PALETTE.inkFaint} />
+                  </div>
+                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: "0 0 8px" }}>Видими само за теб в админ панела — клиентът никога не ги вижда (нито на сайта, нито в имейл).</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                    {adminOfferForm.adminLinks.map((link, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: 8 }}>
+                        <input
+                          value={link}
+                          onChange={(e) => setAdminOfferForm((f) => {
+                            const next = [...f.adminLinks]; next[idx] = e.target.value;
+                            return { ...f, adminLinks: next };
+                          })}
+                          placeholder="напр. линк към резервацията на полета/хотела"
+                          style={{ ...inputStyle, flex: 1 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setAdminOfferForm((f) => ({ ...f, adminLinks: f.adminLinks.filter((_, i) => i !== idx) }))}
+                          style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "0 10px", cursor: "pointer", color: PALETTE.coralDark }}
+                          aria-label="Премахни линка"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setAdminOfferForm((f) => ({ ...f, adminLinks: [...f.adminLinks, ""] }))}
+                      className="lux-hover"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
+                        background: "none", border: `1px dashed ${PALETTE.panelBorder}`, borderRadius: 8, padding: "7px 14px",
+                        cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
+                      }}
+                    >
+                      <Plus size={14} /> Добави линк
+                    </button>
+                  </div>
 
                   <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 15.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
                     В имейла автоматично се добавят пояснения, че след плащане клиентът получава: 2 опции за настаняване, линкове за входни билети/екскурзии през GetYourGuide, и информация за трансфери и градски транспорт.
