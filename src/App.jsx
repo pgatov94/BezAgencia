@@ -917,7 +917,7 @@ export default function BezAgenciaLuxuryApp() {
   });
   const [fullOfferForm, setFullOfferForm] = useState({
     flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-    experienceLinks: [""], cityPdfLink: "",
+    experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
   });
   const [fullOfferSaveStatus, setFullOfferSaveStatus] = useState("idle"); // idle | saving | saved | error
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
@@ -1829,7 +1829,8 @@ export default function BezAgenciaLuxuryApp() {
         hotelLinks: fullOfferForm.hotelLinks.filter(Boolean),
         hotelPhotos: fullOfferForm.hotelPhotos.filter(Boolean),
         experienceLinks: fullOfferForm.experienceLinks.filter(Boolean),
-        cityPdfLink: fullOfferForm.cityPdfLink.trim(),
+        cityPdfLink: fullOfferForm.cityPdfLink,
+        cityPdfName: fullOfferForm.cityPdfName || "",
       }), true);
 
       const p = await db.get(`payment:${id}`, true);
@@ -1866,7 +1867,7 @@ export default function BezAgenciaLuxuryApp() {
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-        experienceLinks: [""], cityPdfLink: "",
+        experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
       });
       setAdminSelectedInquiry(null);
       setAdminSelectedInquiryStatus("none");
@@ -1903,6 +1904,7 @@ export default function BezAgenciaLuxuryApp() {
         hotelPhotos: existingOffer.hotelPhotos?.length ? existingOffer.hotelPhotos : ["", "", ""],
         experienceLinks: existingOffer.experienceLinks?.length ? existingOffer.experienceLinks : [""],
         cityPdfLink: existingOffer.cityPdfLink || "",
+        cityPdfName: existingOffer.cityPdfName || "",
       });
     } else {
       setAdminOfferForm({
@@ -1911,7 +1913,7 @@ export default function BezAgenciaLuxuryApp() {
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-        experienceLinks: [""], cityPdfLink: "",
+        experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
       });
     }
   };
@@ -2979,7 +2981,12 @@ export default function BezAgenciaLuxuryApp() {
                   {dashOffer.cityPdfLink && (
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Info size={15} color={PALETTE.gold} /> Гид за града</div>
-                      <a href={dashOffer.cityPdfLink} target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.oceanBright, fontSize: 15, wordBreak: "break-all" }}>{dashOffer.cityPdfLink}</a>
+                      <a href={dashOffer.cityPdfLink} download={dashOffer.cityPdfName || "gid-za-grada.pdf"} target="_blank" rel="noopener noreferrer" style={{
+                        display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.bgDeep, background: PALETTE.gold, fontWeight: 700,
+                        fontSize: 14.5, padding: "10px 18px", borderRadius: 10, textDecoration: "none",
+                      }}>
+                        <Copy size={15} /> Свали PDF гида{dashOffer.cityPdfName ? ` (${dashOffer.cityPdfName})` : ""}
+                      </a>
                     </div>
                   )}
                 </div>
@@ -3612,12 +3619,38 @@ export default function BezAgenciaLuxuryApp() {
 
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>PDF гид за града</div>
-                              <input
-                                value={fullOfferForm.cityPdfLink}
-                                onChange={(e) => setFullOfferForm((f) => ({ ...f, cityPdfLink: e.target.value }))}
-                                placeholder="Линк към качения PDF (напр. Google Drive линк за споделяне)"
-                                style={inputStyle}
-                              />
+                              {fullOfferForm.cityPdfLink ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px" }}>
+                                  <Check size={15} color={PALETTE.jungle} />
+                                  <span style={{ fontSize: 14, color: PALETTE.ink, flex: 1 }}>{fullOfferForm.cityPdfName || "Качен PDF файл"}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setFullOfferForm((f) => ({ ...f, cityPdfLink: "", cityPdfName: "" }))}
+                                    style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: PALETTE.coralDark }}
+                                  ><X size={13} /></button>
+                                </div>
+                              ) : (
+                                <label className="lux-hover" style={{
+                                  display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", background: PALETTE.panel,
+                                  border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 16px", fontSize: 14, color: PALETTE.ink, fontWeight: 600,
+                                }}>
+                                  <Plus size={15} /> Качи PDF от компютъра
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      if (file.type !== "application/pdf") { alert("Моля, избери PDF файл."); return; }
+                                      if (file.size > 4.5 * 1024 * 1024) { alert("PDF файлът е твърде голям (макс. ~4.5MB)."); return; }
+                                      const reader = new FileReader();
+                                      reader.onload = () => setFullOfferForm((f) => ({ ...f, cityPdfLink: reader.result, cityPdfName: file.name }));
+                                      reader.readAsDataURL(file);
+                                    }}
+                                    style={{ display: "none" }}
+                                  />
+                                </label>
+                              )}
                             </div>
 
                             <button
@@ -4323,9 +4356,10 @@ function PhotoSetEditor({ label, photos, onChange }) {
           <div key={idx}
             onPaste={(e) => {
               const item = Array.from(e.clipboardData?.items || []).find((it) => it.type.startsWith("image/"));
-              if (item) handleFile(idx, item.getAsFile());
+              if (item) { e.preventDefault(); handleFile(idx, item.getAsFile()); }
             }}
             tabIndex={0}
+            className="lux-paste-zone"
             style={{ border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 12, padding: 10, minHeight: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, outline: "none" }}
           >
             {p ? (
@@ -4342,7 +4376,7 @@ function PhotoSetEditor({ label, photos, onChange }) {
                   <Plus size={12} /> Снимка
                   <input type="file" accept="image/*" onChange={(e) => handleFile(idx, e.target.files?.[0])} style={{ display: "none" }} />
                 </label>
-                <span style={{ fontSize: 9.5, color: PALETTE.inkFaint }}>или Ctrl+V</span>
+                <span style={{ fontSize: 9.5, color: PALETTE.inkFaint, textAlign: "center" }}>или кликни тук и Ctrl+V</span>
               </>
             )}
           </div>
