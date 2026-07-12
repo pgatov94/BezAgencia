@@ -918,7 +918,7 @@ export default function BezAgenciaLuxuryApp() {
     inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
   });
   const [fullOfferForm, setFullOfferForm] = useState({
-    flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+    flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
     experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
   });
   const [fullOfferSaveStatus, setFullOfferSaveStatus] = useState("idle"); // idle | saving | saved | error
@@ -1828,8 +1828,9 @@ export default function BezAgenciaLuxuryApp() {
         ...existingOffer,
         flightLinks: fullOfferForm.flightLinks.filter(Boolean),
         flightPhotos: fullOfferForm.flightPhotos.filter(Boolean),
-        hotelLinks: fullOfferForm.hotelLinks.filter(Boolean),
-        hotelPhotos: fullOfferForm.hotelPhotos.filter(Boolean),
+        hotelLinks: fullOfferForm.hotelLinks
+          .filter((x) => x.link?.trim() || x.description?.trim() || x.photos?.some(Boolean))
+          .map((x) => ({ link: x.link || "", description: x.description || "", photos: (x.photos || []).filter(Boolean) })),
         experienceLinks: fullOfferForm.experienceLinks.filter((x) => x.link?.trim() || x.description?.trim()),
         cityPdfLink: fullOfferForm.cityPdfLink,
         cityPdfName: fullOfferForm.cityPdfName || "",
@@ -1871,7 +1872,7 @@ export default function BezAgenciaLuxuryApp() {
       }));
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
-        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
         experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
       });
       setAdminSelectedInquiry(null);
@@ -1905,8 +1906,13 @@ export default function BezAgenciaLuxuryApp() {
       setFullOfferForm({
         flightLinks: existingOffer.flightLinks?.length ? existingOffer.flightLinks : [""],
         flightPhotos: existingOffer.flightPhotos?.length ? existingOffer.flightPhotos : ["", "", ""],
-        hotelLinks: existingOffer.hotelLinks?.length ? existingOffer.hotelLinks : [""],
-        hotelPhotos: existingOffer.hotelPhotos?.length ? existingOffer.hotelPhotos : ["", "", ""],
+        hotelLinks: existingOffer.hotelLinks?.length
+          ? existingOffer.hotelLinks.map((x, i) => (
+              typeof x === "string"
+                ? { link: x, description: "", photos: i === 0 ? (existingOffer.hotelPhotos || ["", "", ""]) : ["", "", ""] }
+                : { link: x.link || "", description: x.description || "", photos: x.photos?.length ? x.photos : ["", "", ""] }
+            ))
+          : [{ link: "", description: "", photos: ["", "", ""] }],
         experienceLinks: existingOffer.experienceLinks?.length
           ? existingOffer.experienceLinks.map((x) => (typeof x === "string" ? { link: x, description: "" } : x))
           : [{ link: "", description: "" }],
@@ -1919,7 +1925,7 @@ export default function BezAgenciaLuxuryApp() {
       });
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
-        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
         experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
       });
     }
@@ -2960,19 +2966,23 @@ export default function BezAgenciaLuxuryApp() {
                     </div>
                   )}
 
-                  {(dashOffer.hotelLinks?.length > 0 || dashOffer.hotelPhotos?.filter(Boolean).length > 0) && (
+                  {dashOffer.hotelLinks?.filter((x) => x?.link || x?.description || x?.photos?.filter(Boolean).length).length > 0 && (
                     <div style={{ marginBottom: 18 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><HomeIcon size={15} color={PALETTE.gold} /> Настаняване</div>
-                      {dashOffer.hotelLinks?.filter(Boolean).map((l, i) => (
-                        <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 6, wordBreak: "break-all" }}>{l}</a>
-                      ))}
-                      {dashOffer.hotelPhotos?.filter(Boolean).length > 0 && (
-                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(dashOffer.hotelPhotos.filter(Boolean).length, 3)}, 1fr)`, gap: 8, marginTop: 8 }}>
-                          {dashOffer.hotelPhotos.filter(Boolean).map((p, i) => (
-                            <img key={i} src={p} alt="" onClick={() => openLightbox(dashOffer.hotelPhotos.filter(Boolean), i)} style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10, cursor: "zoom-in" }} />
-                          ))}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><HomeIcon size={15} color={PALETTE.gold} /> Настаняване</div>
+                      {dashOffer.hotelLinks.filter((x) => x?.link || x?.description || x?.photos?.filter(Boolean).length).map((opt, idx) => (
+                        <div key={idx} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: idx < dashOffer.hotelLinks.length - 1 ? `1px solid ${PALETTE.panelBorder}` : "none" }}>
+                          {dashOffer.hotelLinks.length > 1 && <div style={{ fontSize: 12, color: PALETTE.inkFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Опция {idx + 1}</div>}
+                          {opt.description && <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 6px", lineHeight: 1.5 }}>{opt.description}</p>}
+                          {opt.link && <a href={opt.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 8, wordBreak: "break-all" }}>{opt.link}</a>}
+                          {opt.photos?.filter(Boolean).length > 0 && (
+                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(opt.photos.filter(Boolean).length, 3)}, 1fr)`, gap: 8 }}>
+                              {opt.photos.filter(Boolean).map((p, i) => (
+                                <img key={i} src={p} alt="" onClick={() => openLightbox(opt.photos.filter(Boolean), i)} style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10, cursor: "zoom-in" }} />
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
 
@@ -3608,16 +3618,10 @@ export default function BezAgenciaLuxuryApp() {
                               onChange={(photos) => setFullOfferForm((f) => ({ ...f, flightPhotos: photos }))}
                             />
 
-                            <LinkListEditor
-                              label="Линкове за хотел / апартамент"
-                              links={fullOfferForm.hotelLinks}
-                              onChange={(links) => setFullOfferForm((f) => ({ ...f, hotelLinks: links }))}
-                              placeholder="напр. линк към Booking.com / Airbnb резервацията"
-                            />
-                            <PhotoSetEditor
-                              label="Снимки — настаняване"
-                              photos={fullOfferForm.hotelPhotos}
-                              onChange={(photos) => setFullOfferForm((f) => ({ ...f, hotelPhotos: photos }))}
+                            <HotelOptionsEditor
+                              label="Опции за настаняване (всяка със свои снимки)"
+                              items={fullOfferForm.hotelLinks}
+                              onChange={(items) => setFullOfferForm((f) => ({ ...f, hotelLinks: items }))}
                             />
 
                             <ExperienceListEditor
@@ -4384,6 +4388,54 @@ function ExperienceListEditor({ label, items, onChange }) {
           cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
         }}>
           <Plus size={14} /> Добави преживяване
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HotelOptionsEditor({ label, items, onChange }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {items.map((item, idx) => (
+          <div key={idx} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 12.5, color: PALETTE.inkFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Опция {idx + 1}</span>
+              {items.length > 1 && (
+                <button type="button" onClick={() => onChange(items.filter((_, i) => i !== idx))}
+                  style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "3px 8px", cursor: "pointer", color: PALETTE.coralDark }}>
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <input
+              value={item.link}
+              onChange={(e) => { const next = [...items]; next[idx] = { ...next[idx], link: e.target.value }; onChange(next); }}
+              placeholder="Линк към Booking.com / Airbnb резервацията"
+              style={{ ...inputStyle, width: "100%", marginBottom: 8 }}
+            />
+            <textarea
+              value={item.description}
+              onChange={(e) => { const next = [...items]; next[idx] = { ...next[idx], description: e.target.value }; onChange(next); }}
+              placeholder="Описание в свободен текст — напр. вид стая, изглед, разстояние до плажа"
+              rows={2}
+              style={{ ...inputStyle, width: "100%", resize: "vertical", marginBottom: 10 }}
+            />
+            <PhotoSetEditor
+              label={`Снимки — опция ${idx + 1}`}
+              photos={item.photos?.length ? item.photos : ["", "", ""]}
+              onChange={(photos) => { const next = [...items]; next[idx] = { ...next[idx], photos }; onChange(next); }}
+            />
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange([...items, { link: "", description: "", photos: ["", "", ""] }])} className="lux-hover" style={{
+          display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
+          background: "none", border: `1px dashed ${PALETTE.panelBorder}`, borderRadius: 8, padding: "7px 14px",
+          cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
+        }}>
+          <Plus size={14} /> Добави опция за настаняване
         </button>
       </div>
     </div>
