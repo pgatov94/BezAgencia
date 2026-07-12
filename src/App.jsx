@@ -1970,8 +1970,11 @@ export default function BezAgenciaLuxuryApp() {
           html: emailWrap("Офертата е готова", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
             <p style="margin:0 0 24px;">Офертата ти по запитване <strong style="color:#D4AF37;">${id}</strong> е готова за преглед — цени, дати, снимки на настаняването и начин на плащане те очакват на страницата.</p>
-            <p style="text-align:center;margin:0;">
+            <p style="text-align:center;margin:0 0 22px;">
               <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Прегледай и потвърди офертата</a>
+            </p>
+            <p style="margin:0;padding-top:16px;border-top:1px solid #232b3d;color:#8E99AE;font-style:italic;">
+              Ново приключение те очаква! Пожелаваме ти леко пътуване, слънчево настроение и незабравими спомени — заслужаваш тази почивка. ✈️
             </p>
           `),
         });
@@ -3379,6 +3382,10 @@ export default function BezAgenciaLuxuryApp() {
                     {declineStatus === "error" && <p style={{ fontSize: 13.5, color: PALETTE.coralDark, marginTop: 10 }}>Възникна грешка, опитай отново.</p>}
                   </div>
                 )}
+
+                <p style={{ fontSize: 14, color: PALETTE.inkFaint, fontStyle: "italic", textAlign: "center", marginTop: 22, paddingTop: 18, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
+                  Ново приключение те очаква! Пожелаваме ти леко пътуване, слънчево настроение и незабравими спомени — заслужаваш тази почивка. ✈️
+                </p>
               </div>
             );
           })()}
