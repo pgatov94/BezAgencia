@@ -1610,19 +1610,35 @@ export default function BezAgenciaLuxuryApp() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [inquiryDropdownOpen]);
 
+  // Обща помощна функция за всички защитени админ действия. Ако паролата,
+  // запазена в браузъра, вече не е валидна (напр. остаряла от преди
+  // промяна на логиката), сървърът връща 401 — тогава автоматично
+  // излизаме от админ панела, за да могат да влязат отново с истинската
+  // парола, вместо действието тихо да не се случи нищо.
+  const adminActionFetch = async (body) => {
+    const res = await fetch("/api/admin-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode: adminPasscodeInput, ...body }),
+    });
+    if (res.status === 401) {
+      handleAdminLogout();
+      alert("Сесията ти в Админ панела е изтекла или паролата е остаряла. Влез отново с паролата, за да продължиш.");
+      return { ok: false, data: null, expired: true };
+    }
+    let data = null;
+    try { data = await res.json(); } catch { /* празен/невалиден отговор */ }
+    return { ok: res.ok, data, expired: false };
+  };
+
   const handleAdminSavePayment = async () => {
     const id = adminIdInput.trim().toUpperCase();
     const amt = Number(adminAmountInput);
     if (!id || !amt || amt <= 0) return;
     setAdminSaveStatus("saving"); setAdminNotifyStatus("idle");
     try {
-      const res = await fetch("/api/admin-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: adminPasscodeInput, action: "setPaymentAmount", id, amount: amt }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) { setAdminSaveStatus("error"); return; }
+      const { ok, data } = await adminActionFetch({ action: "setPaymentAmount", id, amount: amt });
+      if (!ok || !data?.ok) { setAdminSaveStatus("error"); return; }
       setAdminSaveStatus("saved");
       setAdminNotifyStatus(data.notifyStatus || "no-email");
       setAdminIdInput(""); setAdminAmountInput(""); loadAdminPayments();
@@ -1631,15 +1647,11 @@ export default function BezAgenciaLuxuryApp() {
 
   const toggleMarkPaid = async (item) => {
     try {
-      const res = await fetch("/api/admin-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          passcode: adminPasscodeInput, action: "markPaid",
-          id: item.key?.replace("payment:", "") || item.id, amount: item.amount, currentlyPaid: item.paid,
-        }),
+      const { ok } = await adminActionFetch({
+        action: "markPaid",
+        id: item.key?.replace("payment:", "") || item.id, amount: item.amount, currentlyPaid: item.paid,
       });
-      if (!res.ok) return;
+      if (!ok) return;
       loadAdminPayments();
     } catch {}
   };
@@ -1648,12 +1660,8 @@ export default function BezAgenciaLuxuryApp() {
     const id = item.key?.replace("payment:", "") || item.id;
     if (!window.confirm(`Изтриване на плащането по запитване ${id}? Това не може да се върне.`)) return;
     try {
-      const res = await fetch("/api/admin-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: adminPasscodeInput, action: "deletePayment", id }),
-      });
-      if (!res.ok) return;
+      const { ok } = await adminActionFetch({ action: "deletePayment", id });
+      if (!ok) return;
       loadAdminPayments();
     } catch {}
   };
@@ -1661,12 +1669,8 @@ export default function BezAgenciaLuxuryApp() {
   const handleAdminDeleteInquiry = async (id) => {
     if (!window.confirm(`Изтриване на запитване ${id} (и свързаното плащане, ако има)? Това не може да се върне.`)) return;
     try {
-      const res = await fetch("/api/admin-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: adminPasscodeInput, action: "deleteInquiry", id }),
-      });
-      if (!res.ok) return;
+      const { ok } = await adminActionFetch({ action: "deleteInquiry", id });
+      if (!ok) return;
       loadAdminContacts();
       loadAdminPayments();
     } catch {}
@@ -1680,12 +1684,8 @@ export default function BezAgenciaLuxuryApp() {
         loadDeals();
         return;
       }
-      const res = await fetch("/api/admin-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: adminPasscodeInput, action: "resetCategory", category }),
-      });
-      if (!res.ok) return;
+      const { ok } = await adminActionFetch({ action: "resetCategory", category });
+      if (!ok) return;
       loadAdminContacts();
       loadAdminPayments();
     } catch {}
