@@ -859,7 +859,9 @@ export default function BezAgenciaLuxuryApp() {
   const [offerConfirmError, setOfferConfirmError] = useState("");
   const [offerDiscountStatus, setOfferDiscountStatus] = useState("idle"); // idle | checking | applied | invalid | used
   const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
-  const [lightboxIndex, setLightboxIndex] = useState(null); // индекс в offerData.photos, или null ако е затворен
+  const [lightboxIndex, setLightboxIndex] = useState(null); // индекс в lightboxPhotos, или null ако е затворен
+  const [lightboxPhotos, setLightboxPhotos] = useState(null); // масивът снимки, показван в момента в lightbox-а
+  const openLightbox = (photos, index) => { setLightboxPhotos(photos); setLightboxIndex(index); };
 
   // ── Публични отзиви (показани в края на страница Отзиви) ────────────
   const [publicReviews, setPublicReviews] = useState([]);
@@ -917,7 +919,7 @@ export default function BezAgenciaLuxuryApp() {
   });
   const [fullOfferForm, setFullOfferForm] = useState({
     flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-    experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
+    experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
   });
   const [fullOfferSaveStatus, setFullOfferSaveStatus] = useState("idle"); // idle | saving | saved | error
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
@@ -1607,8 +1609,8 @@ export default function BezAgenciaLuxuryApp() {
 
   // Навигация в lightbox-а на снимките със стрелки на клавиатурата.
   useEffect(() => {
-    if (lightboxIndex === null || !offerData?.photos?.length) return;
-    const total = offerData.photos.length;
+    if (lightboxIndex === null || !lightboxPhotos?.length) return;
+    const total = lightboxPhotos.length;
     const onKeyDown = (e) => {
       if (e.key === "Escape") setLightboxIndex(null);
       if (e.key === "ArrowLeft") setLightboxIndex((i) => (i - 1 + total) % total);
@@ -1616,7 +1618,7 @@ export default function BezAgenciaLuxuryApp() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [lightboxIndex, offerData]);
+  }, [lightboxIndex, lightboxPhotos]);
 
   // Затваря custom менюто за избор на запитване при клик извън него.
   useEffect(() => {
@@ -1828,7 +1830,7 @@ export default function BezAgenciaLuxuryApp() {
         flightPhotos: fullOfferForm.flightPhotos.filter(Boolean),
         hotelLinks: fullOfferForm.hotelLinks.filter(Boolean),
         hotelPhotos: fullOfferForm.hotelPhotos.filter(Boolean),
-        experienceLinks: fullOfferForm.experienceLinks.filter(Boolean),
+        experienceLinks: fullOfferForm.experienceLinks.filter((x) => x.link?.trim() || x.description?.trim()),
         cityPdfLink: fullOfferForm.cityPdfLink,
         cityPdfName: fullOfferForm.cityPdfName || "",
       }), true);
@@ -1849,8 +1851,11 @@ export default function BezAgenciaLuxuryApp() {
           html: emailWrap("Всичко е готово", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
             <p style="margin:0 0 10px;">Подготвихме всички детайли за пътуването ти по запитване <strong style="color:#D4AF37;">${id}</strong> — самолетни билети, настаняване и препоръчани преживявания.</p>
-            <p style="text-align:center;margin:18px 0 0;">
+            <p style="text-align:center;margin:18px 0 22px;">
               <a href="${statusLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Виж детайлите</a>
+            </p>
+            <p style="margin:0;padding-top:16px;border-top:1px solid #232b3d;color:#8E99AE;font-style:italic;">
+              Остават броени дни до едно ново приключение! Пожелаваме ти леко пътуване, слънчево настроение и незабравими спомени — заслужаваш тази почивка. ✈️
             </p>
           `),
         });
@@ -1867,7 +1872,7 @@ export default function BezAgenciaLuxuryApp() {
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-        experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
+        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
       });
       setAdminSelectedInquiry(null);
       setAdminSelectedInquiryStatus("none");
@@ -1902,7 +1907,9 @@ export default function BezAgenciaLuxuryApp() {
         flightPhotos: existingOffer.flightPhotos?.length ? existingOffer.flightPhotos : ["", "", ""],
         hotelLinks: existingOffer.hotelLinks?.length ? existingOffer.hotelLinks : [""],
         hotelPhotos: existingOffer.hotelPhotos?.length ? existingOffer.hotelPhotos : ["", "", ""],
-        experienceLinks: existingOffer.experienceLinks?.length ? existingOffer.experienceLinks : [""],
+        experienceLinks: existingOffer.experienceLinks?.length
+          ? existingOffer.experienceLinks.map((x) => (typeof x === "string" ? { link: x, description: "" } : x))
+          : [{ link: "", description: "" }],
         cityPdfLink: existingOffer.cityPdfLink || "",
         cityPdfName: existingOffer.cityPdfName || "",
       });
@@ -1913,7 +1920,7 @@ export default function BezAgenciaLuxuryApp() {
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
-        experienceLinks: [""], cityPdfLink: "", cityPdfName: "",
+        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
       });
     }
   };
@@ -2234,9 +2241,9 @@ export default function BezAgenciaLuxuryApp() {
         <CardSecurityModal onClose={() => setShowCardSecurity(false)} />
       )}
 
-      {/* ── LIGHTBOX: снимка на цял екран, с навигация ляво/дясно (оферта) ── */}
-      {lightboxIndex !== null && offerData?.photos?.length > 0 && (() => {
-        const photos = offerData.photos;
+      {/* ── LIGHTBOX: снимка на цял екран, с навигация ляво/дясно ──────── */}
+      {lightboxIndex !== null && lightboxPhotos?.length > 0 && (() => {
+        const photos = lightboxPhotos;
         const goPrev = () => setLightboxIndex((i) => (i - 1 + photos.length) % photos.length);
         const goNext = () => setLightboxIndex((i) => (i + 1) % photos.length);
         return (
@@ -2946,7 +2953,7 @@ export default function BezAgenciaLuxuryApp() {
                       {dashOffer.flightPhotos?.filter(Boolean).length > 0 && (
                         <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(dashOffer.flightPhotos.filter(Boolean).length, 3)}, 1fr)`, gap: 8, marginTop: 8 }}>
                           {dashOffer.flightPhotos.filter(Boolean).map((p, i) => (
-                            <img key={i} src={p} alt="" style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10 }} />
+                            <img key={i} src={p} alt="" onClick={() => openLightbox(dashOffer.flightPhotos.filter(Boolean), i)} style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10, cursor: "zoom-in" }} />
                           ))}
                         </div>
                       )}
@@ -2962,18 +2969,21 @@ export default function BezAgenciaLuxuryApp() {
                       {dashOffer.hotelPhotos?.filter(Boolean).length > 0 && (
                         <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(dashOffer.hotelPhotos.filter(Boolean).length, 3)}, 1fr)`, gap: 8, marginTop: 8 }}>
                           {dashOffer.hotelPhotos.filter(Boolean).map((p, i) => (
-                            <img key={i} src={p} alt="" style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10 }} />
+                            <img key={i} src={p} alt="" onClick={() => openLightbox(dashOffer.hotelPhotos.filter(Boolean), i)} style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10, cursor: "zoom-in" }} />
                           ))}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {dashOffer.experienceLinks?.filter(Boolean).length > 0 && (
+                  {dashOffer.experienceLinks?.filter((x) => x?.link || x?.description).length > 0 && (
                     <div style={{ marginBottom: 18 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Compass size={15} color={PALETTE.gold} /> Преживявания</div>
-                      {dashOffer.experienceLinks.filter(Boolean).map((l, i) => (
-                        <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 6, wordBreak: "break-all" }}>{l}</a>
+                      {dashOffer.experienceLinks.filter((x) => x?.link || x?.description).map((exp, i) => (
+                        <div key={i} style={{ marginBottom: 10 }}>
+                          {exp.description && <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 4px", lineHeight: 1.5 }}>{exp.description}</p>}
+                          {exp.link && <a href={exp.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, wordBreak: "break-all" }}>{exp.link}</a>}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -3198,7 +3208,7 @@ export default function BezAgenciaLuxuryApp() {
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(offerData.photos.length, 3)}, 1fr)`, gap: 8 }}>
                     {offerData.photos.map((p, i) => (
                       <img
-                        key={i} src={p} alt="" onClick={() => setLightboxIndex(i)}
+                        key={i} src={p} alt="" onClick={() => openLightbox(offerData.photos, i)}
                         style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12, border: `1px solid ${PALETTE.panelBorder}`, cursor: "zoom-in" }}
                       />
                     ))}
@@ -3610,11 +3620,10 @@ export default function BezAgenciaLuxuryApp() {
                               onChange={(photos) => setFullOfferForm((f) => ({ ...f, hotelPhotos: photos }))}
                             />
 
-                            <LinkListEditor
-                              label="Линкове за преживявания (GetYourGuide)"
-                              links={fullOfferForm.experienceLinks}
-                              onChange={(links) => setFullOfferForm((f) => ({ ...f, experienceLinks: links }))}
-                              placeholder="напр. линк към билет за атракция в GetYourGuide"
+                            <ExperienceListEditor
+                              label="Преживявания (GetYourGuide)"
+                              items={fullOfferForm.experienceLinks}
+                              onChange={(items) => setFullOfferForm((f) => ({ ...f, experienceLinks: items }))}
                             />
 
                             <div style={{ marginBottom: 16 }}>
@@ -4335,6 +4344,46 @@ function LinkListEditor({ label, links, onChange, placeholder }) {
           cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
         }}>
           <Plus size={14} /> Добави линк
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExperienceListEditor({ label, items, onChange }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {items.map((item, idx) => (
+          <div key={idx} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: 12 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input
+                value={item.link}
+                onChange={(e) => { const next = [...items]; next[idx] = { ...next[idx], link: e.target.value }; onChange(next); }}
+                placeholder="Линк към билета в GetYourGuide"
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button type="button" onClick={() => onChange(items.filter((_, i) => i !== idx))}
+                style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "0 10px", cursor: "pointer", color: PALETTE.coralDark }}>
+                <X size={15} />
+              </button>
+            </div>
+            <textarea
+              value={item.description}
+              onChange={(e) => { const next = [...items]; next[idx] = { ...next[idx], description: e.target.value }; onChange(next); }}
+              placeholder="Описание в свободен текст, напр. „Преживяване през GetYourGuide — разходка с лодка при залез"
+              rows={2}
+              style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+            />
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange([...items, { link: "", description: "" }])} className="lux-hover" style={{
+          display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
+          background: "none", border: `1px dashed ${PALETTE.panelBorder}`, borderRadius: 8, padding: "7px 14px",
+          cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
+        }}>
+          <Plus size={14} /> Добави преживяване
         </button>
       </div>
     </div>
