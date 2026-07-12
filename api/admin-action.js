@@ -59,6 +59,7 @@ export default async function handler(req, res) {
         const { data: inqRow } = await supabaseAdmin.from("inquiries").select("data").eq("id", id).maybeSingle();
         const info = inqRow?.data || null;
         if (info?.email) {
+          const offerLink = `https://bezagencia.com/?offer=${encodeURIComponent(id)}`;
           const ok = await sendEmail({
             to: info.email,
             subject: `Може да платиш по запитване ${id}`,
@@ -66,7 +67,9 @@ export default async function handler(req, res) {
               <p style="margin:0 0 10px;">Здравей ${info.name || ""},</p>
               <p style="margin:0 0 10px;">Твоята оферта по запитване <strong style="color:#D4AF37;">${id}</strong> вече е готова за плащане.</p>
               <p style="margin:0 0 14px;font-size:22px;font-weight:700;color:#D4AF37;">${amt} €</p>
-              <p style="margin:0;">Влез на сайта, отвори „Плащания" и въведи номера си, за да платиш с карта.</p>
+              <p style="text-align:center;margin:0;">
+                <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Виж офертата</a>
+              </p>
             `),
           });
           notifyStatus = ok ? "notified" : "notify-error";

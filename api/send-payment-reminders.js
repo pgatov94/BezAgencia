@@ -14,13 +14,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function reminderContent(day, name, id, amount) {
   const sum = amount ? `${amount} €` : "";
+  const offerLink = `https://bezagencia.com/?offer=${encodeURIComponent(id)}`;
+  const button = `
+    <p style="text-align:center;margin:18px 0 0;">
+      <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Виж офертата</a>
+    </p>
+  `;
   if (day === 1) {
     return {
       subject: `Напомняне: офертата ти по запитване ${id} чака потвърждение`,
       html: `
         <p style="margin:0 0 10px;">Здравей ${name || ""},</p>
         <p style="margin:0 0 10px;">Вчера подготвихме персонална оферта за твоето пътуване${sum ? ` на стойност ${sum}` : ""} — номер на запитването <strong style="color:#D4AF37;">${id}</strong>.</p>
-        <p style="margin:0;">Влез на сайта, отвори „Плащания" и въведи номера си, за да я видиш и потвърдиш с плащане.</p>
+        <p style="margin:0;">Кликни бутона по-долу, за да я видиш и потвърдиш с плащане.</p>
+        ${button}
       `,
     };
   }
@@ -30,7 +37,8 @@ function reminderContent(day, name, id, amount) {
       html: `
         <p style="margin:0 0 10px;">Здравей ${name || ""},</p>
         <p style="margin:0 0 10px;">Твоята оферта по запитване <strong style="color:#D4AF37;">${id}</strong>${sum ? ` (${sum})` : ""} все още не е потвърдена.</p>
-        <p style="margin:0;">Ако имаш въпроси или искаш промяна в датите/бюджета, просто ни пиши — иначе влез на сайта и потвърди, когато си готов/а.</p>
+        <p style="margin:0;">Ако имаш въпроси или искаш промяна в датите/бюджета, просто ни пиши — иначе кликни по-долу и потвърди, когато си готов/а.</p>
+        ${button}
       `,
     };
   }
@@ -39,7 +47,8 @@ function reminderContent(day, name, id, amount) {
     html: `
       <p style="margin:0 0 10px;">Здравей ${name || ""},</p>
       <p style="margin:0 0 10px;">Това е последното ни напомняне за офертата по запитване <strong style="color:#D4AF37;">${id}</strong>${sum ? ` (${sum})` : ""} — цените на полети и настаняване могат да се променят с времето.</p>
-      <p style="margin:0;">Ако все още искаш да пътуваш, влез на сайта и потвърди с плащане възможно най-скоро.</p>
+      <p style="margin:0;">Ако все още искаш да пътуваш, кликни по-долу и потвърди с плащане възможно най-скоро.</p>
+      ${button}
     `,
   };
 }

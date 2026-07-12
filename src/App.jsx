@@ -72,6 +72,15 @@ const DEPARTURES = [
   { id: "bur", name: "Бургас" },
 ];
 
+const DECLINE_REASONS = [
+  "Цената е твърде висока",
+  "Намерих по-изгодна оферта другаде",
+  "Промених решението си за пътуването",
+  "Не ми хареса предложеното настаняване",
+  "Датите не ми пасват",
+  "Друго",
+];
+
 const VISIT_PURPOSES = [
   "Забележителности", "Море и плаж", "Музеи и култура", "Планина и природа",
   "Нощен живот", "Гурме и кухня", "Шопинг", "Друго",
@@ -842,6 +851,10 @@ export default function BezAgenciaLuxuryApp() {
   const [offerDiscountCode, setOfferDiscountCode] = useState("");
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
   const [offerEditRequestStatus, setOfferEditRequestStatus] = useState("idle"); // idle | sending
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declineComment, setDeclineComment] = useState("");
+  const [declineStatus, setDeclineStatus] = useState("idle"); // idle | sending | done | error
   const [offerConfirmError, setOfferConfirmError] = useState("");
   const [offerDiscountStatus, setOfferDiscountStatus] = useState("idle"); // idle | checking | applied | invalid | used
   const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
@@ -1054,6 +1067,34 @@ export default function BezAgenciaLuxuryApp() {
     setStep(4);
     setEditingInquiryId(offerViewId);
     setOfferEditRequestStatus("idle");
+  };
+
+  const handleDeclineOffer = async () => {
+    if (!offerViewId || !declineReason) return;
+    if (declineReason === "Друго" && !declineComment.trim()) return;
+    setDeclineStatus("sending");
+    try {
+      let existing = {};
+      try {
+        const r = await db.get(`payment:${offerViewId}`, true);
+        existing = r?.value ? JSON.parse(r.value) : {};
+      } catch { /* ако няма запис, продължаваме с празен обект */ }
+      await db.set(`payment:${offerViewId}`, JSON.stringify({
+        ...existing, declined: true, declinedAt: Date.now(),
+        declineReason, declineComment: declineReason === "Друго" ? declineComment.trim() : "",
+      }), true);
+
+      await sendTransactionalEmail({
+        to: INQUIRY_EMAIL,
+        subject: `Клиентът отказа офертата ${offerViewId}`,
+        html: emailWrap("Оферта отказана", `
+          <p style="margin:0 0 10px;">Клиент${offerInquiry?.name ? ` ${offerInquiry.name}` : ""} отказа офертата по запитване <strong style="color:#D4AF37;">${offerViewId}</strong>.</p>
+          <p style="margin:0 0 10px;"><strong>Причина:</strong> ${declineReason}</p>
+          ${declineReason === "Друго" && declineComment ? `<p style="margin:0;"><strong>Коментар на клиента:</strong> ${declineComment.trim()}</p>` : ""}
+        `),
+      });
+      setDeclineStatus("done");
+    } catch { setDeclineStatus("error"); }
   };
 
   const handleWantThisDeal = (deal) => {
@@ -3095,6 +3136,65 @@ export default function BezAgenciaLuxuryApp() {
                 >
                   <Edit3 size={14} /> {offerEditRequestStatus === "sending" ? "Изпращам…" : "Редактирай оферта"}
                 </button>
+
+                {declineStatus === "done" ? (
+                  <p style={{ fontSize: 14.5, color: PALETTE.inkMuted, textAlign: "center", margin: 0 }}>Получихме отказа ти — благодарим за обратната връзка.</p>
+                ) : !showDeclineForm ? (
+                  <button
+                    onClick={() => setShowDeclineForm(true)}
+                    className="lux-hover"
+                    style={{
+                      background: "none", border: `1px solid ${PALETTE.coralDark}`, color: PALETTE.coralDark, borderRadius: 10,
+                      padding: "9px 18px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 13.5, cursor: "pointer",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, alignSelf: "center",
+                    }}
+                  >
+                    <X size={14} /> Откажи офертата
+                  </button>
+                ) : (
+                  <div style={{ background: "rgba(226,105,74,0.06)", border: `1px solid rgba(226,105,74,0.3)`, borderRadius: 14, padding: 18, textAlign: "left" }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.coralDark, marginBottom: 12 }}>Защо отказваш офертата?</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: declineReason === "Друго" ? 12 : 16 }}>
+                      {DECLINE_REASONS.map((r) => (
+                        <label key={r} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, color: PALETTE.inkMuted, cursor: "pointer" }}>
+                          <input type="radio" name="declineReason" checked={declineReason === r} onChange={() => setDeclineReason(r)} />
+                          {r}
+                        </label>
+                      ))}
+                    </div>
+                    {declineReason === "Друго" && (
+                      <textarea
+                        value={declineComment}
+                        onChange={(e) => setDeclineComment(e.target.value)}
+                        placeholder="Разкажи ни накратко защо — това ни помага да подобрим офертите си."
+                        rows={3}
+                        style={{ ...inputStyle, width: "100%", resize: "vertical", marginBottom: 16 }}
+                      />
+                    )}
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <button
+                        onClick={handleDeclineOffer}
+                        disabled={!declineReason || (declineReason === "Друго" && !declineComment.trim()) || declineStatus === "sending"}
+                        className="lux-btn"
+                        style={{
+                          background: PALETTE.coralDark, color: "#fff", border: "none", borderRadius: 10,
+                          padding: "10px 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 14,
+                          cursor: (!declineReason || (declineReason === "Друго" && !declineComment.trim())) ? "not-allowed" : "pointer",
+                          opacity: (!declineReason || (declineReason === "Друго" && !declineComment.trim())) ? 0.5 : 1,
+                        }}
+                      >
+                        {declineStatus === "sending" ? "Изпращам…" : "Изпрати отказа"}
+                      </button>
+                      <button
+                        onClick={() => { setShowDeclineForm(false); setDeclineReason(""); setDeclineComment(""); }}
+                        style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.inkMuted, borderRadius: 10, padding: "10px 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+                      >
+                        Отказ
+                      </button>
+                    </div>
+                    {declineStatus === "error" && <p style={{ fontSize: 13.5, color: PALETTE.coralDark, marginTop: 10 }}>Възникна грешка, опитай отново.</p>}
+                  </div>
+                )}
               </div>
             );
           })()}
