@@ -839,6 +839,7 @@ export default function BezAgenciaLuxuryApp() {
   const [dashLookupId, setDashLookupId] = useState("");
   const [dashInquiry, setDashInquiry] = useState(null); // {name,email,city,country,createdAt} | null
   const [dashPayment, setDashPayment] = useState(null); // {amount,status,paid,updatedAt} | null
+  const [dashOffer, setDashOffer] = useState(null); // пълните детайли (полет/хотел/преживявания), видими след плащане
   const [dashStatus, setDashStatus] = useState("idle"); // idle | loading | found | notfound
   const [payCheckoutStatus, setPayCheckoutStatus] = useState("idle"); // idle | loading | error
   const [payCheckoutError, setPayCheckoutError] = useState("");
@@ -914,6 +915,11 @@ export default function BezAgenciaLuxuryApp() {
   const [adminOfferForm, setAdminOfferForm] = useState({
     inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
   });
+  const [fullOfferForm, setFullOfferForm] = useState({
+    flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+    experienceLinks: [""], cityPdfLink: "",
+  });
+  const [fullOfferSaveStatus, setFullOfferSaveStatus] = useState("idle"); // idle | saving | saved | error
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
   const [adminOfferSaveStatus, setAdminOfferSaveStatus] = useState("idle"); // idle | saving | sent | error
   const [adminSelectedInquiry, setAdminSelectedInquiry] = useState(null); // пълните данни от запитването на клиента
@@ -1211,13 +1217,14 @@ export default function BezAgenciaLuxuryApp() {
   const handleDashLookup = async (idOverride) => {
     const id = (idOverride || dashLookupId).trim().toUpperCase();
     if (!id) return;
-    setDashStatus("loading"); setDashInquiry(null); setDashPayment(null);
+    setDashStatus("loading"); setDashInquiry(null); setDashPayment(null); setDashOffer(null);
     try {
-      let inq = null, pay = null;
+      let inq = null, pay = null, off = null;
       try { const r = await db.get(`inquiry:${id}`, true); inq = r?.value ? JSON.parse(r.value) : null; } catch {}
       try { const r = await db.get(`payment:${id}`, true); pay = r?.value ? JSON.parse(r.value) : null; } catch {}
+      try { const r = await db.get(`offer:${id}`, true); off = r?.value ? JSON.parse(r.value) : null; } catch {}
       if (!inq && !pay) { setDashStatus("notfound"); return; }
-      setDashInquiry(inq); setDashPayment(pay); setDashStatus("found");
+      setDashInquiry(inq); setDashPayment(pay); setDashOffer(off); setDashStatus("found");
     } catch { setDashStatus("notfound"); }
   };
 
@@ -1252,11 +1259,24 @@ export default function BezAgenciaLuxuryApp() {
     const inquiry = params.get("inquiry");
     const offerParam = params.get("offer");
     const reviewParam = params.get("review");
+    const statusParam = params.get("status");
 
     if (offerParam) {
       setPage("offerView");
       window.history.replaceState({}, "", window.location.pathname);
       loadOfferView(offerParam);
+      return;
+    }
+
+    if (statusParam) {
+      const cleanId = statusParam.trim().toUpperCase();
+      setModalPage(null);
+      setPage("dashboard");
+      window.history.replaceState({}, "", window.location.pathname);
+      setDashLookupId(cleanId);
+      setTimeout(() => {
+        handleDashLookup(cleanId);
+      }, 0);
       return;
     }
 
@@ -1792,14 +1812,50 @@ export default function BezAgenciaLuxuryApp() {
   };
   const pipelineStatusLabel = (status) => pipelineStatusInfo(status).label;
 
-  const handleMarkFullOfferSent = async (id) => {
+  const handleSaveFullOffer = async (id) => {
+    if (!id) return;
+    setFullOfferSaveStatus("saving");
     try {
+      let existingOffer = {};
+      try {
+        const r = await db.get(`offer:${id}`, true);
+        existingOffer = r?.value ? JSON.parse(r.value) : {};
+      } catch { /* ако няма запис, продължаваме с празен обект */ }
+
+      await db.set(`offer:${id}`, JSON.stringify({
+        ...existingOffer,
+        flightLinks: fullOfferForm.flightLinks.filter(Boolean),
+        flightPhotos: fullOfferForm.flightPhotos.filter(Boolean),
+        hotelLinks: fullOfferForm.hotelLinks.filter(Boolean),
+        hotelPhotos: fullOfferForm.hotelPhotos.filter(Boolean),
+        experienceLinks: fullOfferForm.experienceLinks.filter(Boolean),
+        cityPdfLink: fullOfferForm.cityPdfLink.trim(),
+      }), true);
+
       const p = await db.get(`payment:${id}`, true);
       const current = p?.value ? JSON.parse(p.value) : {};
       await db.set(`payment:${id}`, JSON.stringify({ ...current, fullOfferSent: true, fullOfferSentAt: Date.now() }), true);
       await loadAdminPayments();
       setAdminSelectedInquiryStatus(getInquiryPipelineStatus(id));
-    } catch { /* показваме нищо специално, но не чупим UI-а */ }
+
+      let inqInfo = null;
+      try { const r = await db.get(`inquiry:${id}`, true); inqInfo = r?.value ? JSON.parse(r.value) : null; } catch {}
+      if (inqInfo?.email) {
+        const statusLink = `https://bezagencia.com/?status=${encodeURIComponent(id)}`;
+        await sendTransactionalEmail({
+          to: inqInfo.email,
+          subject: `Пълните детайли за твоето пътуване са готови — ${id}`,
+          html: emailWrap("Всичко е готово", `
+            <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
+            <p style="margin:0 0 10px;">Подготвихме всички детайли за пътуването ти по запитване <strong style="color:#D4AF37;">${id}</strong> — самолетни билети, настаняване и препоръчани преживявания.</p>
+            <p style="text-align:center;margin:18px 0 0;">
+              <a href="${statusLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Виж детайлите</a>
+            </p>
+          `),
+        });
+      }
+      setFullOfferSaveStatus("saved");
+    } catch { setFullOfferSaveStatus("error"); }
   };
 
   const handleSelectOfferInquiry = async (id) => {
@@ -1808,6 +1864,10 @@ export default function BezAgenciaLuxuryApp() {
         inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
       }));
       setAdminOfferImageErrors(["", "", ""]);
+      setFullOfferForm({
+        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+        experienceLinks: [""], cityPdfLink: "",
+      });
       setAdminSelectedInquiry(null);
       setAdminSelectedInquiryStatus("none");
       return;
@@ -1836,11 +1896,23 @@ export default function BezAgenciaLuxuryApp() {
         adminLinks: existingOffer.adminLinks?.length ? existingOffer.adminLinks : [""],
       });
       setAdminOfferImageErrors(new Array(Math.max(3, existingOffer.photos?.length || 0)).fill(""));
+      setFullOfferForm({
+        flightLinks: existingOffer.flightLinks?.length ? existingOffer.flightLinks : [""],
+        flightPhotos: existingOffer.flightPhotos?.length ? existingOffer.flightPhotos : ["", "", ""],
+        hotelLinks: existingOffer.hotelLinks?.length ? existingOffer.hotelLinks : [""],
+        hotelPhotos: existingOffer.hotelPhotos?.length ? existingOffer.hotelPhotos : ["", "", ""],
+        experienceLinks: existingOffer.experienceLinks?.length ? existingOffer.experienceLinks : [""],
+        cityPdfLink: existingOffer.cityPdfLink || "",
+      });
     } else {
       setAdminOfferForm({
         inquiryId: id, flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
       });
       setAdminOfferImageErrors(["", "", ""]);
+      setFullOfferForm({
+        flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [""], hotelPhotos: ["", "", ""],
+        experienceLinks: [""], cityPdfLink: "",
+      });
     }
   };
 
@@ -2858,6 +2930,60 @@ export default function BezAgenciaLuxuryApp() {
                   )}
                 </div>
               )}
+
+              {dashPayment?.paid && dashOffer && (dashOffer.flightLinks?.length || dashOffer.hotelLinks?.length || dashOffer.experienceLinks?.length || dashOffer.cityPdfLink) && (
+                <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 14, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Всички детайли за пътуването</div>
+
+                  {(dashOffer.flightLinks?.length > 0 || dashOffer.flightPhotos?.filter(Boolean).length > 0) && (
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Plane size={15} color={PALETTE.gold} /> Самолетни билети</div>
+                      {dashOffer.flightLinks?.filter(Boolean).map((l, i) => (
+                        <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 6, wordBreak: "break-all" }}>{l}</a>
+                      ))}
+                      {dashOffer.flightPhotos?.filter(Boolean).length > 0 && (
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(dashOffer.flightPhotos.filter(Boolean).length, 3)}, 1fr)`, gap: 8, marginTop: 8 }}>
+                          {dashOffer.flightPhotos.filter(Boolean).map((p, i) => (
+                            <img key={i} src={p} alt="" style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10 }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(dashOffer.hotelLinks?.length > 0 || dashOffer.hotelPhotos?.filter(Boolean).length > 0) && (
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><HomeIcon size={15} color={PALETTE.gold} /> Настаняване</div>
+                      {dashOffer.hotelLinks?.filter(Boolean).map((l, i) => (
+                        <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 6, wordBreak: "break-all" }}>{l}</a>
+                      ))}
+                      {dashOffer.hotelPhotos?.filter(Boolean).length > 0 && (
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(dashOffer.hotelPhotos.filter(Boolean).length, 3)}, 1fr)`, gap: 8, marginTop: 8 }}>
+                          {dashOffer.hotelPhotos.filter(Boolean).map((p, i) => (
+                            <img key={i} src={p} alt="" style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 10 }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {dashOffer.experienceLinks?.filter(Boolean).length > 0 && (
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Compass size={15} color={PALETTE.gold} /> Преживявания</div>
+                      {dashOffer.experienceLinks.filter(Boolean).map((l, i) => (
+                        <a key={i} href={l} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, marginBottom: 6, wordBreak: "break-all" }}>{l}</a>
+                      ))}
+                    </div>
+                  )}
+
+                  {dashOffer.cityPdfLink && (
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Info size={15} color={PALETTE.gold} /> Гид за града</div>
+                      <a href={dashOffer.cityPdfLink} target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.oceanBright, fontSize: 15, wordBreak: "break-all" }}>{dashOffer.cityPdfLink}</a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -3423,40 +3549,92 @@ export default function BezAgenciaLuxuryApp() {
 
                     {adminOfferForm.inquiryId && (
                       <div style={{ gridColumn: "1 / -1", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
-                        <div style={{ marginBottom: adminSelectedInquiry ? 10 : 0 }}>
+                        <div style={{ marginBottom: adminSelectedInquiry ? 12 : 0 }}>
                           <span style={{ fontSize: 13.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Данни от запитването</span>
                         </div>
                         {adminSelectedInquiry ? (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px 16px", fontSize: 16 }}>
-                            <SummaryRow label="Телефон" value={adminSelectedInquiry.phone || "-"} />
-                            <SummaryRow label="Летище" value={adminSelectedInquiry.departure || "-"} />
-                            <SummaryRow label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
-                            <SummaryRow label="Бюджет" value={adminSelectedInquiry.budgetPerPerson ? `${adminSelectedInquiry.budgetPerPerson} €` : "-"} />
-                            <SummaryRow label="Период" value={adminSelectedInquiry.findLowestPrice ? `Гъвкав — ${adminSelectedInquiry.lowestPriceMonth || "-"}` : `${adminSelectedInquiry.dateFrom || "-"} – ${adminSelectedInquiry.dateTo || "-"}`} />
-                            <SummaryRow label="Цел" value={adminSelectedInquiry.visitPurpose || "-"} />
-                            <SummaryRow label="Тип почивка" value={adminSelectedInquiry.vacationType || "-"} />
-                            <SummaryRow label="Настаняване" value={adminSelectedInquiry.accommodationTypes?.length ? adminSelectedInquiry.accommodationTypes.join(", ") : "-"} />
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+                              <InfoBox label="Телефон" value={adminSelectedInquiry.phone || "-"} />
+                              <InfoBox label="Летище" value={adminSelectedInquiry.departure || "-"} accent />
+                              <InfoBox label="Възрастни / деца" value={`${adminSelectedInquiry.adults ?? "-"} / ${adminSelectedInquiry.childrenCount ?? 0}`} />
+                              <InfoBox label="Бюджет" value={adminSelectedInquiry.budgetPerPerson ? `${adminSelectedInquiry.budgetPerPerson} €` : "-"} accent />
+                              <InfoBox label="Период" value={adminSelectedInquiry.findLowestPrice ? `Гъвкав — ${adminSelectedInquiry.lowestPriceMonth || "-"}` : `${adminSelectedInquiry.dateFrom || "-"} – ${adminSelectedInquiry.dateTo || "-"}`} />
+                              <InfoBox label="Цел" value={adminSelectedInquiry.visitPurpose || "-"} />
+                              <InfoBox label="Тип почивка" value={adminSelectedInquiry.vacationType || "-"} accent />
+                              <InfoBox label="Настаняване" value={adminSelectedInquiry.accommodationTypes?.length ? adminSelectedInquiry.accommodationTypes.join(", ") : "-"} />
+                            </div>
                             {adminSelectedInquiry.comment && (
-                              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
-                                <SummaryRow label="Коментар" value={adminSelectedInquiry.comment} />
+                              <div style={{ marginTop: 10 }}>
+                                <InfoBox label="Коментар" value={adminSelectedInquiry.comment} wide />
                               </div>
                             )}
-                          </div>
+                          </>
                         ) : (
                           <p style={{ fontSize: 15.5, color: PALETTE.inkFaint, margin: 0 }}>За това по-старо запитване няма запазени пълни детайли (само име/имейл/дестинация).</p>
                         )}
-                        {adminSelectedInquiryStatus === "paid" && (
-                          <button
-                            onClick={() => handleMarkFullOfferSent(adminOfferForm.inquiryId)}
-                            className="lux-hover"
-                            style={{
-                              marginTop: 14, background: "rgba(46,158,118,0.12)", border: `1px solid ${PALETTE.jungle}`, color: PALETTE.jungle,
-                              borderRadius: 10, padding: "9px 16px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer",
-                              display: "inline-flex", alignItems: "center", gap: 6,
-                            }}
-                          >
-                            <Check size={16} /> Маркирай пълната оферта като изпратена
-                          </button>
+
+                        {(adminSelectedInquiryStatus === "paid" || adminSelectedInquiryStatus === "ready") && (
+                          <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: PALETTE.jungle, marginBottom: 4 }}>Пълна оферта (вече видима за клиента — плащането е потвърдено)</div>
+                            <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: "0 0 14px" }}>Клиентът вижда точно това в „Статус на оферта" на сайта веднага след запазване.</p>
+
+                            <LinkListEditor
+                              label="Линкове за самолетни билети"
+                              links={fullOfferForm.flightLinks}
+                              onChange={(links) => setFullOfferForm((f) => ({ ...f, flightLinks: links }))}
+                              placeholder="напр. линк към бордна карта / потвърждение на билета"
+                            />
+                            <PhotoSetEditor
+                              label="Снимки — полет"
+                              photos={fullOfferForm.flightPhotos}
+                              onChange={(photos) => setFullOfferForm((f) => ({ ...f, flightPhotos: photos }))}
+                            />
+
+                            <LinkListEditor
+                              label="Линкове за хотел / апартамент"
+                              links={fullOfferForm.hotelLinks}
+                              onChange={(links) => setFullOfferForm((f) => ({ ...f, hotelLinks: links }))}
+                              placeholder="напр. линк към Booking.com / Airbnb резервацията"
+                            />
+                            <PhotoSetEditor
+                              label="Снимки — настаняване"
+                              photos={fullOfferForm.hotelPhotos}
+                              onChange={(photos) => setFullOfferForm((f) => ({ ...f, hotelPhotos: photos }))}
+                            />
+
+                            <LinkListEditor
+                              label="Линкове за преживявания (GetYourGuide)"
+                              links={fullOfferForm.experienceLinks}
+                              onChange={(links) => setFullOfferForm((f) => ({ ...f, experienceLinks: links }))}
+                              placeholder="напр. линк към билет за атракция в GetYourGuide"
+                            />
+
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>PDF гид за града</div>
+                              <input
+                                value={fullOfferForm.cityPdfLink}
+                                onChange={(e) => setFullOfferForm((f) => ({ ...f, cityPdfLink: e.target.value }))}
+                                placeholder="Линк към качения PDF (напр. Google Drive линк за споделяне)"
+                                style={inputStyle}
+                              />
+                            </div>
+
+                            <button
+                              onClick={() => handleSaveFullOffer(adminOfferForm.inquiryId)}
+                              disabled={fullOfferSaveStatus === "saving"}
+                              className="lux-hover"
+                              style={{
+                                background: "rgba(46,158,118,0.12)", border: `1px solid ${PALETTE.jungle}`, color: PALETTE.jungle,
+                                borderRadius: 10, padding: "10px 18px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 16, cursor: fullOfferSaveStatus === "saving" ? "wait" : "pointer",
+                                display: "inline-flex", alignItems: "center", gap: 6,
+                              }}
+                            >
+                              <Check size={16} /> {fullOfferSaveStatus === "saving" ? "Запазвам…" : adminSelectedInquiryStatus === "ready" ? "Обнови пълната оферта" : "Запази и изпрати на клиента"}
+                            </button>
+                            {fullOfferSaveStatus === "saved" && <span style={{ marginLeft: 12, fontSize: 14, color: PALETTE.jungle }}>Запазено и изпратено ✓</span>}
+                            {fullOfferSaveStatus === "error" && <span style={{ marginLeft: 12, fontSize: 14, color: PALETTE.coralDark }}>Грешка при запазване.</span>}
+                          </div>
                         )}
                       </div>
                     )}
@@ -4083,6 +4261,101 @@ function SummaryRow({ label, value }) {
     <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 15 }}>
       <span style={{ color: PALETTE.inkFaint, flexShrink: 0 }}>{label}</span>
       <span style={{ color: PALETTE.ink, fontWeight: 600, textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
+function InfoBox({ label, value, accent, wide }) {
+  return (
+    <div style={{
+      gridColumn: wide ? "1 / -1" : undefined,
+      background: "rgba(255,255,255,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 12px",
+    }}>
+      <div style={{ fontSize: 10.5, color: PALETTE.inkFaint, letterSpacing: 0.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, color: accent ? PALETTE.goldBright : PALETTE.ink, fontWeight: 600, lineHeight: 1.4 }}>{value}</div>
+    </div>
+  );
+}
+
+function LinkListEditor({ label, links, onChange, placeholder }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {links.map((link, idx) => (
+          <div key={idx} style={{ display: "flex", gap: 8 }}>
+            <input
+              value={link}
+              onChange={(e) => { const next = [...links]; next[idx] = e.target.value; onChange(next); }}
+              placeholder={placeholder}
+              style={inputStyle}
+            />
+            <button type="button" onClick={() => onChange(links.filter((_, i) => i !== idx))}
+              style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "0 10px", cursor: "pointer", color: PALETTE.coralDark }}>
+              <X size={15} />
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange([...links, ""])} className="lux-hover" style={{
+          display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
+          background: "none", border: `1px dashed ${PALETTE.panelBorder}`, borderRadius: 8, padding: "7px 14px",
+          cursor: "pointer", color: PALETTE.inkFaint, fontSize: 13.5,
+        }}>
+          <Plus size={14} /> Добави линк
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PhotoSetEditor({ label, photos, onChange }) {
+  const handleFile = (idx, file) => {
+    if (!file || !file.type?.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => { const next = [...photos]; next[idx] = reader.result; onChange(next); };
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+        {photos.map((p, idx) => (
+          <div key={idx}
+            onPaste={(e) => {
+              const item = Array.from(e.clipboardData?.items || []).find((it) => it.type.startsWith("image/"));
+              if (item) handleFile(idx, item.getAsFile());
+            }}
+            tabIndex={0}
+            style={{ border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 12, padding: 10, minHeight: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, outline: "none" }}
+          >
+            {p ? (
+              <div style={{ position: "relative" }}>
+                <img src={p} alt="" style={{ width: "100%", maxWidth: 120, height: 60, objectFit: "cover", borderRadius: 8 }} />
+                <button onClick={() => { const next = [...photos]; next[idx] = ""; onChange(next); }} style={{
+                  position: "absolute", top: -6, right: -6, background: PALETTE.coralDark, border: "none", borderRadius: "50%",
+                  width: 18, height: 18, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                }}><X size={12} /></button>
+              </div>
+            ) : (
+              <>
+                <label className="lux-hover" style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 9px", fontSize: 11, color: PALETTE.ink, fontWeight: 600 }}>
+                  <Plus size={12} /> Снимка
+                  <input type="file" accept="image/*" onChange={(e) => handleFile(idx, e.target.files?.[0])} style={{ display: "none" }} />
+                </label>
+                <span style={{ fontSize: 9.5, color: PALETTE.inkFaint }}>или Ctrl+V</span>
+              </>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange([...photos, ""])} style={{
+          border: `1.5px dashed ${PALETTE.panelBorder}`, borderRadius: 12, minHeight: 80,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+          background: "none", cursor: "pointer", color: PALETTE.inkFaint,
+        }}>
+          <Plus size={18} />
+          <span style={{ fontSize: 10.5 }}>Добави</span>
+        </button>
+      </div>
     </div>
   );
 }
