@@ -1171,8 +1171,9 @@ export default function BezAgenciaLuxuryApp() {
   const allChildrenAgesSet = childrenCount === 0 || (childrenAges.length === childrenCount && childrenAges.every((a) => a !== ""));
   const datesValid = findLowestPrice ? !!lowestPriceMonth : !!(dateFrom && dateTo);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const phoneValid = /^(0\d{9}|\+?359\d{9})$/.test(phone.replace(/[\s-]/g, ""));
   const canSubmit =
-    name.trim() && emailValid && phone.trim() && adults >= 1 && allChildrenAgesSet &&
+    name.trim() && emailValid && phoneValid && adults >= 1 && allChildrenAgesSet &&
     String(budgetPerPerson).trim() && Number(budgetPerPerson) > 0 && datesValid &&
     visitPurpose && vacationType && accommodationTypes.length > 0;
 
@@ -2670,7 +2671,12 @@ export default function BezAgenciaLuxuryApp() {
                 {showValidationErrors && email.trim() && !emailValid && (
                   <p style={{ fontSize: 13, color: PALETTE.coralDark, marginTop: -10 }}>Имейлът изглежда невалиден (напр. липсва „@" или домейн) — провери го, за да получиш офертата си.</p>
                 )}
-                <Field label="Телефон *" error={showValidationErrors && !phone.trim()}><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xx xxx xxx" style={inputStyle} /></Field>
+                <Field label="Телефон *" error={showValidationErrors && !phoneValid}>
+                  <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xx xxx xxx" style={inputStyle} />
+                </Field>
+                {showValidationErrors && phone.trim() && !phoneValid && (
+                  <p style={{ fontSize: 13, color: PALETTE.coralDark, marginTop: -10 }}>Номерът изглежда невалиден — трябва да е 10 цифри, започващи с 0 (напр. 0888123456), или да започва с 359/+359 (напр. +359888123456).</p>
+                )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 14 }}>
                   <Field label="Възрастни *"><input type="number" min={1} value={adults} onChange={(e) => handleAdultsChange(e.target.value)} style={inputStyle} /></Field>
