@@ -1458,15 +1458,16 @@ export default function BezAgenciaLuxuryApp() {
 
   /* ── Публични отзиви — зареждане за показ в края на страница Отзиви ── */
   const loadPublicReviews = async () => {
-    setPublicReviewsLoading(true);
+    let hadCached = false;
+    setPublicReviews((prev) => { hadCached = prev.length > 0; return prev; });
+    if (!hadCached) setPublicReviewsLoading(true);
     setPublicReviewsError("");
-    setReviewsPage(0);
+    if (!hadCached) setReviewsPage(0);
     try {
       const items = await db.listAll("review:");
       setPublicReviews(items.map((r) => { try { return JSON.parse(r.value); } catch { return null; } }).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch (e) {
-      setPublicReviews([]);
-      setPublicReviewsError((e && e.message) || "Неизвестна грешка при зареждане на отзивите.");
+      if (!hadCached) setPublicReviewsError((e && e.message) || "Неизвестна грешка при зареждане на отзивите.");
     }
     setPublicReviewsLoading(false);
   };
@@ -1544,13 +1545,19 @@ export default function BezAgenciaLuxuryApp() {
 
   /* ── Оферти: зареждане на публичните оферти от storage ─────────────── */
   const loadDeals = async () => {
-    setDealsLoading(true);
+    // Ако вече имаме заредени оферти от преди (в текущата сесия), не
+    // показваме "Зареждам…" при всяко влизане в таба — само тихо
+    // презареждаме във фонов режим, за да усеща потребителят мигновено
+    // отваряне, а не забавяне всеки път.
+    setDeals((prev) => {
+      if (prev.length === 0) setDealsLoading(true);
+      return prev;
+    });
     setDealsError("");
     try {
       const items = await db.listAll("deal:");
       setDeals(items.map((r) => { try { return JSON.parse(r.value); } catch { return null; } }).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch (e) {
-      setDeals([]);
       setDealsError(
         (e && (e.message || String(e))) ||
         "Неизвестна грешка при връзката с хранилището."
