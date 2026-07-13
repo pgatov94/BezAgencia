@@ -2861,15 +2861,6 @@ export default function BezAgenciaLuxuryApp() {
               {sendStatus === "sent" && <p style={{ fontSize: 15.5, color: PALETTE.jungle, fontWeight: 600 }}>Получихме запитването ти. Очаквай персонална оферта до 24 часа на {email || "посочения имейл"}.</p>}
               {sendStatus === "sending" && <p style={{ fontSize: 15.5, color: PALETTE.inkMuted }}>Изпращаме запитването…</p>}
               {sendStatus === "error" && <p style={{ fontSize: 15.5, color: PALETTE.coralDark }}>Възникна проблем при изпращането. Опитай отново след малко или ни пиши директно на {INQUIRY_EMAIL}.</p>}
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 30, flexWrap: "wrap" }}>
-                <button onClick={resetWizard} className="lux-hover" style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.ink, borderRadius: 10, padding: "11px 22px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, cursor: "pointer" }}>
-                  Ново запитване
-                </button>
-                <button onClick={() => { setModalPage(null); setPage("dashboard"); }} className="lux-hover" style={{ background: "rgba(212,175,55,0.1)", border: `1px solid rgba(212,175,55,0.35)`, color: PALETTE.goldBright, borderRadius: 10, padding: "11px 22px", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, cursor: "pointer" }}>
-                  Отвори плащания
-                </button>
-              </div>
             </section>
           )}
         </div>
