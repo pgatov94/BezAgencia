@@ -102,8 +102,8 @@ const DEMO_OFFER = {
     { link: "https://www.getyourguide.com", description: "Разходка с лодка при залез слънце из залива — една от най-препоръчваните преживявания в града." },
     { link: "https://www.getyourguide.com", description: "Билет без чакане на опашка за най-известния музей в центъра." },
   ],
-  cityPdfLink: "",
-  cityPdfName: "",
+  cityPdfLink: "data:application/pdf;base64,JVBERi0xLjMKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUiAvRjMgNCAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YxIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKMyAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYS1Cb2xkIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMiAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0Jhc2VGb250IC9aYXBmRGluZ2JhdHMgL05hbWUgL0YzIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKNSAwIG9iago8PAovQ29udGVudHMgOSAwIFIgL01lZGlhQm94IFsgMCAwIDU5NS4yNzU2IDg0MS44ODk4IF0gL1BhcmVudCA4IDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9QYWdlTW9kZSAvVXNlTm9uZSAvUGFnZXMgOCAwIFIgL1R5cGUgL0NhdGFsb2cKPj4KZW5kb2JqCjcgMCBvYmoKPDwKL0F1dGhvciAoYW5vbnltb3VzKSAvQ3JlYXRpb25EYXRlIChEOjIwMjYwNzEzMDc0ODAzKzAwJzAwJykgL0NyZWF0b3IgKGFub255bW91cykgL0tleXdvcmRzICgpIC9Nb2REYXRlIChEOjIwMjYwNzEzMDc0ODAzKzAwJzAwJykgL1Byb2R1Y2VyIChSZXBvcnRMYWIgUERGIExpYnJhcnkgLSBcKG9wZW5zb3VyY2VcKSkgCiAgL1N1YmplY3QgKHVuc3BlY2lmaWVkKSAvVGl0bGUgKHVudGl0bGVkKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjggMCBvYmoKPDwKL0NvdW50IDEgL0tpZHMgWyA1IDAgUiBdIC9UeXBlIC9QYWdlcwo+PgplbmRvYmoKOSAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCA1MDUKPj4Kc3RyZWFtCkdiITtiOTJFR1olKTIxM3B0LWJQZm5vO0s3akwnNmx1PXMwT0g/b2dJSzctUlp0c0U6LUpicz02IUk+aGw3XC9eNThibSk0TTUlUSEwOC1PVCxDYHNwQkUvc2QoUjRuMmFhYkxYVHFmNmdcOUFEVkVlITNWWTM+YlEkPCpDTW1jVjtLKnUmQzpfNmI3TGQkRElTIkZJK2g4ZTM3JUJQZTdZa3JYKU5JWUwvPSxKQSNlS2NnXGN0WWJHR0JYLlklLF1DJmFxO1dgYVdzMjJjS3JZOCJ1UmM9U28val5sNm49bj5AW2RXJVNScCJhI10iODhiX0AoMFZwK3IiWzNZUVBmWiZLSUBmJEhdLiUralFRWDBPInRvWysxL2A1VGZ1JDRnPDVfWSVPXVlJXlZMUGRuWT8mYGVwPi9NODsyWlhUOkYoMEtZOFBFZV1NP3VbaiIzPTRtXkFRXGc3IT5mRW1JZihRWi8kJFVmUF1uRmZLRVFBOzVeaT5IPGA7JDlMRDVjJVxBQitkTEA4X1ZLTWZfNStKMHA5TDplTzM7YFU3NV1GITdSMmpbVzRoYDElTSxzXD5RLXNdV1omIi8+Rl03MSpJMFNANFthUShvM2M9Y3MzcEE9LCxmbWg8UWcmXCgrUT5ham8/IjJpJ0BtKmZiWG1rWzo5fj5lbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxMAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwNjEgMDAwMDAgbiAKMDAwMDAwMDExMiAwMDAwMCBuIAowMDAwMDAwMjE5IDAwMDAwIG4gCjAwMDAwMDAzMzEgMDAwMDAgbiAKMDAwMDAwMDQxNCAwMDAwMCBuIAowMDAwMDAwNjE3IDAwMDAwIG4gCjAwMDAwMDA2ODUgMDAwMDAgbiAKMDAwMDAwMDk0NiAwMDAwMCBuIAowMDAwMDAxMDA1IDAwMDAwIG4gCnRyYWlsZXIKPDwKL0lEIApbPDliYTExMTA0ODIyOTQ4ZmMzM2UwYzk2ZDIwNjIzMjI2Pjw5YmExMTEwNDgyMjk0OGZjMzNlMGM5NmQyMDYyMzIyNj5dCiUgUmVwb3J0TGFiIGdlbmVyYXRlZCBQREYgZG9jdW1lbnQgLS0gZGlnZXN0IChvcGVuc291cmNlKQoKL0luZm8gNyAwIFIKL1Jvb3QgNiAwIFIKL1NpemUgMTAKPj4Kc3RhcnR4cmVmCjE2MDAKJSVFT0YK",
+  cityPdfName: "gid-za-transferi-primer.pdf",
 };
 
 const DECLINE_REASONS = [
@@ -945,6 +945,7 @@ export default function BezAgenciaLuxuryApp() {
 
   const [adminDealForm, setAdminDealForm] = useState({
     title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "",
+    flightDateFrom: "", flightDateTo: "", flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
   });
   const [adminDealImageError, setAdminDealImageError] = useState("");
 
@@ -973,6 +974,8 @@ export default function BezAgenciaLuxuryApp() {
 
   const [adminContacts, setAdminContacts] = useState([]);
   const [adminContactsLoading, setAdminContactsLoading] = useState(false);
+  const [adminSubscribers, setAdminSubscribers] = useState([]);
+  const [adminSubscribersLoading, setAdminSubscribersLoading] = useState(false);
 
   /* ── Помощни изчисления, наследени от съществуващата логика ───────── */
   const availableCountries = useMemo(() => {
@@ -1297,6 +1300,14 @@ export default function BezAgenciaLuxuryApp() {
     const offerParam = params.get("offer");
     const reviewParam = params.get("review");
     const statusParam = params.get("status");
+    const dealsParam = params.get("deals");
+
+    if (dealsParam) {
+      setModalPage(null);
+      setPage("deals");
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
 
     if (offerParam) {
       setPage("offerView");
@@ -1510,19 +1521,17 @@ export default function BezAgenciaLuxuryApp() {
 
   /* ── Бюлетин: записва абоната и известява по имейл ──────────────────── */
   const handleNewsletterSubscribe = async () => {
-    const email = newsletterEmail.trim();
+    const email = newsletterEmail.trim().toLowerCase();
     if (!email || !email.includes("@")) { setNewsletterStatus("error"); return; }
     setNewsletterStatus("sending");
     try {
-      await db.set(`newsletter:${email}`, JSON.stringify({ email, createdAt: Date.now() }), true);
-      await sendTransactionalEmail({
-        to: email,
-        subject: "Абонира се успешно за бюлетина на БезАгенция",
-        html: emailWrap("Бюлетин", `
-          <p style="margin:0 0 10px;">Здравей,</p>
-          <p style="margin:0;">Успешно се абонира за бюлетина на БезАгенция — ще получаваш първи новите ни оферти и намаления. Ако не си се абонирал/а ти, просто игнорирай това съобщение.</p>
-        `),
+      const res = await fetch("/api/subscribe-newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
+      const data = await res.json();
+      if (!res.ok || !data.ok) { setNewsletterStatus("error"); return; }
       await sendTransactionalEmail({
         to: INQUIRY_EMAIL,
         subject: "Нов абонат за бюлетина",
@@ -1557,6 +1566,7 @@ export default function BezAgenciaLuxuryApp() {
       if (adminTab === "payments") loadAdminPayments();
       if (adminTab === "deals") loadDeals();
       if (adminTab === "contacts" || adminTab === "offer") loadAdminContacts();
+      if (adminTab === "subscribers") loadAdminSubscribers();
       if (adminTab === "offer") { loadAdminOffersIds(); loadAdminPayments(); }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2041,6 +2051,13 @@ export default function BezAgenciaLuxuryApp() {
         tag: f.tag, departureFrom: f.departureFrom || null, flightPrice, hotelPrice, totalPrice: flightPrice + hotelPrice,
         travelMonth: f.travelMonth || null, imageDataUrl: f.imageDataUrl || null,
         createdAt: existing?.createdAt || Date.now(), updatedAt: Date.now(),
+        // Вътрешни детайли — само за теб, никога не се показват на клиента:
+        flightDateFrom: f.flightDateFrom || "", flightDateTo: f.flightDateTo || "",
+        flightLinks: f.flightLinks.filter(Boolean),
+        flightPhotos: f.flightPhotos.filter(Boolean),
+        hotelLinks: f.hotelLinks
+          .filter((x) => x.link?.trim() || x.description?.trim() || x.photos?.some(Boolean))
+          .map((x) => ({ link: x.link || "", description: x.description || "", photos: (x.photos || []).filter(Boolean) })),
       };
 
       const setResult = await db.set(key, JSON.stringify(payload), true);
@@ -2062,7 +2079,10 @@ export default function BezAgenciaLuxuryApp() {
       }
 
       setAdminDealSaveStatus("saved");
-      setAdminDealForm({ title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "" });
+      setAdminDealForm({
+        title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "",
+        flightDateFrom: "", flightDateTo: "", flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
+      });
       setAdminDealImageError("");
       setEditingDealId(null);
       loadDeals();
@@ -2075,13 +2095,20 @@ export default function BezAgenciaLuxuryApp() {
       departureFrom: d.departureFrom || "",
       flightPrice: d.flightPrice != null ? String(d.flightPrice) : "", hotelPrice: d.hotelPrice != null ? String(d.hotelPrice) : "",
       travelMonth: d.travelMonth || "", imageDataUrl: d.imageDataUrl || "",
+      flightDateFrom: d.flightDateFrom || "", flightDateTo: d.flightDateTo || "",
+      flightLinks: d.flightLinks?.length ? d.flightLinks : [""],
+      flightPhotos: d.flightPhotos?.length ? d.flightPhotos : ["", "", ""],
+      hotelLinks: d.hotelLinks?.length ? d.hotelLinks : [{ link: "", description: "", photos: ["", "", ""] }],
     });
     setAdminDealSaveStatus("idle");
     setAdminDealImageError("");
   };
   const handleCancelEditDeal = () => {
     setEditingDealId(null);
-    setAdminDealForm({ title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "" });
+    setAdminDealForm({
+      title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "",
+      flightDateFrom: "", flightDateTo: "", flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
+    });
     setAdminDealImageError("");
     setAdminDealSaveStatus("idle");
   };
@@ -2105,6 +2132,21 @@ export default function BezAgenciaLuxuryApp() {
       setAdminContacts(items.filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch { setAdminContacts([]); }
     setAdminContactsLoading(false);
+  };
+
+  const loadAdminSubscribers = async () => {
+    setAdminSubscribersLoading(true);
+    try {
+      const items = await db.listAll("newsletter:");
+      const parsed = items.map((r) => { try { return { key: r.key, ...JSON.parse(r.value) }; } catch { return null; } }).filter(Boolean);
+      setAdminSubscribers(parsed.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+    } catch { setAdminSubscribers([]); }
+    setAdminSubscribersLoading(false);
+  };
+
+  const handleAdminDeleteSubscriber = async (email) => {
+    if (!window.confirm(`Премахване на ${email} от абонатите?`)) return;
+    try { await db.delete(`newsletter:${email}`, true); loadAdminSubscribers(); } catch {}
   };
 
   /* ── Обобщение за анализите — реални числа от вече наличните данни ── */
@@ -2142,9 +2184,10 @@ export default function BezAgenciaLuxuryApp() {
 
         .ba-hero-section { min-height: 78vh; }
         @media (max-width: 640px) {
-          .ba-hero-section { min-height: 46vh; }
-          .ba-hero-photo { background-position: 55% 42% !important; }
+          .ba-hero-section { min-height: 40vh; }
+          .ba-hero-photo { background-position: 62% 48% !important; filter: brightness(1.35) !important; }
         }
+        @keyframes heroKenBurns {
           0% { transform: scale(1) translate(0, 0); }
           50% { transform: scale(1.09) translate(-1.5%, -1%); }
           100% { transform: scale(1) translate(0, 0); }
@@ -3411,6 +3454,7 @@ export default function BezAgenciaLuxuryApp() {
                   <AdminTabBtn active={adminTab === "offer"} onClick={() => setAdminTab("offer")} icon={<Send size={16} />} label="Запитвания" />
                   <AdminTabBtn active={adminTab === "deals"} onClick={() => setAdminTab("deals")} icon={<Tag size={16} />} label="Оферти" />
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
+                  <AdminTabBtn active={adminTab === "subscribers"} onClick={() => setAdminTab("subscribers")} icon={<Mail size={16} />} label="Абонати" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
                 </div>
                 <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Work Sans, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkFaint, padding: "6px 4px" }}>
@@ -3877,6 +3921,40 @@ export default function BezAgenciaLuxuryApp() {
                       Обща цена: <span style={{ color: PALETTE.goldBright, fontWeight: 700 }}>{(Number(adminDealForm.flightPrice) || 0) + (Number(adminDealForm.hotelPrice) || 0)} €</span>
                     </p>
                   )}
+
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: 16, marginBottom: 18 }}>
+                    <div style={{ fontSize: 15, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                      Вътрешни детайли <Lock size={13} color={PALETTE.inkFaint} />
+                    </div>
+                    <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: "0 0 14px" }}>Само за теб — клиентът никога не ги вижда на публичната страница с офертите. Полезно, за да помниш какво точно си заложил, когато отвориш офертата по-късно.</p>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 16 }}>
+                      <Field label="Дата на полет от">
+                        <input type="date" value={adminDealForm.flightDateFrom} onChange={(e) => setAdminDealForm((f) => ({ ...f, flightDateFrom: e.target.value }))} style={inputStyle} />
+                      </Field>
+                      <Field label="Дата на полет до">
+                        <input type="date" value={adminDealForm.flightDateTo} onChange={(e) => setAdminDealForm((f) => ({ ...f, flightDateTo: e.target.value }))} style={inputStyle} />
+                      </Field>
+                    </div>
+
+                    <LinkListEditor
+                      label="Линкове за самолетни билети"
+                      links={adminDealForm.flightLinks}
+                      onChange={(links) => setAdminDealForm((f) => ({ ...f, flightLinks: links }))}
+                      placeholder="напр. линк към резервацията на полета"
+                    />
+                    <PhotoSetEditor
+                      label="Снимки — полет"
+                      photos={adminDealForm.flightPhotos}
+                      onChange={(photos) => setAdminDealForm((f) => ({ ...f, flightPhotos: photos }))}
+                    />
+                    <HotelOptionsEditor
+                      label="Настаняване (линк, описание, снимки)"
+                      items={adminDealForm.hotelLinks}
+                      onChange={(items) => setAdminDealForm((f) => ({ ...f, hotelLinks: items }))}
+                    />
+                  </div>
+
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button onClick={handleAdminSaveDeal} className="lux-btn" style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 10, padding: "10px 20px", fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
                       {editingDealId ? <Check size={17} /> : <Plus size={17} />} {editingDealId ? "Запази промените" : "Публикувай оферта"}
@@ -3942,6 +4020,31 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               )}
 
+              {adminTab === "subscribers" && (
+                <div>
+                  <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Абонати за бюлетин</h3>
+                  <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
+                    Всички, записали се в „Абонирай се" на сайта. Автоматично получават имейл с новите оферти, когато добавиш или обновиш нещо в таб „Оферти".
+                  </p>
+                  {adminSubscribersLoading && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам…</p>}
+                  <p style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 12 }}>Общо: {adminSubscribers.length}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {adminSubscribers.map((s) => (
+                      <div key={s.key} className="lux-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px" }}>
+                        <span style={{ fontSize: 15.5, color: PALETTE.ink, fontWeight: 600 }}>{s.email}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 12, color: PALETTE.inkFaint }}>{s.createdAt ? new Date(s.createdAt).toLocaleDateString("bg-BG") : ""}</span>
+                          <button onClick={() => handleAdminDeleteSubscriber(s.email)} title="Премахни" style={{
+                            background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 6, padding: "3px 6px", cursor: "pointer", color: PALETTE.coralDark,
+                          }}><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                    ))}
+                    {!adminSubscribersLoading && adminSubscribers.length === 0 && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма абонати.</p>}
+                  </div>
+                </div>
+              )}
+
               {adminTab === "analytics" && (
                 <div>
                   <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 18px" }}>Обобщение</h3>
@@ -4000,13 +4103,12 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
                 <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{BANK_INFO.bankName}</span>
                 <span>{BANK_INFO.companyName}</span>
-                <span style={{ marginTop: 6, wordBreak: "break-all" }}>IBAN: {BANK_INFO.iban}</span>
               </div>
             </div>
 
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Абонирай се</div>
-              <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 12px", lineHeight: 1.5 }}>Получавай първи новите ни оферти.</p>
+              <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 12px", lineHeight: 1.5 }}>Получавай първи новите ни оферти и вземи еднократен код за 10% отстъпка от комисионната.</p>
               <input
                 type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="посочи email" style={{ ...inputStyle, marginBottom: 8, fontSize: 15, padding: "9px 12px" }}
@@ -4238,8 +4340,8 @@ function AboutModal({ onClose, onStart, onShowDemo }) {
           }}>
             Изпрати запитване <ChevronRight size={19} />
           </button>
-          <button onClick={onShowDemo} className="lux-hover" style={{
-            background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.inkMuted, borderRadius: 12, padding: "15px 26px",
+          <button onClick={onShowDemo} className="lux-btn" style={{
+            background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "15px 26px",
             fontFamily: "Work Sans, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
           }}>
             <Check size={17} /> Виж примерна оферта
