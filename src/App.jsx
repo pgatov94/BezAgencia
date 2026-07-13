@@ -59,10 +59,11 @@ const SOCIAL_LINKS = {
 const CONTACT_PHONE = "+359 882 225 301";
 const VIBER_LINK = "viber://chat?number=+359882225301";
 const WHATSAPP_LINK = "https://wa.me/359882225301";
-const BANK_INFO = {
-  bankName: "Име на банката",
+const COMPANY_INFO = {
   companyName: "БезАгенция ЕООД",
-  iban: "BG00XXXX00000000000000 /EUR/",
+  eik: "000000000",
+  address: "гр. ..., ул. ... №...",
+  mol: "Име Фамилия",
 };
 
 const DEPARTURES = [
@@ -4109,10 +4110,12 @@ export default function BezAgenciaLuxuryApp() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Банка</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>За нас</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
-                <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{BANK_INFO.bankName}</span>
-                <span>{BANK_INFO.companyName}</span>
+                <span style={{ color: PALETTE.ink, fontWeight: 600 }}>{COMPANY_INFO.companyName}</span>
+                <span>ЕИК: {COMPANY_INFO.eik}</span>
+                <span>Адрес: {COMPANY_INFO.address}</span>
+                <span>МОЛ: {COMPANY_INFO.mol}</span>
               </div>
             </div>
 
@@ -4139,7 +4142,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 15 }}>
                 <button onClick={goHome} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Начало</button>
                 <button onClick={() => { setModalPage(null); setPage("deals"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Оферти</button>
-                <button onClick={() => { setModalPage(null); setPage("dashboard"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Плащания</button>
+                <button onClick={() => { setModalPage(null); setPage("dashboard"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Статус на оферта</button>
                 <button onClick={() => setShowAbout(true)} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: PALETTE.inkMuted, cursor: "pointer", fontSize: 15 }}>Как работи платформата</button>
               </div>
             </div>
