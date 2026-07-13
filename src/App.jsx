@@ -2184,8 +2184,10 @@ export default function BezAgenciaLuxuryApp() {
 
         .ba-hero-section { min-height: 78vh; }
         @media (max-width: 640px) {
-          .ba-hero-section { min-height: 40vh; }
-          .ba-hero-photo { background-position: 62% 48% !important; filter: brightness(1.35) !important; }
+          .ba-hero-section { min-height: 42vh; }
+          .ba-hero-photo { background-position: 46% 42% !important; filter: brightness(1.5) saturate(1.1) !important; }
+          .ba-hero-flat-overlay { opacity: 0.45 !important; }
+          .ba-hero-vignette { opacity: 0.55 !important; }
         }
         @keyframes heroKenBurns {
           0% { transform: scale(1) translate(0, 0); }
@@ -2195,13 +2197,13 @@ export default function BezAgenciaLuxuryApp() {
         .ba-hero-photo { animation: heroKenBurns 34s ease-in-out infinite; }
 
         @keyframes heroShimmer {
-          0% { background-position: -40% 0; }
-          100% { background-position: 140% 0; }
+          0% { background-position: -50% 0; }
+          100% { background-position: 150% 0; }
         }
         .ba-hero-shimmer {
-          background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.16) 48%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.16) 52%, transparent 65%);
-          background-size: 250% 100%;
-          animation: heroShimmer 9s linear infinite;
+          background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.20) 45%, rgba(255,255,255,0.40) 50%, rgba(255,255,255,0.20) 55%, transparent 70%);
+          background-size: 220% 100%;
+          animation: heroShimmer 5.5s linear infinite;
           mix-blend-mode: overlay;
         }
         @media (prefers-reduced-motion: reduce) {
@@ -2404,10 +2406,10 @@ export default function BezAgenciaLuxuryApp() {
               position: "absolute", inset: 0,
               backgroundImage: "url(/hero-beach.png)", backgroundSize: "cover", backgroundPosition: "68% 38%",
             }} />
-            <div className="ba-hero-shimmer" style={{ position: "absolute", left: "30%", right: 0, top: "20%", bottom: "35%", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(6,8,16,0) 55%, ${PALETTE.bgDeep} 96%)`, pointerEvents: "none" }} />
-            <div style={{ position: "absolute", inset: 0, background: "rgba(6,8,16,0.35)", pointerEvents: "none" }} />
-            <div style={{
+            <div className="ba-hero-shimmer" style={{ position: "absolute", left: "20%", right: 0, top: "15%", bottom: "30%", pointerEvents: "none" }} />
+            <div className="ba-hero-bottom-fade" style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(6,8,16,0) 55%, ${PALETTE.bgDeep} 96%)`, pointerEvents: "none" }} />
+            <div className="ba-hero-flat-overlay" style={{ position: "absolute", inset: 0, background: "rgba(6,8,16,0.35)", pointerEvents: "none" }} />
+            <div className="ba-hero-vignette" style={{
               position: "absolute", inset: 0,
               background: "radial-gradient(ellipse 90% 85% at 50% 40%, rgba(6,8,16,0.8) 0%, rgba(6,8,16,0.55) 45%, rgba(6,8,16,0.15) 75%, rgba(6,8,16,0) 100%)",
               pointerEvents: "none",
