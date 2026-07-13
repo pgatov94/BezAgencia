@@ -868,6 +868,7 @@ export default function BezAgenciaLuxuryApp() {
 
   const [inquiryId, setInquiryId] = useState(null);
   const [editingInquiryId, setEditingInquiryId] = useState(null);
+  const [fromDealTitle, setFromDealTitle] = useState(null);
   const [sendStatus, setSendStatus] = useState("idle");
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
@@ -1012,7 +1013,7 @@ export default function BezAgenciaLuxuryApp() {
     setBudgetPerPerson(""); setDateFrom(""); setDateTo(""); setApproxDates(false);
     setFindLowestPrice(true); setLowestPriceMonth("");
     setVisitPurpose(""); setVacationType(""); setAccommodationTypes(["Нямам претенции"]);
-    setComment(""); setInquiryId(null); setSendStatus("idle"); setShowValidationErrors(false); setEditingInquiryId(null);
+    setComment(""); setInquiryId(null); setSendStatus("idle"); setShowValidationErrors(false); setEditingInquiryId(null); setFromDealTitle(null);
   };
 
   const goHome = () => { setPage("home"); setShowAbout(false); setModalPage(null); };
@@ -1164,6 +1165,7 @@ export default function BezAgenciaLuxuryApp() {
     setModalPage(null);
     setPage("wizard");
     setStep(4);
+    setFromDealTitle(deal.title || `${deal.city || ""}, ${deal.country || ""}`);
   };
 
   const allChildrenAgesSet = childrenCount === 0 || (childrenAges.length === childrenCount && childrenAges.every((a) => a !== ""));
@@ -1223,6 +1225,9 @@ export default function BezAgenciaLuxuryApp() {
 
     try {
       const html = buildInquiryEmailHtml(id);
+      const dealBanner = fromDealTitle
+        ? `<div style="background:rgba(212,175,55,0.14);border:1px solid rgba(212,175,55,0.4);border-radius:10px;padding:12px 16px;margin:0 0 18px;color:#D4AF37;font-weight:700;font-size:14px;">⚡ От Светкавична оферта: ${fromDealTitle}</div>`
+        : "";
       const customerOk = await sendTransactionalEmail({
         to: email,
         subject: isEdit ? `Запитване ${id} — коригирани данни получени` : `Запитване ${id} — получено`,
@@ -1232,8 +1237,10 @@ export default function BezAgenciaLuxuryApp() {
         to: INQUIRY_EMAIL,
         subject: isEdit
           ? `Клиент коригира запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`
+          : fromDealTitle
+          ? `⚡ Светкавична оферта — Ново запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`
           : `Ново запитване ${id} — ${city?.name || ""}, ${country?.name || ""}`,
-        html,
+        html: dealBanner + html,
         replyTo: email,
       });
       setSendStatus(customerOk ? "sent" : "error");
@@ -1245,12 +1252,14 @@ export default function BezAgenciaLuxuryApp() {
             adults, childrenCount, childrenAges, budgetPerPerson,
             dateFrom, dateTo, approxDates, findLowestPrice, lowestPriceMonth,
             visitPurpose, vacationType, accommodationTypes, comment,
+            fromDealTitle: fromDealTitle || null,
             createdAt: Date.now(),
           }),
           true
         );
       } catch { /* не е критично */ }
       setEditingInquiryId(null);
+      setFromDealTitle(null);
     } catch { setSendStatus("error"); }
   };
 
@@ -3633,6 +3642,11 @@ export default function BezAgenciaLuxuryApp() {
                         </div>
                         {adminSelectedInquiry ? (
                           <>
+                            {adminSelectedInquiry.fromDealTitle && (
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(212,175,55,0.14)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 20, padding: "5px 12px", marginBottom: 12, fontSize: 13, fontWeight: 700, color: PALETTE.goldBright }}>
+                                ⚡ От Светкавична оферта: {adminSelectedInquiry.fromDealTitle}
+                              </div>
+                            )}
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                               <InfoBox label="Телефон" value={adminSelectedInquiry.phone || "-"} />
                               <InfoBox label="Летище" value={adminSelectedInquiry.departure || "-"} accent />
