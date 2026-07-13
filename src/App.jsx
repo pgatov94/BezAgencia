@@ -1170,8 +1170,9 @@ export default function BezAgenciaLuxuryApp() {
 
   const allChildrenAgesSet = childrenCount === 0 || (childrenAges.length === childrenCount && childrenAges.every((a) => a !== ""));
   const datesValid = findLowestPrice ? !!lowestPriceMonth : !!(dateFrom && dateTo);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canSubmit =
-    name.trim() && email.trim() && phone.trim() && adults >= 1 && allChildrenAgesSet &&
+    name.trim() && emailValid && phone.trim() && adults >= 1 && allChildrenAgesSet &&
     String(budgetPerPerson).trim() && Number(budgetPerPerson) > 0 && datesValid &&
     visitPurpose && vacationType && accommodationTypes.length > 0;
 
@@ -2663,7 +2664,12 @@ export default function BezAgenciaLuxuryApp() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <Field label="Име и фамилия *" error={showValidationErrors && !name.trim()}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="напр. Иван Иванов" style={inputStyle} /></Field>
-                <Field label="Имейл *" error={showValidationErrors && !email.trim()}><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ivan@example.com" style={inputStyle} /></Field>
+                <Field label="Имейл *" error={showValidationErrors && !emailValid}>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ivan@example.com" style={inputStyle} />
+                </Field>
+                {showValidationErrors && email.trim() && !emailValid && (
+                  <p style={{ fontSize: 13, color: PALETTE.coralDark, marginTop: -10 }}>Имейлът изглежда невалиден (напр. липсва „@" или домейн) — провери го, за да получиш офертата си.</p>
+                )}
                 <Field label="Телефон *" error={showValidationErrors && !phone.trim()}><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xx xxx xxx" style={inputStyle} /></Field>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 14 }}>
@@ -2836,7 +2842,7 @@ export default function BezAgenciaLuxuryApp() {
                 {sendStatus === "sent" ? "Запитването е изпратено" : sendStatus === "sending" ? "Изпращане…" : sendStatus === "error" ? "Възникна проблем" : "Запитването е прието"}
               </h2>
               <p style={{ fontFamily: "Work Sans, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 18px", lineHeight: 1.6 }}>
-                Запази си уникалния номер — с него по-късно ще проверяваш статус и плащане в „Плащания". Ще получиш персонална оферта на посочения имейл до 24 часа.
+                Ще получиш персонална оферта на посочения имейл до 24 часа.
               </p>
 
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 24 }}>
