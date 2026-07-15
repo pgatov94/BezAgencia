@@ -20,6 +20,7 @@ const TABLE_MAP = {
   review: "reviews",
   voucher: "vouchers",
   newsletter: "newsletter_subscribers",
+  visit: "site_visits",
 };
 
 function parseKey(key) {
@@ -132,5 +133,25 @@ export const db = {
       return null;
     }
     return { key, deleted: true, shared: true };
+  },
+
+  // Анонимно записва едно посещение на страница — без бисквитки, без лични
+  // данни. session_id е случаен идентификатор, генериран веднъж на таб
+  // (пази се в sessionStorage), само за да броим уникални посещения,
+  // отделно от общия брой прегледани страници.
+  async logVisit(path, referrer, device) {
+    if (!isSupabaseConfigured) return null;
+    let sessionId = "";
+    try {
+      sessionId = sessionStorage.getItem("ba_session_id");
+      if (!sessionId) {
+        sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        sessionStorage.setItem("ba_session_id", sessionId);
+      }
+    } catch { /* sessionStorage недостъпен — продължаваме без session_id */ }
+    try {
+      await supabase.from("site_visits").insert({ path, referrer: referrer || null, device, session_id: sessionId });
+    } catch { /* никога не чупим сайта заради проследяването */ }
+    return null;
   },
 };

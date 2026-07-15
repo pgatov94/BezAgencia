@@ -977,6 +977,8 @@ export default function BezAgenciaLuxuryApp() {
   const [adminContacts, setAdminContacts] = useState([]);
   const [adminContactsLoading, setAdminContactsLoading] = useState(false);
   const [adminSubscribers, setAdminSubscribers] = useState([]);
+  const [visitStats, setVisitStats] = useState(null);
+  const [visitStatsLoading, setVisitStatsLoading] = useState(false);
   const [adminSubscribersLoading, setAdminSubscribersLoading] = useState(false);
 
   /* ── Помощни изчисления, наследени от съществуващата логика ───────── */
@@ -1586,6 +1588,7 @@ export default function BezAgenciaLuxuryApp() {
       if (adminTab === "deals") loadDeals();
       if (adminTab === "contacts" || adminTab === "offer") loadAdminContacts();
       if (adminTab === "subscribers") loadAdminSubscribers();
+      if (adminTab === "analytics") loadVisitStats();
       if (adminTab === "offer") { loadAdminOffersIds(); loadAdminPayments(); }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1644,6 +1647,18 @@ export default function BezAgenciaLuxuryApp() {
       else localStorage.removeItem("ba_last_page");
     } catch { /* не е критично, ако localStorage не е достъпен */ }
   }, [page]);
+
+  // Анонимно записваме всяко разгледано "виждане" на страница за
+  // статистиката в Анализи (без бисквитки за проследяване, без лични
+  // данни) — прескачаме админ панела, за да не изкривява собствените ни
+  // визити реалната картина за посетителите.
+  useEffect(() => {
+    if (page === "admin") return;
+    const path = modalPage ? `${page}#${modalPage}` : page;
+    const device = window.innerWidth < 768 ? "mobile" : "desktop";
+    db.logVisit(path, document.referrer, device);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, modalPage]);
 
   // Скрит достъп до Админ панела — не е видим никъде в интерфейса за клиенти.
   // Отваря се само с Ctrl+Shift+A (Cmd+Shift+A на Mac) или с 5 бързи клика върху текста на футъра.
@@ -2166,6 +2181,15 @@ export default function BezAgenciaLuxuryApp() {
   const handleAdminDeleteSubscriber = async (email) => {
     if (!window.confirm(`Премахване на ${email} от абонатите?`)) return;
     try { await db.delete(`newsletter:${email}`, true); loadAdminSubscribers(); } catch {}
+  };
+
+  const loadVisitStats = async () => {
+    setVisitStatsLoading(true);
+    try {
+      const { ok, data } = await adminActionFetch({ action: "getVisitStats" });
+      if (ok && data?.ok) setVisitStats(data);
+    } catch {}
+    setVisitStatsLoading(false);
   };
 
   /* ── Обобщение за анализите — реални числа от вече наличните данни ── */
@@ -4083,12 +4107,103 @@ export default function BezAgenciaLuxuryApp() {
                     <StatCard icon={<Clock size={18} />} label="Очаквано плащане" value={`${analytics.pendingSum} €`} onReset={() => handleAdminResetCategory("payments", "Зададени плащания")} resetTitle="Изтрий всички плащания" />
                     <StatCard icon={<Percent size={18} />} label="Комисионна (5%, приблизително)" value={`${analytics.estimatedCommission} €`} accent onReset={() => handleAdminResetCategory("payments", "Зададени плащания")} resetTitle="Изтрий всички плащания" />
                   </div>
-                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
+                  <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, lineHeight: 1.6, marginBottom: 30 }}>
                     Тези числа са реални, изчислени от записите в „Плащания" и „Контакти" — не са симулирани. Иконата ↺ на всяка карта
                     трайно изтрива всички записи от съответната категория (не само нулира число за показ) — „Платена сума", „Очаквано
                     плащане" и „Комисионна" се броят от същите данни като „Зададени плащания", затова бутонът им прави същото — трие
                     всички плащания.
                   </p>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                    <h3 style={{ fontFamily: "Fraunces, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: 0 }}>Посещения на сайта</h3>
+                    <button onClick={loadVisitStats} className="lux-hover" style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", color: PALETTE.inkMuted, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <RotateCcw size={13} /> Обнови
+                    </button>
+                  </div>
+
+                  {visitStatsLoading && !visitStats && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам…</p>}
+
+                  {visitStats && (
+                    <>
+                      <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+                        <StatCard icon={<Users size={18} />} label="Прегледи днес" value={visitStats.totalViews.today} accent />
+                        <StatCard icon={<TrendingUp size={18} />} label="Прегледи (7 дни)" value={visitStats.totalViews.last7} />
+                        <StatCard icon={<BarChart3 size={18} />} label="Прегледи (30 дни)" value={visitStats.totalViews.last30} accent />
+                        <StatCard icon={<Users size={18} />} label="Уникални посетители (30 дни)" value={visitStats.uniqueVisitors.last30} />
+                      </div>
+
+                      <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px", marginBottom: 20 }}>
+                        <div style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 14, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Прегледи по дни (последните 30)</div>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
+                          {Object.entries(visitStats.byDay).map(([day, count]) => {
+                            const max = Math.max(1, ...Object.values(visitStats.byDay));
+                            return (
+                              <div key={day} title={`${day}: ${count}`} style={{
+                                flex: 1, height: `${Math.max(3, (count / max) * 100)}%`,
+                                background: count > 0 ? `linear-gradient(180deg, ${PALETTE.goldBright}, ${PALETTE.gold})` : "rgba(255,255,255,0.06)",
+                                borderRadius: "3px 3px 0 0", minWidth: 4,
+                              }} />
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: PALETTE.inkFaint, marginTop: 6 }}>
+                          <span>{Object.keys(visitStats.byDay)[0]}</span>
+                          <span>{Object.keys(visitStats.byDay)[Object.keys(visitStats.byDay).length - 1]}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 20 }}>
+                        <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                          <div style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Най-разглеждани страници</div>
+                          {visitStats.topPages.length === 0 && <p style={{ fontSize: 14, color: PALETTE.inkFaint }}>Няма данни все още.</p>}
+                          {visitStats.topPages.map(([path, count]) => (
+                            <div key={path} style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted, padding: "6px 0", borderBottom: `1px solid ${PALETTE.panelBorder}` }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>{path}</span>
+                              <span style={{ color: PALETTE.goldBright, fontWeight: 700, flexShrink: 0 }}>{count}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                          <div style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Откъде идват посетителите</div>
+                          {visitStats.topReferrers.length === 0 && <p style={{ fontSize: 14, color: PALETTE.inkFaint }}>Няма данни все още.</p>}
+                          {visitStats.topReferrers.map(([ref, count]) => (
+                            <div key={ref} style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted, padding: "6px 0", borderBottom: `1px solid ${PALETTE.panelBorder}` }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>{ref}</span>
+                              <span style={{ color: PALETTE.goldBright, fontWeight: 700, flexShrink: 0 }}>{count}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                          <div style={{ fontSize: 13, color: PALETTE.inkFaint, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Устройства</div>
+                          {(() => {
+                            const total = Math.max(1, visitStats.deviceCounts.mobile + visitStats.deviceCounts.desktop);
+                            const mobilePct = Math.round((visitStats.deviceCounts.mobile / total) * 100);
+                            return (
+                              <>
+                                <div style={{ display: "flex", height: 10, borderRadius: 6, overflow: "hidden", marginBottom: 12 }}>
+                                  <div style={{ width: `${mobilePct}%`, background: PALETTE.goldBright }} />
+                                  <div style={{ width: `${100 - mobilePct}%`, background: PALETTE.oceanBright }} />
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted }}>
+                                  <span>📱 Мобилни: <strong style={{ color: PALETTE.goldBright }}>{mobilePct}%</strong> ({visitStats.deviceCounts.mobile})</span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: PALETTE.inkMuted, marginTop: 4 }}>
+                                  <span>🖥️ Десктоп: <strong style={{ color: PALETTE.oceanBright }}>{100 - mobilePct}%</strong> ({visitStats.deviceCounts.desktop})</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
+                        Данните са анонимни (без бисквитки, без лични данни) — пазят се последните 90 дни. "Уникални посетители" се броят
+                        по случаен идентификатор на браузърната сесия, не по личност.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 

@@ -143,6 +143,68 @@ export default async function handler(req, res) {
       return;
     }
 
+    if (action === "getVisitStats") {
+      const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: rows, error: visitsErr } = await supabaseAdmin
+        .from("site_visits")
+        .select("created_at, path, referrer, device, session_id")
+        .gte("created_at", since90);
+      if (visitsErr) { res.status(500).json({ error: visitsErr.message }); return; }
+
+      const all = rows || [];
+      const now = Date.now();
+      const DAY = 24 * 60 * 60 * 1000;
+      const within = (ms) => all.filter((r) => now - new Date(r.created_at).getTime() <= ms);
+
+      const countUnique = (list) => new Set(list.map((r) => r.session_id).filter(Boolean)).size;
+
+      // Прегледи по ден за последните 30 дни (за графиката).
+      const byDay = {};
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now - i * DAY);
+        const key = d.toISOString().slice(0, 10);
+        byDay[key] = 0;
+      }
+      for (const r of within(30 * DAY)) {
+        const key = new Date(r.created_at).toISOString().slice(0, 10);
+        if (key in byDay) byDay[key]++;
+      }
+
+      // Най-разглеждани страници.
+      const pageCounts = {};
+      for (const r of all) pageCounts[r.path || "(непознато)"] = (pageCounts[r.path || "(непознато)"] || 0) + 1;
+      const topPages = Object.entries(pageCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+      // Топ реферери (откъде идват хората) — извличаме само домейна.
+      const refCounts = {};
+      for (const r of all) {
+        let ref = "Директен достъп / без реферер";
+        if (r.referrer) {
+          try { ref = new URL(r.referrer).hostname.replace(/^www\./, ""); } catch { ref = r.referrer; }
+        }
+        refCounts[ref] = (refCounts[ref] || 0) + 1;
+      }
+      const topReferrers = Object.entries(refCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+      // Устройства.
+      const deviceCounts = { mobile: 0, desktop: 0 };
+      for (const r of all) {
+        if (r.device === "mobile") deviceCounts.mobile++;
+        else deviceCounts.desktop++;
+      }
+
+      res.status(200).json({
+        ok: true,
+        totalViews: { today: within(DAY).length, last7: within(7 * DAY).length, last30: within(30 * DAY).length, last90: all.length },
+        uniqueVisitors: { today: countUnique(within(DAY)), last7: countUnique(within(7 * DAY)), last30: countUnique(within(30 * DAY)), last90: countUnique(all) },
+        byDay,
+        topPages,
+        topReferrers,
+        deviceCounts,
+      });
+      return;
+    }
+
     res.status(400).json({ error: "Непознато действие." });
   } catch (e) {
     res.status(500).json({ error: e.message || "Неизвестна грешка." });
