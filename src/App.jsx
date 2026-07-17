@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
@@ -50,8 +51,8 @@ const STRIPE_CHECKOUT_ENDPOINT = "";
 
 // Смени с реалните адреси на страниците си — засега сочат към общите сайтове.
 const SOCIAL_LINKS = {
-  facebook: "https://facebook.com/",
-  instagram: "https://instagram.com/",
+  facebook: "https://www.facebook.com/profile.php?id=61592180452209",
+  instagram: "https://www.instagram.com/bezagencia/",
   tiktok: "https://tiktok.com/",
 };
 
