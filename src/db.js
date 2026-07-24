@@ -1,17 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
-/**
- * Този файл замества старото window.storage (което работеше само за хора
- * с логнат Claude акаунт) с истинска, публично достъпна база данни в Supabase.
- * Пази същата форма на извикване (set/get/list/delete), за да не се налага
- * да пипаме бизнес логиката в App.jsx — само "тръбата" отдолу е сменена.
- *
- * Всеки ключ е във формат "префикс:id" (напр. "deal:abc123").
- * Префиксът определя в коя таблица отива записът — виж TABLE_MAP по-долу.
- * Ако добавиш нов тип запис в App.jsx с нов префикс, добави го и тук,
- * плюс създай съответната таблица в Supabase (виж sql/schema.sql).
- */
-
 const TABLE_MAP = {
   deal: "deals",
   offer: "offers",
@@ -33,7 +21,6 @@ const NOT_CONFIGURED_MSG =
   "Supabase не е свързан — провери дали си сложил истинските SUPABASE_URL и SUPABASE_ANON_KEY в src/supabaseClient.js (виж README.md, Стъпка 1 и 2).";
 
 export const db = {
-  // Запазва запис. value е JSON.stringify-нат текст (както преди).
   async set(key, value) {
     if (!isSupabaseConfigured) {
       console.error(NOT_CONFIGURED_MSG);
@@ -62,7 +49,6 @@ export const db = {
     return { key, value, shared: true };
   },
 
-  // Връща { key, value } или null, ако не съществува.
   async get(key) {
     if (!isSupabaseConfigured) {
       console.error(NOT_CONFIGURED_MSG);
@@ -84,7 +70,6 @@ export const db = {
     return { key, value: JSON.stringify(data.data), shared: true };
   },
 
-  // prefix е нещо от типа "deal:" — връща { keys: ["deal:abc", "deal:xyz", ...] }
   async list(prefix) {
     if (!isSupabaseConfigured) {
       throw new Error(NOT_CONFIGURED_MSG);
@@ -99,12 +84,6 @@ export const db = {
     return { keys: (data || []).map((r) => `${p}:${r.id}`), prefix, shared: true };
   },
 
-  // Зарежда ВСИЧКИ записи от префикса с ЕДНА заявка (вместо list + по едно
-  // get на всеки резултат) — много по-бързо за списъци (Оферти, Отзиви и
-  // т.н.), защото няма нужда от N допълнителни отделни заявки.
-  // Връща масив от { key, value } (value е JSON.stringify-нат текст,
-  // както при get/set, за да заменя list+get комбинацията без промяна
-  // другаде в кода).
   async listAll(prefix) {
     if (!isSupabaseConfigured) {
       throw new Error(NOT_CONFIGURED_MSG);
@@ -117,6 +96,22 @@ export const db = {
       throw new Error("Storage listAll failed: " + error.message);
     }
     return (data || []).map((r) => ({ key: `${p}:${r.id}`, value: JSON.stringify(r.data), shared: true }));
+  },
+
+  // Олекотена версия само за ПУБЛИЧНИЯ списък с оферти — тегли само
+  // полетата, нужни за показване в картите (без тежките вътрешни снимки
+  // за полет/настаняване, които преди причиняваха "statement timeout").
+  async listPublicDeals() {
+    if (!isSupabaseConfigured) {
+      throw new Error(NOT_CONFIGURED_MSG);
+    }
+    const { data, error } = await supabase
+      .from("deals")
+      .select("id, data->title, data->city, data->country, data->tag, data->departureFrom, data->flightPrice, data->hotelPrice, data->totalPrice, data->travelMonth, data->imageDataUrl, data->createdAt");
+    if (error) {
+      throw new Error("Storage listPublicDeals failed: " + error.message);
+    }
+    return data || [];
   },
 
   async delete(key) {
@@ -135,10 +130,6 @@ export const db = {
     return { key, deleted: true, shared: true };
   },
 
-  // Анонимно записва едно посещение на страница — без бисквитки, без лични
-  // данни. session_id е случаен идентификатор, генериран веднъж на таб
-  // (пази се в sessionStorage), само за да броим уникални посещения,
-  // отделно от общия брой прегледани страници.
   async logVisit(path, referrer, device) {
     if (!isSupabaseConfigured) return null;
     let sessionId = "";

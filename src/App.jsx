@@ -1569,8 +1569,11 @@ export default function BezAgenciaLuxuryApp() {
     });
     setDealsError("");
     try {
-      const items = await db.listAll("deal:");
-      setDeals(items.map((r) => { try { return JSON.parse(r.value); } catch { return null; } }).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+      // Олекотена заявка — тегли само полетата, нужни за публичните карти
+      // с оферти (без тежките вътрешни снимки за полет/настаняване, които
+      // преди причиняваха "statement timeout" при много/големи снимки).
+      const rows = await db.listPublicDeals();
+      setDeals(rows.filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch (e) {
       setDealsError(
         (e && (e.message || String(e))) ||
@@ -2122,20 +2125,30 @@ export default function BezAgenciaLuxuryApp() {
       loadDeals();
     } catch { setAdminDealSaveStatus("error"); }
   };
-  const handleEditDeal = (d) => {
+  const handleEditDeal = async (d) => {
     setEditingDealId(d.id);
+    setAdminDealSaveStatus("loading");
+    setAdminDealImageError("");
+    // Списъкът с оферти вече тегли само леки данни (без вътрешните снимки),
+    // затова тук зареждаме пълния запис на точно тази оферта отделно —
+    // само когато админът реално отвори конкретна оферта за редакция.
+    let full = d;
+    try {
+      const r = await db.get(`deal:${d.id}`, true);
+      if (r?.value) full = { ...d, ...JSON.parse(r.value) };
+    } catch { /* при грешка просто ползваме леките данни, без вътрешните снимки */ }
+
     setAdminDealForm({
-      title: d.title || "", city: d.city || "", country: d.country || "", tag: d.tag || "flash",
-      departureFrom: d.departureFrom || "",
-      flightPrice: d.flightPrice != null ? String(d.flightPrice) : "", hotelPrice: d.hotelPrice != null ? String(d.hotelPrice) : "",
-      travelMonth: d.travelMonth || "", imageDataUrl: d.imageDataUrl || "",
-      flightDateFrom: d.flightDateFrom || "", flightDateTo: d.flightDateTo || "",
-      flightLinks: d.flightLinks?.length ? d.flightLinks : [""],
-      flightPhotos: d.flightPhotos?.length ? d.flightPhotos : ["", "", ""],
-      hotelLinks: d.hotelLinks?.length ? d.hotelLinks : [{ link: "", description: "", photos: ["", "", ""] }],
+      title: full.title || "", city: full.city || "", country: full.country || "", tag: full.tag || "flash",
+      departureFrom: full.departureFrom || "",
+      flightPrice: full.flightPrice != null ? String(full.flightPrice) : "", hotelPrice: full.hotelPrice != null ? String(full.hotelPrice) : "",
+      travelMonth: full.travelMonth || "", imageDataUrl: full.imageDataUrl || "",
+      flightDateFrom: full.flightDateFrom || "", flightDateTo: full.flightDateTo || "",
+      flightLinks: full.flightLinks?.length ? full.flightLinks : [""],
+      flightPhotos: full.flightPhotos?.length ? full.flightPhotos : ["", "", ""],
+      hotelLinks: full.hotelLinks?.length ? full.hotelLinks : [{ link: "", description: "", photos: ["", "", ""] }],
     });
     setAdminDealSaveStatus("idle");
-    setAdminDealImageError("");
   };
   const handleCancelEditDeal = () => {
     setEditingDealId(null);
