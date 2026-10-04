@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+git add src/App.jsx
+git commit -m "Хедърът се скрива при скрол надолу; без мобилен номер във футъра"
+git pushimport React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
 import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
@@ -56,7 +58,6 @@ const SOCIAL_LINKS = {
 };
 
 // Смени с реални данни преди да пуснеш сайта на живо.
-const CONTACT_PHONE = "+359 882 225 301";
 const VIBER_LINK = "viber://chat?number=+359882225301";
 const WHATSAPP_LINK = "https://wa.me/359882225301";
 const COMPANY_INFO = {
@@ -1663,6 +1664,24 @@ export default function BezAgenciaLuxuryApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, modalPage]);
 
+  // Хедърът се скрива при скрол надолу и се показва отново при скрол нагоре.
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = Math.max(0, window.scrollY);
+      const delta = y - lastScrollY.current;
+      if (y < 80) setHeaderHidden(false);
+      else if (delta > 8) setHeaderHidden(true);
+      else if (delta < -8) setHeaderHidden(false);
+      if (Math.abs(delta) > 8 || y < 80) lastScrollY.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  // При смяна на страница хедърът винаги се връща видим.
+  useEffect(() => { setHeaderHidden(false); }, [page, modalPage]);
+
   // Скрит достъп до Админ панела — не е видим никъде в интерфейса за клиенти.
   // Отваря се само с Ctrl+Shift+A (Cmd+Shift+A на Mac) или с 5 бързи клика върху текста на футъра.
   const [footerClickCount, setFooterClickCount] = useState(0);
@@ -2362,6 +2381,7 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── НАВИГАЦИЯ ─────────────────────────────────────────────── */}
       <header style={{
         position: "sticky", top: 0, zIndex: 20, background: "rgba(10,14,23,0.72)", backdropFilter: "blur(16px)",
+        transform: headerHidden ? "translateY(-110%)" : "translateY(0)", transition: "transform .3s ease",
         borderBottom: `1px solid ${PALETTE.panelBorder}`, padding: "12px 20px",
         display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 10,
       }}>
@@ -4235,10 +4255,6 @@ export default function BezAgenciaLuxuryApp() {
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.goldBright, marginBottom: 14 }}>Контакти</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.5 }}>
-                <a href={`tel:${CONTACT_PHONE.replace(/\s/g, "")}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
-                  <Phone size={17} color={PALETTE.goldBright} />
-                  {CONTACT_PHONE}
-                </a>
                 <a href={VIBER_LINK} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: PALETTE.inkMuted, textDecoration: "none" }}>
                   <SiViber size={17} color={BRAND_COLORS.viber.bg} />
                   Пиши ми във Viber
