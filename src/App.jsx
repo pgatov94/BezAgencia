@@ -1,6 +1,4 @@
-git add src/App.jsx
-git commit -m "Хедърът се скрива при скрол надолу; без мобилен номер във футъра"
-git pushimport React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import { isSupabaseConfigured } from "./supabaseClient";
 import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
