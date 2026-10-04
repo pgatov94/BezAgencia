@@ -379,6 +379,11 @@ const COUNTRIES = [
     { id: "ltn", name: "Лондон Лутън", from: ["sof", "plv", "bur", "var"] }, { id: "man", name: "Манчестър", from: ["plv"] },
   ]},
   { id: "sk", name: "Словакия", cities: [{ id: "bts", name: "Братислава", from: ["plv", "bur", "var"] }] },
+  // Далечни дестинации извън Европа — без директни полети от България (с прекачване).
+  // Налични са от всички 4 летища; за да ограничиш някое, промени списъка в "from".
+  { id: "id", name: "Индонезия", cities: [{ id: "dps", name: "Бали", from: ["sof", "plv", "var", "bur"] }] },
+  { id: "hk", name: "Хонконг", cities: [{ id: "hkg", name: "Хонконг", from: ["sof", "plv", "var", "bur"] }] },
+  { id: "cn", name: "Китай", cities: [{ id: "szx", name: "Шънджън", from: ["sof", "plv", "var", "bur"] }] },
 ];
 
 function genInquiryId() {
@@ -2720,7 +2725,7 @@ export default function BezAgenciaLuxuryApp() {
               <BackBtn onClick={() => setStep(1)} />
               <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Избери държава</h2>
               <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 24px" }}>
-                Тръгвате от {departure?.name} · само дестинации с директни полети на Ryanair и Wizz Air
+                Тръгвате от {departure?.name} · директни полети на Ryanair и Wizz Air, плюс далечни дестинации с прекачване
               </p>
               {availableCountries.length === 0 ? (
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "32px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5, lineHeight: 1.7 }}>
