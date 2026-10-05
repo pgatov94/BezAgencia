@@ -60,7 +60,6 @@ const STRIPE_CHECKOUT_ENDPOINT = "";
 const SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/profile.php?id=61592180452209",
   instagram: "https://www.instagram.com/bezagencia/",
-  tiktok: "https://www.tiktok.com/@bezagencia",
 };
 
 // Смени с реални данни преди да пуснеш сайта на живо.
@@ -2491,7 +2490,7 @@ export default function BezAgenciaLuxuryApp() {
           <section className="ba-hero-section" style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center" }}>
             <div className="ba-hero-photo" style={{
               position: "absolute", inset: 0,
-              backgroundImage: "url(/hero-beach.png)", backgroundSize: "cover", backgroundPosition: "68% 38%",
+              backgroundImage: "url(/hero-beach.webp)", backgroundSize: "cover", backgroundPosition: "68% 38%",
             }} />
             <div className="ba-hero-shimmer" style={{ position: "absolute", left: "20%", right: 0, top: "15%", bottom: "30%", pointerEvents: "none" }} />
             <div className="ba-hero-overlay" style={{
@@ -4409,7 +4408,6 @@ export default function BezAgenciaLuxuryApp() {
               <SocialIcon id="whatsapp" href={WHATSAPP_LINK} />
               <SocialIcon id="facebook" href={SOCIAL_LINKS.facebook} />
               <SocialIcon id="instagram" href={SOCIAL_LINKS.instagram} />
-              <SocialIcon id="tiktok" href={SOCIAL_LINKS.tiktok} />
             </div>
             <p onClick={handleFooterSecretClick} style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: FOOT.faint, margin: 0, cursor: "default", userSelect: "none" }}>БезАгенция — бюджетни екскурзии без агенция</p>
           </div>
