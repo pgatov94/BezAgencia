@@ -107,11 +107,28 @@ export const db = {
     }
     const { data, error } = await supabase
       .from("deals")
-      .select("id, data->title, data->city, data->country, data->tag, data->departureFrom, data->flightPrice, data->hotelPrice, data->totalPrice, data->travelMonth, data->imageDataUrl, data->createdAt");
+      .select("id, data->title, data->city, data->country, data->tag, data->departureFrom, data->flightPrice, data->hotelPrice, data->totalPrice, data->travelMonth, data->createdAt");
     if (error) {
       throw new Error("Storage listPublicDeals failed: " + error.message);
     }
     return data || [];
+  },
+
+  // Снимката на корицата на ЕДНА оферта (base64). Зарежда се отделно от
+  // списъка, за да се покажат картите веднага, а снимките да дойдат след това.
+  async getDealImage(id) {
+    if (!isSupabaseConfigured) return null;
+    try {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("img:data->imageDataUrl")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !data) return null;
+      return typeof data.img === "string" ? data.img : null;
+    } catch {
+      return null;
+    }
   },
 
   async delete(key) {

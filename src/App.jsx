@@ -675,6 +675,35 @@ function LandmarkArt({ id }) {
   }
 }
 
+// Смалява снимка (data URL) до разумен размер — карта с оферта се показва в
+// ~400px, затова 900px по дългата страна и JPEG ~78% е напълно достатъчно
+// и намалява теглото от мегабайти до ~100 KB.
+function compressImageDataUrl(dataUrl, maxSide = 900, quality = 0.78) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const out = canvas.toDataURL("image/jpeg", quality);
+        resolve(out.length < dataUrl.length ? out : dataUrl);
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 function LandmarkBanner({ city, accent, imageDataUrl }) {
   const id = findLandmark(city);
   if (imageDataUrl) {
@@ -929,6 +958,9 @@ export default function BezAgenciaLuxuryApp() {
   const [deals, setDeals] = useState([]);
   const [dealsLoading, setDealsLoading] = useState(false);
   const [dealsFilterDeparture, setDealsFilterDeparture] = useState("");
+  const [dealImages, setDealImages] = useState({}); // id -> data URL ("" ако офертата няма снимка)
+  const dealImagesInFlight = useRef(new Set());
+  const [optimizeStatus, setOptimizeStatus] = useState("");
   const [dealsError, setDealsError] = useState("");
 
   // ── Админ панел ────────────────────────────────────────────────────
@@ -1584,6 +1616,22 @@ export default function BezAgenciaLuxuryApp() {
     setDealsLoading(false);
   };
 
+  // Снимките на офертите се теглят отделно (и паралелно) след като картите
+  // вече са показани. На началната страница — само първите 3.
+  useEffect(() => {
+    const onDealsView = page === "deals" || modalPage === "deals" || (page === "admin" && adminTab === "deals");
+    const visible = page === "home" ? deals.slice(0, 3) : onDealsView ? deals : [];
+    visible.forEach((d) => {
+      if (d.imageDataUrl || dealImages[d.id] !== undefined || dealImagesInFlight.current.has(d.id)) return;
+      dealImagesInFlight.current.add(d.id);
+      db.getDealImage(d.id)
+        .then((img) => setDealImages((prev) => ({ ...prev, [d.id]: img || "" })))
+        .finally(() => dealImagesInFlight.current.delete(d.id));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deals, page, modalPage, adminTab]);
+  const dealImg = (d) => d.imageDataUrl || dealImages[d.id] || null;
+
   useEffect(() => {
     if (page === "home" || page === "deals" || modalPage === "deals") loadDeals();
     if (page === "home" || page === "reviews" || modalPage === "reviews") loadPublicReviews();
@@ -1822,12 +1870,16 @@ export default function BezAgenciaLuxuryApp() {
       setAdminDealImageError("Постави или избери файл със снимка (JPG, PNG и т.н.).");
       return;
     }
-    if (file.size > 3.5 * 1024 * 1024) {
-      setAdminDealImageError("Снимката е твърде голяма (макс. ~3.5MB). Избери по-малка или компресирана версия.");
+    if (file.size > 15 * 1024 * 1024) {
+      setAdminDealImageError("Снимката е твърде голяма (макс. ~15MB). Избери по-малка версия.");
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => setAdminDealForm((f) => ({ ...f, imageDataUrl: reader.result }));
+    reader.onload = async () => {
+      // Автоматично смаляваме снимката, за да не бави сайта.
+      const small = await compressImageDataUrl(reader.result);
+      setAdminDealForm((f) => ({ ...f, imageDataUrl: small }));
+    };
     reader.onerror = () => setAdminDealImageError("Неуспешно зареждане на снимката, опитай отново.");
     reader.readAsDataURL(file);
   };
@@ -2135,6 +2187,7 @@ export default function BezAgenciaLuxuryApp() {
       }
 
       setAdminDealSaveStatus("saved");
+      setDealImages((prev) => ({ ...prev, [id]: payload.imageDataUrl || "" }));
       setAdminDealForm({
         title: "", city: "", country: "", tag: "flash", departureFrom: "", flightPrice: "", hotelPrice: "", travelMonth: "", imageDataUrl: "",
         flightDateFrom: "", flightDateTo: "", flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
@@ -2178,6 +2231,53 @@ export default function BezAgenciaLuxuryApp() {
     setAdminDealImageError("");
     setAdminDealSaveStatus("idle");
   };
+  // Еднократно: смалява снимките (корица + вътрешните за полет/настаняване)
+  // на вече публикуваните оферти. Безопасно е да се пуска повече от веднъж.
+  const handleOptimizeDealImages = async () => {
+    if (!window.confirm("Ще смаля снимките на всички публикувани оферти, за да се зареждат бързо. Може да отнеме минута. Продължаваш ли?")) return;
+    setOptimizeStatus("Започвам…");
+    let done = 0;
+    let savedBytes = 0;
+    const BIG = 200000;
+    const shrink = async (url) => {
+      if (typeof url !== "string" || url.length < BIG) return url;
+      const small = await compressImageDataUrl(url);
+      if (small.length < url.length) { savedBytes += url.length - small.length; return small; }
+      return url;
+    };
+    for (const d of deals) {
+      try {
+        const r = await db.get(`deal:${d.id}`);
+        if (r?.value) {
+          const full = JSON.parse(r.value);
+          let changed = false;
+          const cover = await shrink(full.imageDataUrl);
+          if (cover !== full.imageDataUrl) { full.imageDataUrl = cover; changed = true; }
+          if (Array.isArray(full.flightPhotos)) {
+            const next = [];
+            for (const p of full.flightPhotos) next.push(await shrink(p));
+            if (next.some((p, i) => p !== full.flightPhotos[i])) { full.flightPhotos = next; changed = true; }
+          }
+          if (Array.isArray(full.hotelLinks)) {
+            for (const h of full.hotelLinks) {
+              if (!Array.isArray(h.photos)) continue;
+              const next = [];
+              for (const p of h.photos) next.push(await shrink(p));
+              if (next.some((p, i) => p !== h.photos[i])) { h.photos = next; changed = true; }
+            }
+          }
+          if (changed) {
+            await db.set(`deal:${d.id}`, JSON.stringify(full));
+            setDealImages((prev) => ({ ...prev, [d.id]: full.imageDataUrl || "" }));
+          }
+        }
+      } catch { /* продължаваме със следващата оферта */ }
+      done++;
+      setOptimizeStatus(`Обработени ${done} от ${deals.length}…`);
+    }
+    setOptimizeStatus(`Готово. Спестени са около ${(savedBytes / 1024 / 1024).toFixed(1)} MB.`);
+  };
+
   const handleDeleteDeal = async (id) => {
     try {
       await db.delete(`deal:${id}`, true);
@@ -2588,7 +2688,7 @@ export default function BezAgenciaLuxuryApp() {
                   const total = d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0));
                   return (
                     <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, overflow: "hidden" }}>
-                      <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={d.imageDataUrl} />
+                      <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={dealImg(d)} />
                       <div style={{ padding: "20px 22px 22px" }}>
                         <span style={{ display: "inline-block", fontSize: 10.5, fontWeight: 800, letterSpacing: 1.2, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "4px 11px", marginBottom: 12 }}>{tag.label}</span>
                         <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 21, lineHeight: 1.25, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
@@ -3047,7 +3147,7 @@ export default function BezAgenciaLuxuryApp() {
               const tag = DEAL_TAGS[d.tag] || DEAL_TAGS.flash;
               return (
                 <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, overflow: "hidden" }}>
-                  <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={d.imageDataUrl} />
+                  <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={dealImg(d)} />
                   <div style={{ padding: "16px 18px" }}>
                     <div style={{ marginBottom: 10 }}>
                       <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "3px 9px" }}>{tag.label}</span>
@@ -4124,11 +4224,19 @@ export default function BezAgenciaLuxuryApp() {
                     </p>
                   )}
 
-                  <h4 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: "28px 0 12px" }}>Публикувани оферти</h4>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "28px 0 12px" }}>
+                    <h4 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: 0 }}>Публикувани оферти</h4>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {optimizeStatus && <span style={{ fontSize: 13, color: PALETTE.inkMuted }}>{optimizeStatus}</span>}
+                      <button onClick={handleOptimizeDealImages} className="lux-hover" title="Смалява снимките на публикуваните оферти, за да се зареждат бързо" style={{
+                        background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", color: PALETTE.inkMuted, fontSize: 13, fontWeight: 600,
+                      }}>Оптимизирай снимките</button>
+                    </div>
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {deals.map((d) => (
                       <div key={d.id} className="lux-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: editingDealId === d.id ? "rgba(212,175,55,0.08)" : PALETTE.panel, border: `1px solid ${editingDealId === d.id ? "rgba(212,175,55,0.4)" : PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px", gap: 10, flexWrap: "wrap" }}>
-                        {d.imageDataUrl && <img src={d.imageDataUrl} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />}
+                        {dealImg(d) && <img src={dealImg(d)} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />}
                         <span style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 600 }}>{d.title} <span style={{ color: PALETTE.inkFaint, fontWeight: 400 }}>({d.city})</span></span>
                         <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{d.departureFrom ? `от ${d.departureFrom} · ` : ""}✈ {d.flightPrice ?? "—"} € · 🏨 {d.hotelPrice ?? "—"} €</span>
                         <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
