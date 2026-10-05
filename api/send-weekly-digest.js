@@ -1,6 +1,7 @@
 // Vercel Cron Job — изпраща обобщен имейл до всички абонати за бюлетина
 // ВСЕКИ ПЕТЪК (не при всяко качване на оферта, за да не се получава спам).
-// Изброява текущите публикувани оферти с линк към пълния списък.
+// Изброява текущите ВИДИМИ публикувани оферти (скритите от админ панела
+// не се включват) с линк към пълния списък.
 //
 // Настройка в Vercel: вече е добавен в vercel.json — вика се веднъж
 // седмично, в петък.
@@ -25,12 +26,14 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { data: deals, error: dealsErr } = await supabase.from("deals").select("id, data");
+    // Само леките полета (без снимките), и само нескритите оферти.
+    const { data: deals, error: dealsErr } = await supabase
+      .from("deals")
+      .select("title:data->title, city:data->city, totalPrice:data->totalPrice, hidden:data->hidden, createdAt:data->createdAt");
     if (dealsErr) throw dealsErr;
 
     const dealsList = (deals || [])
-      .map((d) => d.data)
-      .filter(Boolean)
+      .filter((d) => d && !d.hidden)
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
       .slice(0, 6);
 

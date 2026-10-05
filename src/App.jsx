@@ -6,7 +6,7 @@ import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap');`;
@@ -704,6 +704,12 @@ function compressImageDataUrl(dataUrl, maxSide = 900, quality = 0.78) {
   });
 }
 
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+    .replace(/\n/g, "<br>");
+}
+
 function LandmarkBanner({ city, accent, imageDataUrl }) {
   const id = findLandmark(city);
   if (imageDataUrl) {
@@ -959,6 +965,7 @@ export default function BezAgenciaLuxuryApp() {
   const [dealsLoading, setDealsLoading] = useState(false);
   const [dealsFilterDeparture, setDealsFilterDeparture] = useState("");
   const [dealImages, setDealImages] = useState({}); // id -> data URL ("" ако офертата няма снимка)
+  const publicDeals = useMemo(() => deals.filter((d) => !d.hidden), [deals]);
   const dealImagesInFlight = useRef(new Set());
   const [optimizeStatus, setOptimizeStatus] = useState("");
   const [dealsError, setDealsError] = useState("");
@@ -986,11 +993,11 @@ export default function BezAgenciaLuxuryApp() {
 
   // ── Лична оферта към клиент (Админ → Оферта) ────────────────────────
   const [adminOfferForm, setAdminOfferForm] = useState({
-    inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
+    inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""], notes: "",
   });
   const [fullOfferForm, setFullOfferForm] = useState({
     flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
-    experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
+    experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "", notes: "",
   });
   const [fullOfferSaveStatus, setFullOfferSaveStatus] = useState("idle"); // idle | saving | saved | error
   const [adminOfferImageErrors, setAdminOfferImageErrors] = useState(["", "", ""]);
@@ -1619,8 +1626,9 @@ export default function BezAgenciaLuxuryApp() {
   // Снимките на офертите се теглят отделно (и паралелно) след като картите
   // вече са показани. На началната страница — само първите 3.
   useEffect(() => {
-    const onDealsView = page === "deals" || modalPage === "deals" || (page === "admin" && adminTab === "deals");
-    const visible = page === "home" ? deals.slice(0, 3) : onDealsView ? deals : [];
+    const onAdminDeals = page === "admin" && adminTab === "deals";
+    const onPublicDeals = page === "deals" || modalPage === "deals";
+    const visible = page === "home" ? publicDeals.slice(0, 3) : onAdminDeals ? deals : onPublicDeals ? publicDeals : [];
     visible.forEach((d) => {
       if (d.imageDataUrl || dealImages[d.id] !== undefined || dealImagesInFlight.current.has(d.id)) return;
       dealImagesInFlight.current.add(d.id);
@@ -1987,6 +1995,7 @@ export default function BezAgenciaLuxuryApp() {
         experienceLinks: fullOfferForm.experienceLinks.filter((x) => x.link?.trim() || x.description?.trim()),
         cityPdfLink: fullOfferForm.cityPdfLink,
         cityPdfName: fullOfferForm.cityPdfName || "",
+        fullNotes: (fullOfferForm.notes || "").trim(),
       }), true);
 
       const p = await db.get(`payment:${id}`, true);
@@ -2005,6 +2014,7 @@ export default function BezAgenciaLuxuryApp() {
           html: emailWrap("Всичко е готово", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
             <p style="margin:0 0 10px;">Подготвихме всички детайли за пътуването ти по запитване <strong style="color:#D4AF37;">${id}</strong> — самолетни билети, настаняване и препоръчани преживявания.</p>
+            ${(fullOfferForm.notes || "").trim() ? `<div style="margin:14px 0 6px;padding:14px 16px;border:1px solid #232b3d;border-radius:10px;background:rgba(212,175,55,0.06);"><div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#D4AF37;font-weight:700;margin-bottom:6px;">Забележки</div><div style="font-size:15px;line-height:1.6;">${escapeHtml((fullOfferForm.notes || "").trim())}</div></div>` : ""}
             <p style="text-align:center;margin:18px 0 22px;">
               <a href="${statusLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Виж детайлите</a>
             </p>
@@ -2021,12 +2031,12 @@ export default function BezAgenciaLuxuryApp() {
   const handleSelectOfferInquiry = async (id) => {
     if (!id) {
       setAdminOfferForm((f) => ({
-        inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
+        inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""], notes: "",
       }));
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
-        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
+        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "", notes: "",
       });
       setAdminSelectedInquiry(null);
       setAdminSelectedInquiryStatus("none");
@@ -2054,6 +2064,7 @@ export default function BezAgenciaLuxuryApp() {
         flightDateTo: existingOffer.flightDateTo || "",
         photos: existingOffer.photos?.length ? [...existingOffer.photos, "", "", ""].slice(0, Math.max(3, existingOffer.photos.length)) : ["", "", ""],
         adminLinks: existingOffer.adminLinks?.length ? existingOffer.adminLinks : [""],
+        notes: existingOffer.notes || "",
       });
       setAdminOfferImageErrors(new Array(Math.max(3, existingOffer.photos?.length || 0)).fill(""));
       setFullOfferForm({
@@ -2071,15 +2082,16 @@ export default function BezAgenciaLuxuryApp() {
           : [{ link: "", description: "" }],
         cityPdfLink: existingOffer.cityPdfLink || "",
         cityPdfName: existingOffer.cityPdfName || "",
+        notes: existingOffer.fullNotes || "",
       });
     } else {
       setAdminOfferForm({
-        inquiryId: id, flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""],
+        inquiryId: id, flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""], notes: "",
       });
       setAdminOfferImageErrors(["", "", ""]);
       setFullOfferForm({
         flightLinks: [""], flightPhotos: ["", "", ""], hotelLinks: [{ link: "", description: "", photos: ["", "", ""] }],
-        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "",
+        experienceLinks: [{ link: "", description: "" }], cityPdfLink: "", cityPdfName: "", notes: "",
       });
     }
   };
@@ -2097,6 +2109,7 @@ export default function BezAgenciaLuxuryApp() {
         flightDateFrom: f.flightDateFrom || null, flightDateTo: f.flightDateTo || null,
         photos: f.photos.filter(Boolean),
         adminLinks: f.adminLinks.filter(Boolean),
+        notes: (f.notes || "").trim(),
         createdAt: Date.now(),
       };
       const setResult = await db.set(`offer:${id}`, JSON.stringify(payload), true);
@@ -2123,6 +2136,7 @@ export default function BezAgenciaLuxuryApp() {
           html: emailWrap("Офертата е готова", `
             <p style="margin:0 0 10px;">Здравей ${inqInfo.name || ""},</p>
             <p style="margin:0 0 24px;">Офертата ти по запитване <strong style="color:#D4AF37;">${id}</strong> е готова за преглед — цени, дати, снимки на настаняването и начин на плащане те очакват на страницата.</p>
+            ${(f.notes || "").trim() ? `<div style="margin:0 0 24px;padding:14px 16px;border:1px solid #232b3d;border-radius:10px;background:rgba(212,175,55,0.06);"><div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#D4AF37;font-weight:700;margin-bottom:6px;">Забележки</div><div style="font-size:15px;line-height:1.6;">${escapeHtml((f.notes || "").trim())}</div></div>` : ""}
             <p style="text-align:center;margin:0 0 22px;">
               <a href="${offerLink}" style="display:inline-block;background:#D4AF37;color:#0A0E17;font-weight:700;padding:14px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Прегледай и потвърди офертата</a>
             </p>
@@ -2139,7 +2153,7 @@ export default function BezAgenciaLuxuryApp() {
       });
 
       setAdminOfferSaveStatus("sent");
-      setAdminOfferForm({ inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""] });
+      setAdminOfferForm({ inquiryId: "", flightPrice: "", flightDateFrom: "", flightDateTo: "", hotelPrice: "", photos: ["", "", ""], adminLinks: [""], notes: "" });
       setAdminOfferImageErrors(["", "", ""]);
     } catch { setAdminOfferSaveStatus("error"); }
   };
@@ -2159,6 +2173,7 @@ export default function BezAgenciaLuxuryApp() {
         tag: f.tag, departureFrom: f.departureFrom || null, flightPrice, hotelPrice, totalPrice: flightPrice + hotelPrice,
         travelMonth: f.travelMonth || null, imageDataUrl: f.imageDataUrl || null,
         createdAt: existing?.createdAt || Date.now(), updatedAt: Date.now(),
+        hidden: !!existing?.hidden,
         // Вътрешни детайли — само за теб, никога не се показват на клиента:
         flightDateFrom: f.flightDateFrom || "", flightDateTo: f.flightDateTo || "",
         flightLinks: f.flightLinks.filter(Boolean),
@@ -2278,6 +2293,22 @@ export default function BezAgenciaLuxuryApp() {
     setOptimizeStatus(`Готово. Спестени са около ${(savedBytes / 1024 / 1024).toFixed(1)} MB.`);
   };
 
+  // Скрива/показва оферта на публичния сайт, без да я трие — за да можеш
+  // да я редактираш и да я върнеш по-късно.
+  const handleToggleDealHidden = async (d) => {
+    const nextHidden = !d.hidden;
+    try {
+      const r = await db.get(`deal:${d.id}`);
+      if (!r?.value) return;
+      const full = JSON.parse(r.value);
+      full.hidden = nextHidden;
+      full.hiddenAt = nextHidden ? Date.now() : null;
+      const ok = await db.set(`deal:${d.id}`, JSON.stringify(full));
+      if (!ok) return;
+      setDeals((prev) => prev.map((x) => (x.id === d.id ? { ...x, hidden: nextHidden } : x)));
+    } catch { /* при грешка нищо не се променя */ }
+  };
+
   const handleDeleteDeal = async (id) => {
     try {
       await db.delete(`deal:${id}`, true);
@@ -2333,7 +2364,7 @@ export default function BezAgenciaLuxuryApp() {
     const commissionPct = 5;
     return {
       inquiriesCount: adminContacts.length,
-      dealsCount: deals.length,
+      dealsCount: deals.filter((d) => !d.hidden).length,
       paymentsCount: adminPayments.length,
       totalPayments, paidSum, pendingSum,
       estimatedCommission: Math.round(paidSum * (commissionPct / 100)),
@@ -2666,7 +2697,7 @@ export default function BezAgenciaLuxuryApp() {
             </div>
           </section>
 
-          {deals.length > 0 && (
+          {publicDeals.length > 0 && (
             <section style={{ maxWidth: 1240, margin: "0 auto", padding: "64px 32px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap", marginBottom: 28 }}>
                 <div>
@@ -2683,7 +2714,7 @@ export default function BezAgenciaLuxuryApp() {
                 </button>
               </div>
               <div className="ba-cols3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 24 }}>
-                {deals.slice(0, 3).map((d, di) => {
+                {publicDeals.slice(0, 3).map((d, di) => {
                   const tag = DEAL_TAGS[d.tag] || DEAL_TAGS.flash;
                   const total = d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0));
                   return (
@@ -3131,19 +3162,19 @@ export default function BezAgenciaLuxuryApp() {
               Възникна грешка при зареждане на офертите от базата данни: <strong style={{ color: PALETTE.coralDark }}>{dealsError}</strong>. Провери в Админ панела дали Supabase е свързан.
             </div>
           )}
-          {!dealsLoading && !dealsError && deals.length === 0 && (
+          {!dealsLoading && !dealsError && publicDeals.length === 0 && (
             <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "36px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5 }}>
               Все още няма публикувани оферти. Добави ги от Админ → Оферти.
             </div>
           )}
-          {!dealsLoading && !dealsError && deals.length > 0 && deals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).length === 0 && (
+          {!dealsLoading && !dealsError && publicDeals.length > 0 && publicDeals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).length === 0 && (
             <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "36px 24px", textAlign: "center", color: PALETTE.inkMuted, fontSize: 15.5 }}>
               Няма оферти с полет от {dealsFilterDeparture}.
             </div>
           )}
 
           <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            {deals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).map((d, di) => {
+            {publicDeals.filter((d) => !dealsFilterDeparture || d.departureFrom === dealsFilterDeparture).map((d, di) => {
               const tag = DEAL_TAGS[d.tag] || DEAL_TAGS.flash;
               return (
                 <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, overflow: "hidden" }}>
@@ -3290,7 +3321,7 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               )}
 
-              {dashPayment?.paid && dashOffer && (dashOffer.flightLinks?.length || dashOffer.hotelLinks?.length || dashOffer.experienceLinks?.length || dashOffer.cityPdfLink) && (
+              {dashPayment?.paid && dashOffer && (dashOffer.flightLinks?.length || dashOffer.hotelLinks?.length || dashOffer.experienceLinks?.length || dashOffer.cityPdfLink || dashOffer.fullNotes) && (
                 <OfferDetailsDisplay offer={dashOffer} openLightbox={openLightbox} />
               )}
             </div>
@@ -3515,6 +3546,13 @@ export default function BezAgenciaLuxuryApp() {
                     <SummaryRow label="Обща стойност" value={<span style={{ color: PALETTE.goldText, fontWeight: 700 }}>{total} €</span>} />
                   </div>
                 </div>
+
+                {offerData.notes && (
+                  <div style={{ background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 14, padding: "16px 20px" }}>
+                    <div style={{ fontSize: 12.5, color: PALETTE.goldText, letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>Забележки</div>
+                    <p style={{ fontSize: 15.5, color: PALETTE.ink, lineHeight: 1.65, margin: 0, whiteSpace: "pre-wrap" }}>{offerData.notes}</p>
+                  </div>
+                )}
 
                 <div style={{ background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
                   <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 14 }}>След потвърдено плащане получаваш</div>
@@ -3923,6 +3961,17 @@ export default function BezAgenciaLuxuryApp() {
                             />
 
                             <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>Забележки към клиента</div>
+                              <textarea
+                                value={fullOfferForm.notes}
+                                onChange={(e) => setFullOfferForm((f) => ({ ...f, notes: e.target.value }))}
+                                placeholder="Свободен текст — клиентът го вижда в „Статус на оферта“ и в имейла (по желание)."
+                                rows={3}
+                                style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+                              />
+                            </div>
+
+                            <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 13, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>PDF гид за града</div>
                               {fullOfferForm.cityPdfLink ? (
                                 <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px" }}>
@@ -4091,6 +4140,17 @@ export default function BezAgenciaLuxuryApp() {
                     </button>
                   </div>
 
+                  <div style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 16, color: PALETTE.inkMuted, fontWeight: 600, marginBottom: 6 }}>Забележки към клиента</div>
+                    <textarea
+                      value={adminOfferForm.notes}
+                      onChange={(e) => setAdminOfferForm((f) => ({ ...f, notes: e.target.value }))}
+                      placeholder="Свободен текст, който клиентът ще види в имейла и на страницата с офертата (по желание)."
+                      rows={3}
+                      style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+                    />
+                  </div>
+
                   <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18, fontSize: 15.5, color: PALETTE.inkFaint, lineHeight: 1.6 }}>
                     В имейла автоматично се добавят пояснения, че след плащане клиентът получава: 2 опции за настаняване, линкове за входни билети/екскурзии през GetYourGuide, и информация за трансфери и градски транспорт.
                   </div>
@@ -4235,13 +4295,16 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {deals.map((d) => (
-                      <div key={d.id} className="lux-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: editingDealId === d.id ? "rgba(212,175,55,0.08)" : PALETTE.panel, border: `1px solid ${editingDealId === d.id ? "rgba(212,175,55,0.4)" : PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px", gap: 10, flexWrap: "wrap" }}>
+                      <div key={d.id} className="lux-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: editingDealId === d.id ? "rgba(212,175,55,0.08)" : PALETTE.panel, border: `1px solid ${editingDealId === d.id ? "rgba(212,175,55,0.4)" : PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px", gap: 10, flexWrap: "wrap", opacity: d.hidden ? 0.6 : 1 }}>
                         {dealImg(d) && <img src={dealImg(d)} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />}
-                        <span style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 600 }}>{d.title} <span style={{ color: PALETTE.inkFaint, fontWeight: 400 }}>({d.city})</span></span>
+                        <span style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 600 }}>{d.title} <span style={{ color: PALETTE.inkFaint, fontWeight: 400 }}>({d.city})</span>{d.hidden && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: PALETTE.coralDark, background: "rgba(184,75,49,0.10)", border: "1px solid rgba(184,75,49,0.3)", borderRadius: 20, padding: "2px 9px" }}>Скрита от сайта</span>}</span>
                         <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{d.departureFrom ? `от ${d.departureFrom} · ` : ""}✈ {d.flightPrice ?? "—"} € · 🏨 {d.hotelPrice ?? "—"} €</span>
                         <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => handleEditDeal(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.oceanBright }} title="Редактирай"><Search size={15} /></button>
+                          <button onClick={() => handleToggleDealHidden(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 10px", cursor: "pointer", color: d.hidden ? PALETTE.jungle : PALETTE.inkMuted, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }} title={d.hidden ? "Покажи офертата на сайта" : "Скрий офертата от основния сайт (без да я триеш)"}>
+                            {d.hidden ? <Eye size={15} /> : <EyeOff size={15} />} {d.hidden ? "Покажи" : "Скрий"}
+                          </button>
                           <button onClick={() => handleDeleteDeal(d.id)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.coralDark }} title="Изтрий"><Trash2 size={15} /></button>
                         </div>
                       </div>
@@ -4761,6 +4824,13 @@ function OfferDetailsDisplay({ offer, openLightbox }) {
   return (
     <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
       <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 14, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Всички детайли за пътуването</div>
+
+      {offer.fullNotes && (
+        <div style={{ background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "14px 16px", marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, color: PALETTE.goldText, letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Забележки</div>
+          <p style={{ fontSize: 15, color: PALETTE.ink, lineHeight: 1.65, margin: 0, whiteSpace: "pre-wrap" }}>{offer.fullNotes}</p>
+        </div>
+      )}
 
       {(offer.flightLinks?.length > 0 || offer.flightPhotos?.filter(Boolean).length > 0) && (
         <div style={{ marginBottom: 18 }}>

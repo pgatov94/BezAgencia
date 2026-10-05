@@ -107,7 +107,7 @@ export const db = {
     }
     const { data, error } = await supabase
       .from("deals")
-      .select("id, data->title, data->city, data->country, data->tag, data->departureFrom, data->flightPrice, data->hotelPrice, data->totalPrice, data->travelMonth, data->createdAt");
+      .select("id, data->title, data->city, data->country, data->tag, data->departureFrom, data->flightPrice, data->hotelPrice, data->totalPrice, data->travelMonth, data->hidden, data->createdAt");
     if (error) {
       throw new Error("Storage listPublicDeals failed: " + error.message);
     }
