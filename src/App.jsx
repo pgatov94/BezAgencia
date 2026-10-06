@@ -9,7 +9,7 @@ import {
   MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown,
 } from "lucide-react";
 
-const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap');`;
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');`;
 
 /* ─────────────────────────────────────────────────────────────────────
    ДИЗАЙН СИСТЕМА — luxury concierge: дълбок navy/charcoal фон, злато
@@ -504,7 +504,7 @@ function CityIllustration({ name, code, accent }) {
       overflow: "hidden",
     }}>
       <span style={{
-        position: "absolute", right: -6, bottom: -22, fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700,
+        position: "absolute", right: -6, bottom: -22, fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700,
         fontSize: 108, lineHeight: 1, color: "rgba(238,241,246,0.06)", userSelect: "none",
       }}>{initial}</span>
       <img
@@ -2208,7 +2208,7 @@ export default function BezAgenciaLuxuryApp() {
 
   const handleAdminSaveDeal = async () => {
     const f = adminDealForm;
-    if (!f.title.trim() || !f.flightPrice || !f.hotelPrice) return;
+    if (!f.title.trim() || !f.flightPrice || !f.hotelPrice || !f.departureFrom) { setAdminDealSaveStatus("invalid"); return; }
     setAdminDealSaveStatus("saving");
     try {
       const id = editingDealId || genDealId();
@@ -2564,7 +2564,10 @@ export default function BezAgenciaLuxuryApp() {
         /* Общи поправки за четимост на мобилен — да не се реже текст и да не прелива извън екрана */
         img, svg { max-width: 100%; }
         h1, h2, h3, h4, p, span, a, label, button { overflow-wrap: anywhere; word-break: break-word; }
-        button { white-space: normal; }
+        button { white-space: normal; font-family: inherit; }
+        html, body { font-family: 'Manrope', system-ui, sans-serif; }
+        h1, h2, h3, h4 { letter-spacing: -0.01em; }
+        .ba-hero-title { letter-spacing: -0.02em; }
       `}</style>
 
       {/* ── ЛОГО (бутон "Начало") — на началната е върху hero снимката ───── */}
@@ -2678,7 +2681,7 @@ export default function BezAgenciaLuxuryApp() {
                   <Plane size={16} /> БезАгенция
                 </div>
                 <h1 className="ba-hero-title" style={{
-                  fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 60, lineHeight: 1.08, margin: "0 0 20px", color: "#FFFFFF",
+                  fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 60, lineHeight: 1.08, margin: "0 0 20px", color: "#FFFFFF",
                 }}>
                   Личен консултант по бюджетни пътувания
                 </h1>
@@ -2713,7 +2716,7 @@ export default function BezAgenciaLuxuryApp() {
                 <div key={n} className="ba-step" style={{ padding: "26px 28px", display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{
                     width: 42, height: 42, minWidth: 42, borderRadius: "50%", background: PALETTE.gold, color: PALETTE.bgDeep,
-                    fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center",
                   }}>{n}</div>
                   <div style={{ fontWeight: 700, fontSize: 17, color: PALETTE.ink, lineHeight: 1.3 }}>{t}</div>
                 </div>
@@ -2723,7 +2726,7 @@ export default function BezAgenciaLuxuryApp() {
 
           <section style={{ maxWidth: 1240, margin: "0 auto", padding: "88px 32px 24px" }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: PALETTE.goldText, marginBottom: 10 }}>Как работи платформата</div>
-            <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: "0 0 34px", maxWidth: 720 }}>
+            <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: "0 0 34px", maxWidth: 720 }}>
               Плащаш само ако решиш да пътуваш
             </h2>
             <div className="ba-cols3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 24 }}>
@@ -2746,7 +2749,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: PALETTE.goldText, marginBottom: 10 }}>
                 <Tag size={16} /> Оферти
               </div>
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Светкавични намаления</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Светкавични намаления</h2>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
@@ -2799,13 +2802,18 @@ export default function BezAgenciaLuxuryApp() {
                       <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={dealImg(d)} />
                       <div style={{ padding: "18px 18px 20px", display: "flex", flexDirection: "column", flex: 1 }}>
                         <span style={{ alignSelf: "flex-start", fontSize: 10, fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "4px 10px", marginBottom: 12 }}>{tag.label}</span>
-                        <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 19, lineHeight: 1.25, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
+                        <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 19, lineHeight: 1.25, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, color: PALETTE.inkMuted, marginBottom: 14 }}>
                           <MapPin size={15} /> {d.city}{d.city && d.country ? ", " : ""}{d.country}
                         </div>
+                        {d.departureFrom && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, color: PALETTE.inkMuted, marginTop: -8, marginBottom: 14 }}>
+                            <Plane size={15} /> Излитане от: <strong style={{ color: PALETTE.ink, fontWeight: 700 }}>{d.departureFrom}</strong>
+                          </div>
+                        )}
                         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "auto", marginBottom: d.travelMonth ? 6 : 16 }}>
                           <span style={{ fontSize: 11.5, color: PALETTE.inkFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.1 }}>Обща цена</span>
-                          <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink }}>{total} €</span>
+                          <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink }}>{total} €</span>
                         </div>
                         {d.travelMonth && (
                           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: PALETTE.inkFaint, marginBottom: 16 }}>
@@ -2874,7 +2882,7 @@ export default function BezAgenciaLuxuryApp() {
 
           <section style={{ maxWidth: 1240, margin: "0 auto", padding: "64px 32px 96px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 34, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Какво споделят другите пътешественици</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 34, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Какво споделят другите пътешественици</h2>
             </div>
             {publicReviewsLoading && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам отзиви…</p>}
             {!publicReviewsLoading && publicReviews.length === 0 && (
@@ -2956,7 +2964,7 @@ export default function BezAgenciaLuxuryApp() {
 
           {step === 1 && (
             <section style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px 70px" }}>
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Излитане от</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Излитане от</h2>
               <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 24px" }}>Изберете летището, от което тръгвате</p>
               <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
                 {DEPARTURES.map((d) => (
@@ -2975,7 +2983,7 @@ export default function BezAgenciaLuxuryApp() {
           {step === 2 && (
             <section style={{ maxWidth: 1000, margin: "0 auto", padding: "20px 24px 70px" }}>
               <BackBtn onClick={() => setStep(1)} />
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Избери държава</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Избери държава</h2>
               <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 24px" }}>
                 Тръгвате от {departure?.name} · директни полети на Ryanair и Wizz Air, плюс далечни дестинации с прекачване
               </p>
@@ -2994,7 +3002,7 @@ export default function BezAgenciaLuxuryApp() {
                       <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(6,8,16,0.15) 30%, rgba(6,8,16,0.94) 100%)` }} />
                       <div style={{ position: "absolute", top: 10, right: 10, background: "rgba(10,14,23,0.75)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 6, padding: "2px 7px", fontWeight: 700, fontSize: 10.5, color: "#E3C15A", letterSpacing: 1 }}>{c.id.toUpperCase()}</div>
                       <div style={{ position: "absolute", left: 14, right: 14, bottom: 12, textAlign: "left" }}>
-                        <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 17, color: "#FFFFFF" }}>{c.name}</div>
+                        <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 17, color: "#FFFFFF" }}>{c.name}</div>
                         <div style={{ fontSize: 11, color: "#C9D1E0" }}>{c.cities.length} {c.cities.length === 1 ? "дестинация" : "дестинации"}</div>
                       </div>
                     </button>
@@ -3007,7 +3015,7 @@ export default function BezAgenciaLuxuryApp() {
           {step === 3 && country && (
             <section style={{ maxWidth: 1000, margin: "0 auto", padding: "20px 24px 70px" }}>
               <BackBtn onClick={() => setStep(2)} />
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 10 }}>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 10 }}>
                 <FlagBadge id={country.id} style={{ width: 30, height: 20, borderRadius: 3, boxShadow: "0 1px 4px rgba(0,0,0,0.4)" }} />
                 Избери град в {country.name}
               </h2>
@@ -3022,7 +3030,7 @@ export default function BezAgenciaLuxuryApp() {
                       <CityIllustration name={ci.name} code={ci.id.toUpperCase()} accent={ACCENTS[idx % ACCENTS.length]} seed={idx} />
                     </div>
                     <div style={{ padding: "12px 14px" }}>
-                      <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 600, fontSize: 16.5, color: PALETTE.ink }}>{ci.name}</div>
+                      <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 16.5, color: PALETTE.ink }}>{ci.name}</div>
                     </div>
                   </button>
                 ))}
@@ -3033,7 +3041,7 @@ export default function BezAgenciaLuxuryApp() {
           {step === 4 && city && (
             <section style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px 70px" }}>
               <BackBtn onClick={() => setStep(3)} />
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Завърши запитването</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Завърши запитването</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 24px" }}>
                 <MapPin size={16} color={PALETTE.oceanBright} />
                 <span style={{ fontSize: 15.5, color: PALETTE.inkMuted }}>{city.name}, {country?.name} · от {departure?.name}</span>
@@ -3162,13 +3170,13 @@ export default function BezAgenciaLuxuryApp() {
           {step === 5 && city && (
             <section style={{ maxWidth: 640, margin: "0 auto", padding: "20px 24px 90px" }}>
               <BackBtn onClick={() => setStep(4)} />
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Провери преди да изпратиш</h2>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 4px" }}>Провери преди да изпратиш</h2>
               <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 24px" }}>Ако всичко е точно, потвърди по-долу. Иначе се върни и редактирай.</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 20px" }}>
                   <div style={{ fontSize: 12.5, color: PALETTE.inkFaint, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>Дестинация</div>
-                  <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 18, color: PALETTE.ink, marginBottom: 4 }}>{city.name}, {country?.name}</div>
+                  <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 18, color: PALETTE.ink, marginBottom: 4 }}>{city.name}, {country?.name}</div>
                   <div style={{ fontSize: 16, color: PALETTE.inkMuted }}>Полет от {departure?.name}</div>
                 </div>
 
@@ -3220,7 +3228,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: "50%", background: "rgba(212,175,55,0.14)", color: PALETTE.goldText, marginBottom: 18, border: `1px solid rgba(212,175,55,0.35)` }}>
                 <Check size={26} />
               </div>
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 8px" }}>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: "0 0 8px" }}>
                 {sendStatus === "sent" ? "Запитването е изпратено" : sendStatus === "sending" ? "Изпращане…" : sendStatus === "error" ? "Възникна проблем" : "Запитването е прието"}
               </h2>
               <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 18px", lineHeight: 1.6 }}>
@@ -3228,7 +3236,7 @@ export default function BezAgenciaLuxuryApp() {
               </p>
 
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 24 }}>
-                <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldText, letterSpacing: 1 }}>{inquiryId}</span>
+                <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldText, letterSpacing: 1 }}>{inquiryId}</span>
                 <button onClick={() => navigator.clipboard?.writeText(inquiryId)} title="Копирай номера" style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 6, cursor: "pointer" }}>
                   <Copy size={16} color={PALETTE.oceanBright} />
                 </button>
@@ -3250,7 +3258,7 @@ export default function BezAgenciaLuxuryApp() {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldText, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
               <Tag size={15} /> Оферти
             </div>
-            <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 28, color: PALETTE.ink, margin: "0 0 6px" }}>Светкавични намаления</h2>
+            <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 28, color: PALETTE.ink, margin: "0 0 6px" }}>Светкавични намаления</h2>
           </div>
 
           <div style={{ marginBottom: 22 }}>
@@ -3305,7 +3313,7 @@ export default function BezAgenciaLuxuryApp() {
                     <div style={{ marginBottom: 10 }}>
                       <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "3px 9px" }}>{tag.label}</span>
                     </div>
-                    <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 17, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
+                    <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 17, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 16, color: PALETTE.inkMuted, marginBottom: 14 }}>
                       <MapPin size={14} /> {d.city}{d.city && d.country ? ", " : ""}{d.country}
                     </div>
@@ -3326,7 +3334,7 @@ export default function BezAgenciaLuxuryApp() {
 
                     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: d.travelMonth ? 10 : 0 }}>
                       <span style={{ fontSize: 13.5, color: PALETTE.inkFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Обща цена</span>
-                      <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 24, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
+                      <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 24, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                     </div>
                     {d.travelMonth && (
                       <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: PALETTE.inkFaint, marginBottom: 14 }}>
@@ -3392,7 +3400,7 @@ export default function BezAgenciaLuxuryApp() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldText, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
             <ClipboardCheck size={15} /> Статус на оферта
           </div>
-          <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Провери статус по номер</h2>
+          <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Провери статус по номер</h2>
           <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 22px" }}>Въведи номера, който получи при подаване на запитването (напр. BA-20260701-1234).</p>
 
           <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
@@ -3410,7 +3418,7 @@ export default function BezAgenciaLuxuryApp() {
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
                 <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Пътуване</div>
-                <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, marginBottom: 4 }}>
+                <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, marginBottom: 4 }}>
                   {dashInquiry?.city || "—"}{dashInquiry?.country ? `, ${dashInquiry.country}` : ""}
                 </div>
                 <div style={{ fontSize: 16, color: PALETTE.inkFaint }}>{dashInquiry?.name ? `За ${dashInquiry.name}` : ""}</div>
@@ -3425,7 +3433,7 @@ export default function BezAgenciaLuxuryApp() {
                 <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
                   <div style={{ fontSize: 13, color: PALETTE.inkMuted, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>Плащане</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
-                    <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText }}>{dashPayment.amount} €</span>
+                    <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText }}>{dashPayment.amount} €</span>
                     <span style={{ fontSize: 16, color: dashPayment.paid ? PALETTE.jungle : PALETTE.inkMuted, fontWeight: 600 }}>{dashPayment.paid ? "Платено" : "Дължимо"}</span>
                   </div>
                   {!dashPayment.paid && (
@@ -3467,7 +3475,7 @@ export default function BezAgenciaLuxuryApp() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: PALETTE.goldText, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
             <Star size={15} /> Отзиви
           </div>
-          <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Сподели преживяването си</h2>
+          <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 26, color: PALETTE.ink, margin: "0 0 6px" }}>Сподели преживяването си</h2>
           <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 22px", lineHeight: 1.6 }}>
             За да предпазим отзивите от злоупотреба, ваучер за 10% отстъпка получават само клиенти с реално платено пътуване.
             Въведи номера на своята резервация (същия като за „Плащания").
@@ -3502,7 +3510,7 @@ export default function BezAgenciaLuxuryApp() {
               </p>
               {existingVoucherCode ? (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(212,175,55,0.1)", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 10, padding: "10px 16px" }}>
-                  <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 18, color: PALETTE.goldText, letterSpacing: 1 }}>{existingVoucherCode}</span>
+                  <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 18, color: PALETTE.goldText, letterSpacing: 1 }}>{existingVoucherCode}</span>
                   <button onClick={() => navigator.clipboard?.writeText(existingVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 5, cursor: "pointer" }}><Copy size={15} color={PALETTE.oceanBright} /></button>
                 </div>
               ) : (
@@ -3552,12 +3560,12 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: "50%", background: "rgba(212,175,55,0.14)", color: PALETTE.goldText, marginBottom: 18, border: `1px solid rgba(212,175,55,0.35)` }}>
                 <Check size={26} />
               </div>
-              <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 22, color: PALETTE.ink, margin: "0 0 10px" }}>Благодарим за отзива!</h3>
+              <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 22, color: PALETTE.ink, margin: "0 0 10px" }}>Благодарим за отзива!</h3>
               <p style={{ fontSize: 15.5, color: PALETTE.inkMuted, margin: "0 0 20px", lineHeight: 1.6 }}>
                 Ето твоя ваучер за 10% отстъпка от следващото пътуване. Спомени кода в полето „Допълнителен коментар" при следващото си запитване.
               </p>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 12, background: "rgba(212,175,55,0.1)", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 14, padding: "16px 26px", marginBottom: 24 }}>
-                <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldText, letterSpacing: 1 }}>{reviewVoucherCode}</span>
+                <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 22, color: PALETTE.goldText, letterSpacing: 1 }}>{reviewVoucherCode}</span>
                 <button onClick={() => navigator.clipboard?.writeText(reviewVoucherCode)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: 6, cursor: "pointer" }}><Copy size={16} color={PALETTE.oceanBright} /></button>
               </div>
               <div>
@@ -3573,7 +3581,7 @@ export default function BezAgenciaLuxuryApp() {
 
           <div style={{ marginTop: 44, paddingTop: 28, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-              <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, margin: 0 }}>Какво споделят другите пътешественици</h3>
+              <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, margin: 0 }}>Какво споделят другите пътешественици</h3>
               <button onClick={loadPublicReviews} className="lux-hover" style={{
                 display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`,
                 borderRadius: 10, padding: "6px 12px", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 11.5, color: PALETTE.inkMuted, cursor: "pointer",
@@ -3644,7 +3652,7 @@ export default function BezAgenciaLuxuryApp() {
             const baseCommission = Math.max(total * 0.05, 50);
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: 0 }}>
+                <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, margin: 0 }}>
                   {offerInquiry?.city ? `${offerInquiry.city}, ${offerInquiry.country}` : `Запитване ${offerViewId}`}
                 </h2>
                 {offerInquiry?.name && <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: 0 }}>За {offerInquiry.name} · номер {offerViewId}</p>}
@@ -3729,12 +3737,12 @@ export default function BezAgenciaLuxuryApp() {
                   {offerDiscountStatus === "applied" ? (
                     <>
                       <div style={{ fontSize: 15, color: PALETTE.inkFaint, textDecoration: "line-through", marginBottom: 2 }}>{Math.round(baseCommission)} €</div>
-                      <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText, marginBottom: 6 }}>
+                      <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText, marginBottom: 6 }}>
                         {Math.round(baseCommission * (1 - offerDiscountPercent / 100))} €
                       </div>
                     </>
                   ) : (
-                    <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText, marginBottom: 6 }}>
+                    <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 30, color: PALETTE.goldText, marginBottom: 6 }}>
                       {Math.round(baseCommission)} €
                     </div>
                   )}
@@ -3837,7 +3845,7 @@ export default function BezAgenciaLuxuryApp() {
           <BackBtn onClick={goHome} />
           {!adminAuthed ? (
             <div style={{ maxWidth: 380, margin: "0 auto" }}>
-              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 22, color: PALETTE.ink, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 22, color: PALETTE.ink, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                 <Lock size={21} /> Админ достъп
               </h2>
               <div style={{ display: "flex", gap: 10 }}>
@@ -3875,7 +3883,7 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "payments" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Задай сума по номер</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Задай сума по номер</h3>
                   <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>Клиентът ще я види в „Плащания" по същия номер.</p>
                   <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
                     <input value={adminIdInput} onChange={(e) => setAdminIdInput(e.target.value)} placeholder="Номер, напр. BA-20260701-1234" style={{ ...inputStyle, flex: 2, minWidth: 200 }} />
@@ -3891,14 +3899,14 @@ export default function BezAgenciaLuxuryApp() {
                   {adminNotifyStatus === "no-email" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginBottom: 14 }}>Няма запазен имейл за този номер — извести ръчно.</p>}
                   {adminNotifyStatus === "notify-error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, marginBottom: 14 }}>Сумата е записана, но известието не се изпрати.</p>}
 
-                  <h4 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: "26px 0 12px" }}>Всички зададени суми</h4>
+                  <h4 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: "26px 0 12px" }}>Всички зададени суми</h4>
                   {adminPaymentsLoading && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Зареждам…</p>}
                   {!adminPaymentsLoading && adminPayments.length === 0 && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма зададени суми.</p>}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {adminPayments.map((item) => (
                       <div key={item.key} className="lux-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "10px 14px", gap: 10, flexWrap: "wrap" }}>
                         <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 15, color: PALETTE.ink }}>{item.key.replace("payment:", "")}</span>
-                        <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15, color: PALETTE.goldText }}>{item.amount} €</span>
+                        <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, color: PALETTE.goldText }}>{item.amount} €</span>
                         <button onClick={() => toggleMarkPaid(item)} style={{
                           fontSize: 11.5, fontWeight: 700, padding: "5px 10px", borderRadius: 20, cursor: "pointer",
                           background: item.paid ? "rgba(46,158,118,0.16)" : "rgba(15,23,42,0.06)",
@@ -3916,7 +3924,7 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "offer" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Изпрати лична оферта</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Изпрати лична оферта</h3>
                   <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
                     Клиентът получава имейл с линк, на който вижда офертата и може да я потвърди с плащане (5% комисионна, минимум 50 €).
                   </p>
@@ -4290,14 +4298,14 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "deals" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>{editingDealId ? "Редактирай оферта" : "Добави оферта"}</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>{editingDealId ? "Редактирай оферта" : "Добави оферта"}</h3>
                   <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>{editingDealId ? "Промените се записват при запазване и се отразяват веднага в „Оферти\"." : "Появява се веднага в публичната страница „Оферти\"."}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 12 }}>
                     <input value={adminDealForm.title} onChange={(e) => setAdminDealForm((f) => ({ ...f, title: e.target.value }))} placeholder="Заглавие, напр. Уикенд в Барселона" style={inputStyle} />
                     <input value={adminDealForm.city} onChange={(e) => setAdminDealForm((f) => ({ ...f, city: e.target.value }))} placeholder="Град" style={inputStyle} />
                     <input value={adminDealForm.country} onChange={(e) => setAdminDealForm((f) => ({ ...f, country: e.target.value }))} placeholder="Държава" style={inputStyle} />
                     <select value={adminDealForm.departureFrom} onChange={(e) => setAdminDealForm((f) => ({ ...f, departureFrom: e.target.value }))} style={selectStyle}>
-                      <option value="">Полет от (незадължително)</option>
+                      <option value="">Излитане от *</option>
                       {DEPARTURES.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
                     </select>
                     <select value={adminDealForm.tag} onChange={(e) => setAdminDealForm((f) => ({ ...f, tag: e.target.value }))} style={selectStyle}>
@@ -4398,6 +4406,7 @@ export default function BezAgenciaLuxuryApp() {
                     )}
                   </div>
                   {adminDealSaveStatus === "saved" && <p style={{ fontSize: 16, color: PALETTE.jungle, marginTop: 8 }}>{editingDealId ? "Записано." : "Публикувано."}</p>}
+                  {adminDealSaveStatus === "invalid" && <p style={{ fontSize: 15, color: PALETTE.coralDark, marginTop: 8 }}>Попълни заглавие, цена на полети, цена на нощувки и от кое летище е излитането.</p>}
                   {adminDealSaveStatus === "error" && (
                     <p style={{ fontSize: 16, color: PALETTE.coralDark, marginTop: 8 }}>
                       {!isSupabaseConfigured
@@ -4407,7 +4416,7 @@ export default function BezAgenciaLuxuryApp() {
                   )}
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "28px 0 12px" }}>
-                    <h4 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: 0 }}>Публикувани оферти</h4>
+                    <h4 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, margin: 0 }}>Публикувани оферти</h4>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {optimizeStatus && <span style={{ fontSize: 13, color: PALETTE.inkMuted }}>{optimizeStatus}</span>}
                       <button onClick={handleOptimizeDealImages} className="lux-hover" title="Смалява снимките на публикуваните оферти, за да се зареждат бързо" style={{
@@ -4421,7 +4430,7 @@ export default function BezAgenciaLuxuryApp() {
                         {dealImg(d) && <img src={dealImg(d)} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />}
                         <span style={{ fontSize: 15, color: PALETTE.ink, fontWeight: 600 }}>{d.title} <span style={{ color: PALETTE.inkFaint, fontWeight: 400 }}>({d.city})</span>{d.hidden && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: PALETTE.coralDark, background: "rgba(184,75,49,0.10)", border: "1px solid rgba(184,75,49,0.3)", borderRadius: 20, padding: "2px 9px" }}>Скрита от сайта</span>}</span>
                         <span style={{ fontSize: 11.5, color: PALETTE.inkFaint }}>{d.departureFrom ? `от ${d.departureFrom} · ` : ""}✈ {d.flightPrice ?? "—"} € · 🏨 {d.hotelPrice ?? "—"} €</span>
-                        <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
+                        <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, color: PALETTE.goldText }}>{d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0))} €</span>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => handleEditDeal(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 8px", cursor: "pointer", color: PALETTE.oceanBright }} title="Редактирай"><Search size={15} /></button>
                           <button onClick={() => handleToggleDealHidden(d)} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "5px 10px", cursor: "pointer", color: d.hidden ? PALETTE.jungle : PALETTE.inkMuted, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }} title={d.hidden ? "Покажи офертата на сайта" : "Скрий офертата от основния сайт (без да я триеш)"}>
@@ -4438,7 +4447,7 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "contacts" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Контакти на клиенти</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Контакти на клиенти</h3>
                   <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
                     Реални данни от всички подадени запитвания — засега без пароли/акаунти, това е списък с контакти, не система за автентикация.
                   </p>
@@ -4465,7 +4474,7 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "subscribers" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Абонати за бюлетин</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 6px" }}>Абонати за бюлетин</h3>
                   <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 18px" }}>
                     Всички, записали се в „Абонирай се" на сайта. Автоматично получават имейл с новите оферти, когато добавиш или обновиш нещо в таб „Оферти".
                   </p>
@@ -4490,7 +4499,7 @@ export default function BezAgenciaLuxuryApp() {
 
               {adminTab === "analytics" && (
                 <div>
-                  <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 18px" }}>Обобщение</h3>
+                  <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: "0 0 18px" }}>Обобщение</h3>
                   <div className="ba-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
                     <StatCard icon={<Users size={18} />} label="Запитвания" value={analytics.inquiriesCount} onReset={() => handleAdminResetCategory("inquiries", "Запитвания")} resetTitle="Изтрий всички запитвания" />
                     <StatCard icon={<Tag size={18} />} label="Активни оферти" value={analytics.dealsCount} onReset={() => handleAdminResetCategory("deals", "Активни оферти")} resetTitle="Изтрий всички оферти" />
@@ -4507,7 +4516,7 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                    <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: 0 }}>Посещения на сайта</h3>
+                    <h3 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: 0 }}>Посещения на сайта</h3>
                     <button onClick={loadVisitStats} className="lux-hover" style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", color: PALETTE.inkMuted, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <RotateCcw size={13} /> Обнови
                     </button>
@@ -4744,7 +4753,7 @@ function RouteField({ label, value, muted }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
       <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 10.5, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: PALETTE.oceanBright }}>{label}</span>
-      <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 600, fontSize: 15, color: muted ? PALETTE.inkMuted : PALETTE.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</span>
+      <span style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 15, color: muted ? PALETTE.inkMuted : PALETTE.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</span>
     </div>
   );
 }
@@ -4765,7 +4774,7 @@ function StatCard({ icon, label, value, accent, onReset, resetTitle }) {
         </button>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 8, color: accent ? PALETTE.goldText : PALETTE.oceanBright, marginBottom: 10 }}>{icon}</div>
-      <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 22, color: accent ? PALETTE.goldText : PALETTE.ink, marginBottom: 4 }}>{value}</div>
+      <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 22, color: accent ? PALETTE.goldText : PALETTE.ink, marginBottom: 4 }}>{value}</div>
       <div style={{ fontSize: 11.5, color: PALETTE.inkMuted }}>{label}</div>
     </div>
   );
@@ -4823,7 +4832,7 @@ function AboutModal({ onClose, onStart, onShowDemo }) {
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 13, color: PALETTE.goldText, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
           <Compass size={15} /> За мен и за платформата
         </div>
-        <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink, lineHeight: 1.25, margin: "0 0 16px" }}>
+        <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink, lineHeight: 1.25, margin: "0 0 16px" }}>
           Не съм туристическа агенция — аз съм личният ти консултант по пътувания
         </h2>
         <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.75, margin: "0 0 14px" }}>
@@ -4857,7 +4866,7 @@ function AboutModal({ onClose, onStart, onShowDemo }) {
             <div key={i} className="lux-hover" style={{ display: "flex", gap: 14, alignItems: "flex-start", background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(212,175,55,0.12)", color: PALETTE.goldText, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.icon}</div>
               <div>
-                <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 15.5, color: PALETTE.ink, marginBottom: 4 }}>{s.title}</div>
+                <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15.5, color: PALETTE.ink, marginBottom: 4 }}>{s.title}</div>
                 <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.6 }}>{s.text}</div>
                 {s.extra}
               </div>
@@ -4915,7 +4924,7 @@ function CardSecurityModal({ onClose }) {
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 13, color: PALETTE.goldText, letterSpacing: 2, textTransform: "uppercase", border: `1px solid rgba(212,175,55,0.35)`, borderRadius: 30, padding: "6px 16px", marginBottom: 18 }}>
           <Lock size={15} /> Защита на картови данни
         </div>
-        <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, lineHeight: 1.3, margin: "0 0 18px" }}>
+        <h2 style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 25, color: PALETTE.ink, lineHeight: 1.3, margin: "0 0 18px" }}>
           Политика за осигуряване на защита на картови данни
         </h2>
         <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: PALETTE.inkMuted, lineHeight: 1.75, display: "flex", flexDirection: "column", gap: 14 }}>
