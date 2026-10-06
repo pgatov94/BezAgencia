@@ -6,7 +6,7 @@ import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap');`;
@@ -704,6 +704,20 @@ function compressImageDataUrl(dataUrl, maxSide = 900, quality = 0.78) {
   });
 }
 
+// Логото като бутон "Начало" — върху hero снимката (и на другите страници).
+// Тъмна стъклена плочка, за да се чете добре върху всякакъв фон.
+function LogoButton({ onClick }) {
+  return (
+    <button onClick={onClick} aria-label="БезАгенция — към началото" className="ba-logo-btn" style={{
+      display: "inline-flex", alignItems: "center", cursor: "pointer", padding: "8px 16px", borderRadius: 16,
+      background: "rgba(11,18,32,0.74)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+      border: "1px solid rgba(212,175,55,0.40)", boxShadow: "0 10px 28px rgba(0,0,0,0.38)",
+    }}>
+      <img className="ba-logo-img" src={LOGO_IMAGE} alt="БезАгенция" style={{ width: "auto", display: "block", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))" }} />
+    </button>
+  );
+}
+
 function escapeHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
@@ -966,6 +980,25 @@ export default function BezAgenciaLuxuryApp() {
   const [dealsFilterDeparture, setDealsFilterDeparture] = useState("");
   const [dealImages, setDealImages] = useState({}); // id -> data URL ("" ако офертата няма снимка)
   const publicDeals = useMemo(() => deals.filter((d) => !d.hidden), [deals]);
+  const [dealsQuery, setDealsQuery] = useState("");
+  const [dealsShowAll, setDealsShowAll] = useState(false);
+  const [viewW, setViewW] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1280));
+  useEffect(() => {
+    const onResize = () => setViewW(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Оферти след филтъра по летище и търсенето "До: град или държава".
+  const dealsMatch = useMemo(() => {
+    const q = dealsQuery.trim().toLowerCase();
+    return publicDeals.filter((d) => {
+      if (dealsFilterDeparture && d.departureFrom !== dealsFilterDeparture) return false;
+      if (q && !`${d.city || ""} ${d.country || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [publicDeals, dealsFilterDeparture, dealsQuery]);
+  const dealsInitial = viewW >= 1100 ? 8 : viewW >= 640 ? 6 : 4;
+  const dealsShown = dealsShowAll ? dealsMatch : dealsMatch.slice(0, dealsInitial);
   const dealImagesInFlight = useRef(new Set());
   const [optimizeStatus, setOptimizeStatus] = useState("");
   const [dealsError, setDealsError] = useState("");
@@ -1058,7 +1091,40 @@ export default function BezAgenciaLuxuryApp() {
     setComment(""); setInquiryId(null); setSendStatus("idle"); setShowValidationErrors(false); setEditingInquiryId(null); setFromDealTitle(null);
   };
 
-  const goHome = () => { setPage("home"); setShowAbout(false); setModalPage(null); };
+  const goHome = () => {
+    setPage("home"); setShowAbout(false); setModalPage(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  // Всичко за оферти е на началната страница — тук само скролваме до тях.
+  const goToOffers = () => {
+    setPage("home"); setShowAbout(false); setModalPage(null);
+    setTimeout(() => document.getElementById("offers")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+  };
+  // Когато няма подходяща светкавична оферта: стартираме запитване и, ако
+  // знаем летището и дестинацията, прескачаме вече избраните стъпки.
+  const startInquiryFromSearch = () => {
+    const q = dealsQuery.trim().toLowerCase();
+    const dep = DEPARTURES.find((d) => d.name === dealsFilterDeparture) || null;
+    resetWizard();
+    setModalPage(null);
+    setPage("wizard");
+    if (!dep) return;
+    setDeparture(dep);
+    let foundCountry = null, foundCity = null;
+    if (q) {
+      for (const c of COUNTRIES) {
+        const ci = c.cities.find((x) => x.from.includes(dep.id) && x.name.toLowerCase().includes(q));
+        if (ci) { foundCountry = c; foundCity = ci; break; }
+      }
+      if (!foundCity) {
+        const c = COUNTRIES.find((x) => x.name.toLowerCase().includes(q) && x.cities.some((ci) => ci.from.includes(dep.id)));
+        if (c) foundCountry = c;
+      }
+    }
+    if (foundCountry && foundCity) { setCountry(foundCountry); setCity(foundCity); setStep(4); }
+    else if (foundCountry) { setCountry(foundCountry); setStep(3); }
+    else setStep(2);
+  };
   const goWizard = () => { setPage("wizard"); if (step === 6) resetWizard(); };
 
   /* ── Синхронизация с браузърната история ──────────────────────────────
@@ -1357,9 +1423,8 @@ export default function BezAgenciaLuxuryApp() {
     const dealsParam = params.get("deals");
 
     if (dealsParam) {
-      setModalPage(null);
-      setPage("deals");
       window.history.replaceState({}, "", window.location.pathname);
+      goToOffers();
       return;
     }
 
@@ -1628,7 +1693,7 @@ export default function BezAgenciaLuxuryApp() {
   useEffect(() => {
     const onAdminDeals = page === "admin" && adminTab === "deals";
     const onPublicDeals = page === "deals" || modalPage === "deals";
-    const visible = page === "home" ? publicDeals.slice(0, 3) : onAdminDeals ? deals : onPublicDeals ? publicDeals : [];
+    const visible = page === "home" ? dealsShown : onAdminDeals ? deals : onPublicDeals ? publicDeals : [];
     visible.forEach((d) => {
       if (d.imageDataUrl || dealImages[d.id] !== undefined || dealImagesInFlight.current.has(d.id)) return;
       dealImagesInFlight.current.add(d.id);
@@ -1637,7 +1702,7 @@ export default function BezAgenciaLuxuryApp() {
         .finally(() => dealImagesInFlight.current.delete(d.id));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deals, page, modalPage, adminTab]);
+  }, [deals, dealsShown, page, modalPage, adminTab]);
   const dealImg = (d) => d.imageDataUrl || dealImages[d.id] || null;
 
   useEffect(() => {
@@ -1720,23 +1785,6 @@ export default function BezAgenciaLuxuryApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, modalPage]);
 
-  // Хедърът се скрива при скрол надолу и се показва отново при скрол нагоре.
-  const [headerHidden, setHeaderHidden] = useState(false);
-  const lastScrollY = useRef(0);
-  useEffect(() => {
-    const onScroll = () => {
-      const y = Math.max(0, window.scrollY);
-      const delta = y - lastScrollY.current;
-      if (y < 80) setHeaderHidden(false);
-      else if (delta > 8) setHeaderHidden(true);
-      else if (delta < -8) setHeaderHidden(false);
-      if (Math.abs(delta) > 8 || y < 80) lastScrollY.current = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  // При смяна на страница хедърът винаги се връща видим.
-  useEffect(() => { setHeaderHidden(false); }, [page, modalPage]);
 
   // Скрит достъп до Админ панела — не е видим никъде в интерфейса за клиенти.
   // Отваря се само с Ctrl+Shift+A (Cmd+Shift+A на Mac) или с 5 бързи клика върху текста на футъра.
@@ -2390,15 +2438,21 @@ export default function BezAgenciaLuxuryApp() {
         .page-enter { animation: fadeSlideIn .7s var(--ease) both; }
 
         .ba-hero-section { min-height: 620px; }
+        .ba-logo-img { height: 76px; }
+        .ba-logo-btn:focus-visible { outline: 2px solid #E3C15A; outline-offset: 3px; }
+        .ba-deals-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+        @media (max-width: 1100px) { .ba-deals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 640px) { .ba-deals-grid { grid-template-columns: 1fr; } }
         .ba-step { border-right: 1px solid #EFEBE0; }
         .ba-step:last-child { border-right: 0; }
         @media (max-width: 900px) {
           .ba-cols3 { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 760px) {
-          .ba-header-cta { display: none !important; }
+          .ba-logo-img { height: 54px; }
+          .ba-logo-wrap { padding: 0 22px !important; }
           section.ba-hero-section { min-height: 470px; align-items: flex-end !important; padding-left: 0 !important; padding-right: 0 !important; }
-          .ba-hero-inner { padding: 0 22px 64px !important; }
+          .ba-hero-inner { padding: 100px 22px 64px !important; }
           .ba-hero-photo { background-position: 46% 42% !important; filter: brightness(1.1) saturate(1.1) !important; }
           .ba-hero-overlay { background: linear-gradient(180deg, rgba(8,13,24,0.30) 0%, rgba(8,13,24,0.72) 100%) !important; }
           .ba-step:nth-child(2n) { border-right: 0; }
@@ -2513,29 +2567,14 @@ export default function BezAgenciaLuxuryApp() {
         button { white-space: normal; }
       `}</style>
 
-      {/* ── НАВИГАЦИЯ ─────────────────────────────────────────────── */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 20, background: "rgba(11,18,32,0.96)", backdropFilter: "blur(16px)",
-        transform: headerHidden ? "translateY(-110%)" : "translateY(0)", transition: "transform .3s ease",
-        borderBottom: "1px solid rgba(212,175,55,0.25)", padding: "12px 20px",
-        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 10,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={goHome}>
-          <img src={LOGO_IMAGE} alt="БезАгенция" style={{ height: 80, width: "auto", display: "block" }} />
+      {/* ── ЛОГО (бутон "Начало") — на началната е върху hero снимката ───── */}
+      {page !== "home" && (
+        <div style={{ padding: "16px 0 0" }}>
+          <div className="ba-logo-wrap" style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
+            <LogoButton onClick={goHome} />
+          </div>
         </div>
-
-        <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          <NavBtn active={page === "home"} onClick={goHome} icon={<HomeIcon size={16} />} label="Начало" />
-          <NavBtn active={page === "deals"} onClick={() => { setModalPage(null); setPage("deals"); }} icon={<Percent size={16} />} label="Оферти" />
-          <NavBtn active={page === "dashboard"} onClick={() => { setModalPage(null); setPage("dashboard"); }} icon={<ClipboardCheck size={16} />} label="Статус на оферта" />
-          <button onClick={() => { setModalPage(null); setPage("wizard"); resetWizard(); }} className="lux-btn ba-header-cta" style={{
-            marginLeft: 10, background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 999, padding: "12px 22px", minHeight: 44,
-            fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 800, fontSize: 14.5, cursor: "pointer",
-          }}>
-            Изпрати запитване
-          </button>
-        </nav>
-      </header>
+      )}
 
       {/* ── МОДАЛ: КАК РАБОТИ ─────────────────────────────────────── */}
       {showAbout && (
@@ -2628,7 +2667,12 @@ export default function BezAgenciaLuxuryApp() {
               position: "absolute", inset: 0, pointerEvents: "none",
               background: "linear-gradient(90deg, rgba(8,13,24,0.84) 0%, rgba(8,13,24,0.58) 42%, rgba(8,13,24,0.06) 100%)",
             }} />
-            <div className="ba-hero-inner" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1240, margin: "0 auto", padding: "0 32px 70px" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2, padding: "22px 0" }}>
+              <div className="ba-logo-wrap" style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px" }}>
+                <LogoButton onClick={goHome} />
+              </div>
+            </div>
+            <div className="ba-hero-inner" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1240, margin: "0 auto", padding: "70px 32px 70px" }}>
               <div style={{ maxWidth: 640 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#E3C15A", marginBottom: 20 }}>
                   <Plane size={16} /> БезАгенция
@@ -2686,7 +2730,7 @@ export default function BezAgenciaLuxuryApp() {
               {[
                 { icon: <ShieldCheck size={24} />, title: "Без предплащане", text: "Плащаш комисионна само ако решиш да пътуваш — 5%, минимум 50 €." },
                 { icon: <Clock size={24} />, title: "Оферта до 24 часа", text: "Получаваш персонална оферта на посочения имейл — с полети, настаняване и цени." },
-                { icon: <MapPin size={24} />, title: "Всичко на едно място", text: "След потвърдено плащане: 2 опции за настаняване, билети за забележителности и трансфер от летището." },
+                { icon: <MapPin size={24} />, title: "Всичко на едно място", text: "Полети, настаняване и препоръки в една персонална оферта, подготвена специално за теб." },
               ].map((c) => (
                 <div key={c.title} style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "30px 28px" }}>
                   <div style={{ width: 48, height: 48, borderRadius: 12, background: "#F3EAD0", color: PALETTE.goldText, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>{c.icon}</div>
@@ -2697,47 +2741,80 @@ export default function BezAgenciaLuxuryApp() {
             </div>
           </section>
 
-          {publicDeals.length > 0 && (
-            <section style={{ maxWidth: 1240, margin: "0 auto", padding: "64px 32px 24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap", marginBottom: 28 }}>
-                <div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: PALETTE.goldText, marginBottom: 10 }}>
-                    <Tag size={16} /> Оферти
-                  </div>
-                  <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Светкавични намаления</h2>
-                </div>
-                <button onClick={() => { setModalPage(null); setPage("deals"); }} className="lux-hover" style={{
-                  display: "inline-flex", alignItems: "center", gap: 6, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 999,
-                  padding: "11px 22px", minHeight: 44, fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, color: PALETTE.ink, cursor: "pointer",
-                }}>
-                  Виж всички оферти <ChevronRight size={16} />
-                </button>
+          <section id="offers" style={{ maxWidth: 1240, margin: "0 auto", padding: "64px 32px 24px", scrollMarginTop: 16 }}>
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: PALETTE.goldText, marginBottom: 10 }}>
+                <Tag size={16} /> Оферти
               </div>
-              <div className="ba-cols3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 24 }}>
-                {publicDeals.slice(0, 3).map((d, di) => {
+              <h2 style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 40, lineHeight: 1.15, color: PALETTE.ink, margin: 0 }}>Светкавични намаления</h2>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: PALETTE.inkMuted, marginRight: 4 }}>Полет от</span>
+              {DEPARTURES.map((dep) => {
+                const isActive = dealsFilterDeparture === dep.name;
+                return (
+                  <button key={dep.id} onClick={() => setDealsFilterDeparture(isActive ? "" : dep.name)} className="lux-hover" style={{
+                    minHeight: 44, padding: "8px 18px", borderRadius: 10, cursor: "pointer", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15,
+                    background: isActive ? "rgba(212,175,55,0.14)" : PALETTE.panel, border: `1px solid ${isActive ? PALETTE.gold : PALETTE.panelBorder}`,
+                    color: isActive ? PALETTE.goldText : PALETTE.ink,
+                  }}>{dep.name}</button>
+                );
+              })}
+              <div style={{ marginLeft: "auto", flex: "1 1 260px", maxWidth: 380, position: "relative" }}>
+                <Search size={18} color={PALETTE.inkFaint} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <input
+                  value={dealsQuery}
+                  onChange={(e) => { setDealsQuery(e.target.value); setDealsShowAll(false); }}
+                  placeholder="До: град или държава"
+                  aria-label="Търси оферта по град или държава"
+                  style={{ ...inputStyle, padding: dealsQuery ? "11px 40px 11px 42px" : "11px 14px 11px 42px", borderRadius: 999, minHeight: 44 }}
+                />
+                {dealsQuery && (
+                  <button onClick={() => setDealsQuery("")} aria-label="Изчисти търсенето" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: PALETTE.inkFaint, display: "flex", padding: 6 }}>
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {dealsLoading && publicDeals.length === 0 && (
+              <div className="ba-deals-grid">
+                {[0, 1, 2, 3].map((k) => (
+                  <div key={k} style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, height: 360, opacity: 0.6 }} />
+                ))}
+              </div>
+            )}
+            {dealsError && !dealsLoading && publicDeals.length === 0 && (
+              <p style={{ fontSize: 15, color: PALETTE.coralDark }}>Офертите не успяха да се заредят. Опитай да презаредиш страницата.</p>
+            )}
+
+            {dealsShown.length > 0 && (
+              <div className="ba-deals-grid">
+                {dealsShown.map((d, di) => {
                   const tag = DEAL_TAGS[d.tag] || DEAL_TAGS.flash;
                   const total = d.totalPrice ?? ((Number(d.flightPrice) || 0) + (Number(d.hotelPrice) || 0));
                   return (
-                    <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, overflow: "hidden" }}>
+                    <div key={d.id} className="lux-hover" style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                       <LandmarkBanner city={d.city} accent={ACCENTS[di % ACCENTS.length]} imageDataUrl={dealImg(d)} />
-                      <div style={{ padding: "20px 22px 22px" }}>
-                        <span style={{ display: "inline-block", fontSize: 10.5, fontWeight: 800, letterSpacing: 1.2, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "4px 11px", marginBottom: 12 }}>{tag.label}</span>
-                        <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 21, lineHeight: 1.25, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: PALETTE.inkMuted, marginBottom: 16 }}>
+                      <div style={{ padding: "18px 18px 20px", display: "flex", flexDirection: "column", flex: 1 }}>
+                        <span style={{ alignSelf: "flex-start", fontSize: 10, fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase", color: tag.color, background: `${tag.color}22`, border: `1px solid ${tag.color}55`, borderRadius: 20, padding: "4px 10px", marginBottom: 12 }}>{tag.label}</span>
+                        <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 19, lineHeight: 1.25, color: PALETTE.ink, marginBottom: 4 }}>{d.title}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, color: PALETTE.inkMuted, marginBottom: 14 }}>
                           <MapPin size={15} /> {d.city}{d.city && d.country ? ", " : ""}{d.country}
                         </div>
-                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: d.travelMonth ? 6 : 18 }}>
-                          <span style={{ fontSize: 12, color: PALETTE.inkFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>Обща цена</span>
-                          <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 30, color: PALETTE.ink }}>{total} €</span>
+                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "auto", marginBottom: d.travelMonth ? 6 : 16 }}>
+                          <span style={{ fontSize: 11.5, color: PALETTE.inkFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.1 }}>Обща цена</span>
+                          <span style={{ fontFamily: "Playfair Display, Georgia, serif", fontWeight: 700, fontSize: 27, color: PALETTE.ink }}>{total} €</span>
                         </div>
                         {d.travelMonth && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: PALETTE.inkFaint, marginBottom: 18 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: PALETTE.inkFaint, marginBottom: 16 }}>
                             <Clock size={14} /> Пътуване през {d.travelMonth}
                           </div>
                         )}
                         <button onClick={() => handleWantThisDeal(d)} className="lux-btn" style={{
-                          width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, minHeight: 50,
-                          fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 800, fontSize: 16, cursor: "pointer",
+                          width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, minHeight: 48,
+                          fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 800, fontSize: 15.5, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
                         }}>
                           Искам тази оферта <ChevronRight size={17} />
@@ -2747,8 +2824,53 @@ export default function BezAgenciaLuxuryApp() {
                   );
                 })}
               </div>
-            </section>
-          )}
+            )}
+
+            {dealsMatch.length > dealsShown.length && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 30 }}>
+                <button onClick={() => setDealsShowAll(true)} className="lux-hover" style={{
+                  display: "inline-flex", alignItems: "center", gap: 8, minHeight: 48, padding: "0 30px", borderRadius: 999, cursor: "pointer",
+                  background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.ink,
+                  fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 16,
+                }}>
+                  Още <ChevronDown size={18} />
+                </button>
+              </div>
+            )}
+
+            {!dealsLoading && !(dealsError && publicDeals.length === 0) && dealsMatch.length === 0 && (
+              <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, padding: "34px 24px", textAlign: "center" }}>
+                <p style={{ fontSize: 17, color: PALETTE.ink, fontWeight: 700, margin: "0 0 6px" }}>
+                  {publicDeals.length === 0
+                    ? "В момента нямаме публикувани светкавични оферти."
+                    : `Нямаме светкавична оферта${dealsFilterDeparture ? ` с полет от ${dealsFilterDeparture}` : ""}${dealsQuery.trim() ? ` до „${dealsQuery.trim()}"` : ""}.`}
+                </p>
+                <p style={{ fontSize: 15, color: PALETTE.inkMuted, margin: "0 0 20px" }}>Изпрати запитване и ще ти подготвим персонална оферта до 24 часа.</p>
+                <button onClick={startInquiryFromSearch} className="lux-btn" style={{
+                  background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, minHeight: 50, padding: "0 30px",
+                  fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 800, fontSize: 16, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
+                }}>
+                  Изпрати запитване <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginTop: 44, background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 18, padding: "24px 26px" }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: PALETTE.inkFaint, marginBottom: 16 }}>След потвърдено плащане получаваш</div>
+              <div className="ba-cols3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 22 }}>
+                {[
+                  { icon: <HomeIcon size={17} />, title: "2 конкретни опции за настаняване", text: "избираш това, което ти хареса повече." },
+                  { icon: <Compass size={17} />, title: "Билети за забележителности и екскурзии", text: "линкове през GetYourGuide." },
+                  { icon: <Car size={17} />, title: "Трансфер от летището и градски транспорт", text: "как да се придвижваш на място." },
+                ].map((it) => (
+                  <div key={it.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{ width: 32, height: 32, minWidth: 32, borderRadius: "50%", background: "rgba(212,175,55,0.14)", color: PALETTE.goldText, display: "flex", alignItems: "center", justifyContent: "center" }}>{it.icon}</div>
+                    <div style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.55 }}><strong style={{ color: PALETTE.ink }}>{it.title}</strong> — {it.text}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
 
           <section style={{ maxWidth: 1240, margin: "0 auto", padding: "64px 32px 96px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
@@ -4539,7 +4661,7 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: FOOT.gold, marginBottom: 14 }}>Полезни връзки</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 15 }}>
                 <button onClick={goHome} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: FOOT.muted, cursor: "pointer", fontSize: 15 }}>Начало</button>
-                <button onClick={() => { setModalPage(null); setPage("deals"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: FOOT.muted, cursor: "pointer", fontSize: 15 }}>Оферти</button>
+                <button onClick={goToOffers} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: FOOT.muted, cursor: "pointer", fontSize: 15 }}>Оферти</button>
                 <button onClick={() => { setModalPage(null); setPage("dashboard"); }} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: FOOT.muted, cursor: "pointer", fontSize: 15 }}>Статус на оферта</button>
                 <button onClick={() => setShowAbout(true)} className="lux-link" style={{ background: "none", border: "none", textAlign: "left", padding: 0, color: FOOT.muted, cursor: "pointer", fontSize: 15 }}>Как работи платформата</button>
               </div>
