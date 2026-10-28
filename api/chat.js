@@ -82,8 +82,8 @@ export default async function handler(req, res) {
             replyTo: email || cur.visitor_email || undefined,
             html: emailWrap("Ново съобщение в чата", `
               <p><strong>${esc(cur.visitor_name || name)}</strong>${(email || cur.visitor_email) ? ` (${esc(email || cur.visitor_email)})` : ""} пише:</p>
-              <p style="background:#f7f5f0;padding:12px 14px;border-radius:10px;">${esc(message)}</p>
-              <p><a href="${SITE}/">Отвори админ панела → Чат</a></p>`),
+              <p style="background:#f7f5f0;color:#0F172A;padding:12px 14px;border-radius:10px;font-size:16px;line-height:1.5;">${esc(message)}</p>
+              <p><a href="${SITE}/admin" style="display:inline-block;background:#D4AF37;color:#0F172A;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:700;">Отвори чата в админ панела</a></p>`),
           });
         } catch (e) { console.error("chat notify:", e?.message); }
       }
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
             subject: "Отговор от БезАгенция",
             html: emailWrap("Имаш отговор в чата", `
               <p>Здравей${conv.visitor_name ? ", " + esc(conv.visitor_name) : ""}!</p>
-              <p style="background:#f7f5f0;padding:12px 14px;border-radius:10px;">${esc(message)}</p>
+              <p style="background:#f7f5f0;color:#0F172A;padding:12px 14px;border-radius:10px;font-size:16px;line-height:1.5;">${esc(message)}</p>
               <p><a href="${SITE}/?chat=${id}" style="display:inline-block;background:#D4AF37;color:#0F172A;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:700;">Продължи разговора</a></p>`),
           });
           emailed = true;
