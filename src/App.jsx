@@ -1774,6 +1774,15 @@ export default function BezAgenciaLuxuryApp() {
     const reviewParam = params.get("review");
     const statusParam = params.get("status");
     const dealsParam = params.get("deals");
+    const adminParam = params.get("admin");
+
+    // Бърз вход: bezagencia.com/admin (или ?admin=1) отваря директно Админ панела
+    const onAdminPath = /^\/admin\/?$/.test(window.location.pathname);
+    if (onAdminPath || adminParam) {
+      if (adminParam) window.history.replaceState({}, "", "/admin");
+      setPage("admin");
+      return;
+    }
 
     if (dealsParam) {
       window.history.replaceState({}, "", window.location.pathname);
@@ -2139,6 +2148,15 @@ export default function BezAgenciaLuxuryApp() {
       setAdminAuthChecked(true);
     })();
   }, []);
+
+  // Когато излезем от Админ панела, адресът /admin се връща на началния.
+  useEffect(() => {
+    try {
+      if (page !== "admin" && /^\/admin\/?$/.test(window.location.pathname)) {
+        window.history.replaceState({}, "", "/");
+      }
+    } catch { /* */ }
+  }, [page]);
 
   // Помни дали последно сме били в Админ панела, за да не ни връща
   // обратно към началния екран при обикновено презареждане на страницата.
