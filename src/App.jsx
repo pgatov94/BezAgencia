@@ -53,7 +53,7 @@ const CITY_GLOBE_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAADJ
 const INQUIRY_EMAIL = "pgatov94@gmail.com";
 // Всички имейли вече минават през /api/send-email (Resend), не през Formspree —
 // вижте README.md за настройка на RESEND_API_KEY.
-const ADMIN_PASSCODE = "smeni-me-2026";
+const ADMIN_PASSCODE = "Qwerty@9401064401";
 const STRIPE_CHECKOUT_ENDPOINT = "";
 
 // Смени с реалните адреси на страниците си — засега сочат към общите сайтове.
