@@ -53,7 +53,6 @@ const CITY_GLOBE_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAADJ
 const INQUIRY_EMAIL = "pgatov94@gmail.com";
 // Всички имейли вече минават през /api/send-email (Resend), не през Formspree —
 // вижте README.md за настройка на RESEND_API_KEY.
-const ADMIN_PASSCODE = "Qwerty@9401064401";
 const STRIPE_CHECKOUT_ENDPOINT = "";
 
 // Смени с реалните адреси на страниците си — засега сочат към общите сайтове.
@@ -2087,14 +2086,28 @@ export default function BezAgenciaLuxuryApp() {
     setAdminPaymentsLoading(false);
   };
 
-  const handleAdminLogin = () => {
-    if (adminPasscodeInput === ADMIN_PASSCODE) {
+  // Паролата се проверява само на сървъра (/api/admin-login) — в кода няма парола.
+  const handleAdminLogin = async () => {
+    try {
+      const res = await fetch("/api/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: adminPasscodeInput }),
+      });
+      if (!res.ok) {
+        let msg = "Грешна парола.";
+        try { const d = await res.json(); if (d?.error) msg = d.error; } catch { /* */ }
+        alert(msg);
+        return;
+      }
       setAdminAuthed(true);
       if (rememberAdmin) {
         localStorage.setItem("admin_remember", adminPasscodeInput);
       } else {
         localStorage.removeItem("admin_remember");
       }
+    } catch {
+      alert("Проблем с връзката. Опитай пак.");
     }
   };
 
@@ -2109,7 +2122,16 @@ export default function BezAgenciaLuxuryApp() {
     (async () => {
       try {
         const remembered = localStorage.getItem("admin_remember");
-        if (remembered) { setAdminAuthed(true); setAdminPasscodeInput(remembered); }
+        if (remembered) {
+          // запомнената парола се проверява на сървъра, преди да пуснем админ панела
+          const r = await fetch("/api/admin-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ passcode: remembered }),
+          }).catch(() => null);
+          if (r && r.ok) { setAdminAuthed(true); setAdminPasscodeInput(remembered); }
+          else if (r && r.status === 401) localStorage.removeItem("admin_remember");
+        }
       } catch { /* няма запазен вход — показваме формата за парола */ }
       try {
         if (localStorage.getItem("ba_last_page") === "admin") setPage("admin");
