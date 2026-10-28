@@ -1022,7 +1022,20 @@ function ChatWidget() {
   return (
     <>
       {!open && (
-        <button onClick={() => { setOpen(true); setUnseen(false); }} aria-label="Чат"
+        <style>{`
+          @keyframes baChatPulse {
+            0%, 55% { box-shadow: 0 8px 24px rgba(15,23,42,0.25), 0 0 0 0 rgba(212,175,55,0.65); transform: scale(1); }
+            62% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+            100% { box-shadow: 0 8px 24px rgba(15,23,42,0.25), 0 0 0 22px rgba(212,175,55,0); transform: scale(1); }
+          }
+          .ba-chat-btn { animation: baChatPulse 3.2s ease-out infinite; }
+          .ba-chat-btn:hover { animation: none; transform: scale(1.06); }
+          @media (prefers-reduced-motion: reduce) { .ba-chat-btn { animation: none; } }
+        `}</style>
+      )}
+      {!open && (
+        <button className="ba-chat-btn" onClick={() => { setOpen(true); setUnseen(false); }} aria-label="Чат"
           style={{ position: "fixed", right: 16, bottom: 16, zIndex: 900, width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
             background: PALETTE.gold, color: PALETTE.ink, boxShadow: "0 8px 24px rgba(15,23,42,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <MessageCircle size={26} />
