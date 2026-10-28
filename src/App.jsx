@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
-import { isSupabaseConfigured } from "./supabaseClient";
+import { supabase, isSupabaseConfigured } from "./supabaseClient";
 import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown, MessageCircle,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');`;
@@ -878,6 +878,346 @@ function WorldMapBackground() {
 }
 
 /* ═════════════════════════════════════════════════════════════════════
+   ЧАТ НА ЖИВО (Supabase) — виджет за посетители + панел за админа
+   Базата е източникът на истина; Realtime се ползва само като "ping".
+   ═════════════════════════════════════════════════════════════════════ */
+const CHAT_ENABLED = import.meta.env.VITE_CHAT_ENABLED === "true";
+
+const chatLS = {
+  get: (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* няма storage */ } },
+};
+const newChatId = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      });
+
+// Изпраща кратък "ping" по broadcast канал (получателят си дърпа съобщенията от API).
+async function chatPing(channelName) {
+  if (!isSupabaseConfigured) return;
+  try {
+    const ch = supabase.channel(channelName);
+    await new Promise((resolve) => {
+      const t = setTimeout(resolve, 2500);
+      ch.subscribe((status) => { if (status === "SUBSCRIBED") { clearTimeout(t); resolve(); } });
+    });
+    await ch.send({ type: "broadcast", event: "ping", payload: {} });
+    supabase.removeChannel(ch);
+  } catch { /* polling ще догони */ }
+}
+
+const chatTime = (iso) => {
+  try { return new Date(iso).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; }
+};
+
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [chatId, setChatId] = useState(() => chatLS.get("ba_chat_id"));
+  const [name, setName] = useState(() => chatLS.get("ba_chat_name"));
+  const [email, setEmail] = useState(() => chatLS.get("ba_chat_email"));
+  const [honey, setHoney] = useState("");
+  const [text, setText] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [online, setOnline] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [unseen, setUnseen] = useState(false);
+  const endRef = useRef(null);
+  const lastAdminId = useRef(Number(chatLS.get("ba_chat_seen") || 0));
+
+  const fetchHistory = async (id = chatId) => {
+    if (!id) return;
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "visitorHistory", id }),
+      });
+      const data = await res.json();
+      if (!data?.messages) return;
+      setMessages(data.messages);
+      const lastAdmin = [...data.messages].reverse().find((m) => m.sender === "admin");
+      if (lastAdmin) {
+        if (open) { lastAdminId.current = lastAdmin.id; chatLS.set("ba_chat_seen", String(lastAdmin.id)); setUnseen(false); }
+        else if (lastAdmin.id > lastAdminId.current) setUnseen(true);
+      }
+    } catch { /* няма връзка */ }
+  };
+
+  // ?chat=<uuid> от имейл → отвори чата
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("chat");
+    if (p && /^[0-9a-f-]{36}$/i.test(p)) {
+      chatLS.set("ba_chat_id", p); setChatId(p); setOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    const h = () => setOpen(true);
+    window.addEventListener("ba-open-chat", h);
+    return () => window.removeEventListener("ba-open-chat", h);
+  }, []);
+
+  // Затворен панел, но има разговор → рядка проверка за нови отговори
+  useEffect(() => {
+    if (open || !chatId) return;
+    fetchHistory();
+    const t = setInterval(fetchHistory, 60000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, chatId]);
+
+  // Отворен панел → история + realtime ping + presence + резервно обновяване
+  useEffect(() => {
+    if (!open) return;
+    fetchHistory();
+    let chans = [];
+    if (isSupabaseConfigured) {
+      try {
+        if (chatId) {
+          const c1 = supabase.channel("chat:" + chatId).on("broadcast", { event: "ping" }, () => fetchHistory()).subscribe();
+          chans.push(c1);
+        }
+        const c2 = supabase.channel("ba-support", { config: { presence: { key: "v-" + Math.random().toString(36).slice(2) } } });
+        const sync = () => {
+          const st = c2.presenceState();
+          setOnline(Object.values(st).some((arr) => arr.some((p) => p.admin === true)));
+        };
+        c2.on("presence", { event: "sync" }, sync).subscribe();
+        chans.push(c2);
+      } catch { /* продължаваме с polling */ }
+    }
+    const t = setInterval(fetchHistory, 20000);
+    return () => { clearInterval(t); chans.forEach((c) => { try { supabase.removeChannel(c); } catch { /* */ } }); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, chatId]);
+
+  useEffect(() => { if (open) endRef.current?.scrollIntoView({ block: "end" }); }, [messages, open]);
+
+  const send = async () => {
+    const msg = text.trim();
+    if (!msg || sending) return;
+    if (!chatId && !name.trim()) { setError("Моля, въведи името си."); return; }
+    setError(""); setSending(true);
+    const id = chatId || newChatId();
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "visitorSend", id, name: name.trim(), email: email.trim(), message: msg, website: honey }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data?.error || "Неуспешно изпращане."); setSending(false); return; }
+      if (!chatId) { chatLS.set("ba_chat_id", id); setChatId(id); }
+      chatLS.set("ba_chat_name", name.trim()); chatLS.set("ba_chat_email", email.trim());
+      setText("");
+      await fetchHistory(id);
+      chatPing("ba-admin-inbox");
+    } catch { setError("Проблем с връзката. Опитай пак."); }
+    setSending(false);
+  };
+
+  const font = "Manrope, system-ui, sans-serif";
+  const panelW = Math.min(360, typeof window !== "undefined" ? window.innerWidth - 24 : 360);
+
+  return (
+    <>
+      {!open && (
+        <button onClick={() => { setOpen(true); setUnseen(false); }} aria-label="Чат"
+          style={{ position: "fixed", right: 16, bottom: 16, zIndex: 900, width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
+            background: PALETTE.gold, color: PALETTE.ink, boxShadow: "0 8px 24px rgba(15,23,42,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <MessageCircle size={26} />
+          {unseen && <span style={{ position: "absolute", top: 4, right: 4, width: 14, height: 14, borderRadius: "50%", background: PALETTE.coral, border: "2px solid #fff" }} />}
+        </button>
+      )}
+      {open && (
+        <div style={{ position: "fixed", right: 12, bottom: 12, zIndex: 900, width: panelW, height: "min(540px, calc(100vh - 24px))", background: "#fff",
+          borderRadius: 18, boxShadow: "0 20px 60px rgba(15,23,42,0.3)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: font }}>
+          <div style={{ background: PALETTE.bgDeep, color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>Пиши ни</div>
+              <div style={{ fontSize: 12.5, color: online ? FOOT.good : FOOT.muted, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: online ? FOOT.good : FOOT.faint, display: "inline-block" }} />
+                {online ? "На линия" : "Отговаряме възможно най-скоро"}
+              </div>
+            </div>
+            <button onClick={() => setOpen(false)} aria-label="Затвори" style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 4 }}><X size={20} /></button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: 14, background: PALETTE.bg, display: "flex", flexDirection: "column", gap: 8 }}>
+            {messages.length === 0 && (
+              <div style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.55 }}>
+                Здравей! Имаш въпрос за дестинация, оферта или плащане? Напиши ни — отговаряме тук или на имейла ти.
+              </div>
+            )}
+            {messages.map((m) => (
+              <div key={m.id} style={{ alignSelf: m.sender === "visitor" ? "flex-end" : "flex-start", maxWidth: "82%" }}>
+                <div style={{ background: m.sender === "visitor" ? PALETTE.gold : "#fff", color: PALETTE.ink, padding: "9px 13px", borderRadius: 14,
+                  border: m.sender === "visitor" ? "none" : `1px solid ${PALETTE.panelBorder}`, fontSize: 14.5, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
+                <div style={{ fontSize: 11, color: PALETTE.inkFaint, margin: "2px 6px", textAlign: m.sender === "visitor" ? "right" : "left" }}>{chatTime(m.created_at)}</div>
+              </div>
+            ))}
+            <div ref={endRef} />
+          </div>
+
+          <div style={{ padding: 10, borderTop: `1px solid ${PALETTE.panelBorder}`, background: "#fff" }}>
+            {!chatId && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Име *" maxLength={60}
+                  style={{ flex: 1, minWidth: 0, padding: "9px 11px", borderRadius: 10, border: `1px solid ${PALETTE.panelBorder}`, fontFamily: font, fontSize: 16 }} />
+                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Имейл (по желание)" type="email" maxLength={120}
+                  style={{ flex: 1.3, minWidth: 0, padding: "9px 11px", borderRadius: 10, border: `1px solid ${PALETTE.panelBorder}`, fontFamily: font, fontSize: 16 }} />
+              </div>
+            )}
+            <input value={honey} onChange={(e) => setHoney(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true"
+              style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }} />
+            {error && <div style={{ color: PALETTE.coralDark, fontSize: 13, marginBottom: 6 }}>{error}</div>}
+            <div style={{ display: "flex", gap: 6 }}>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Напиши съобщение…" rows={1} maxLength={1000}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                style={{ flex: 1, minWidth: 0, resize: "none", padding: "9px 11px", borderRadius: 10, border: `1px solid ${PALETTE.panelBorder}`, fontFamily: font, fontSize: 16 }} />
+              <button onClick={send} disabled={sending || !text.trim()} aria-label="Изпрати"
+                style={{ border: "none", borderRadius: 10, background: PALETTE.gold, color: PALETTE.ink, padding: "0 14px", cursor: sending ? "wait" : "pointer", opacity: !text.trim() ? 0.5 : 1 }}>
+                <Send size={18} />
+              </button>
+            </div>
+            <div style={{ fontSize: 11.5, color: PALETTE.inkFaint, marginTop: 6 }}>Съобщенията ти се съхраняват, за да ти отговорим.</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function AdminChatPanel({ adminActionFetch, onUnread }) {
+  const [convs, setConvs] = useState([]);
+  const [active, setActive] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [onlineOn, setOnlineOn] = useState(false);
+  const activeRef = useRef(null);
+  const endRef = useRef(null);
+  const presRef = useRef(null);
+  activeRef.current = active;
+
+  const loadList = async () => {
+    const { ok, data } = await adminActionFetch({ action: "adminList" }, "/api/chat");
+    if (ok && data?.conversations) {
+      setConvs(data.conversations);
+      onUnread?.(data.conversations.reduce((s, c) => s + (c.unread_admin || 0), 0));
+    }
+  };
+  const loadMsgs = async (id) => {
+    const { ok, data } = await adminActionFetch({ action: "adminMessages", id }, "/api/chat");
+    if (ok && data?.messages) setMsgs(data.messages);
+  };
+
+  useEffect(() => {
+    loadList();
+    let inbox = null;
+    if (isSupabaseConfigured) {
+      try {
+        inbox = supabase.channel("ba-admin-inbox").on("broadcast", { event: "ping" }, () => {
+          loadList(); if (activeRef.current) loadMsgs(activeRef.current);
+        }).subscribe();
+      } catch { /* polling */ }
+    }
+    const t = setInterval(() => { loadList(); if (activeRef.current) loadMsgs(activeRef.current); }, 15000);
+    return () => { clearInterval(t); if (inbox) supabase.removeChannel(inbox); if (presRef.current) supabase.removeChannel(presRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs]);
+
+  const toggleOnline = () => {
+    if (!isSupabaseConfigured) return;
+    if (onlineOn) {
+      if (presRef.current) { supabase.removeChannel(presRef.current); presRef.current = null; }
+      setOnlineOn(false);
+    } else {
+      const ch = supabase.channel("ba-support", { config: { presence: { key: "admin" } } });
+      ch.subscribe(async (st) => { if (st === "SUBSCRIBED") await ch.track({ admin: true }); });
+      presRef.current = ch; setOnlineOn(true);
+    }
+  };
+
+  const openConv = async (id) => { setActive(id); setMsgs([]); await loadMsgs(id); loadList(); };
+
+  const sendReply = async () => {
+    const m = reply.trim();
+    if (!m || !active || busy) return;
+    setBusy(true);
+    const { ok, data } = await adminActionFetch({ action: "adminReply", id: active, message: m }, "/api/chat");
+    if (ok) {
+      setReply(""); await loadMsgs(active); loadList(); chatPing("chat:" + active);
+      if (data?.emailed) alert("Посетителят не е в сайта — изпратихме отговора и на имейла му.");
+    } else if (!ok) alert("Грешка при изпращане.");
+    setBusy(false);
+  };
+
+  const del = async (id) => {
+    if (!window.confirm("Да изтрия ли целия разговор?")) return;
+    const { ok } = await adminActionFetch({ action: "adminDelete", id }, "/api/chat");
+    if (ok) { if (active === id) { setActive(null); setMsgs([]); } loadList(); }
+  };
+
+  const font = "Manrope, system-ui, sans-serif";
+  const cur = convs.find((c) => c.id === active);
+  return (
+    <div style={{ fontFamily: font }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <h3 style={{ fontWeight: 700, fontSize: 20, color: PALETTE.ink, margin: 0 }}>Чат с посетители</h3>
+        <button onClick={toggleOnline}
+          style={{ padding: "8px 16px", borderRadius: 999, border: `1px solid ${PALETTE.panelBorder}`, cursor: "pointer", fontFamily: font, fontWeight: 600,
+            background: onlineOn ? PALETTE.jungle : "#fff", color: onlineOn ? "#fff" : PALETTE.ink }}>
+          {onlineOn ? "● На линия (показва се на посетителите)" : "○ Не си на линия"}
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 14 }}>
+        {!active && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {convs.length === 0 && <div style={{ color: PALETTE.inkMuted }}>Още няма разговори.</div>}
+            {convs.map((c) => (
+              <div key={c.id} onClick={() => openConv(c.id)}
+                style={{ background: "#fff", border: `1px solid ${c.unread_admin ? PALETTE.gold : PALETTE.panelBorder}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: PALETTE.ink }}>{c.visitor_name || "Без име"} {c.unread_admin > 0 && <span style={{ background: PALETTE.coral, color: "#fff", borderRadius: 999, fontSize: 12, padding: "1px 8px", marginLeft: 6 }}>{c.unread_admin}</span>}</div>
+                  <div style={{ fontSize: 13, color: PALETTE.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.visitor_email || "без имейл"} · {new Date(c.last_message_at).toLocaleString("bg-BG")}</div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); del(c.id); }} aria-label="Изтрий" style={{ background: "none", border: "none", cursor: "pointer", color: PALETTE.coralDark }}><Trash2 size={17} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+        {active && (
+          <div style={{ background: "#fff", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "10px 14px", borderBottom: `1px solid ${PALETTE.panelBorder}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <button onClick={() => { setActive(null); loadList(); }} style={{ background: "none", border: "none", cursor: "pointer", color: PALETTE.goldText, fontFamily: font, fontWeight: 700 }}>← Всички</button>
+              <div style={{ fontWeight: 700, color: PALETTE.ink, textAlign: "right" }}>{cur?.visitor_name} <span style={{ fontWeight: 400, color: PALETTE.inkMuted, fontSize: 13 }}>{cur?.visitor_email}</span></div>
+            </div>
+            <div style={{ maxHeight: 380, overflowY: "auto", padding: 14, background: PALETTE.bg, display: "flex", flexDirection: "column", gap: 8 }}>
+              {msgs.map((m) => (
+                <div key={m.id} style={{ alignSelf: m.sender === "admin" ? "flex-end" : "flex-start", maxWidth: "80%" }}>
+                  <div style={{ background: m.sender === "admin" ? PALETTE.gold : "#fff", border: m.sender === "admin" ? "none" : `1px solid ${PALETTE.panelBorder}`, padding: "9px 13px", borderRadius: 14, fontSize: 14.5, whiteSpace: "pre-wrap", wordBreak: "break-word", color: PALETTE.ink }}>{m.body}</div>
+                  <div style={{ fontSize: 11, color: PALETTE.inkFaint, margin: "2px 6px", textAlign: m.sender === "admin" ? "right" : "left" }}>{chatTime(m.created_at)}</div>
+                </div>
+              ))}
+              <div ref={endRef} />
+            </div>
+            <div style={{ display: "flex", gap: 8, padding: 10, borderTop: `1px solid ${PALETTE.panelBorder}` }}>
+              <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={2} placeholder="Твоят отговор…"
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                style={{ flex: 1, minWidth: 0, resize: "none", padding: "9px 11px", borderRadius: 10, border: `1px solid ${PALETTE.panelBorder}`, fontFamily: font, fontSize: 16 }} />
+              <button onClick={sendReply} disabled={busy || !reply.trim()} style={{ border: "none", borderRadius: 10, background: PALETTE.gold, color: PALETTE.ink, padding: "0 16px", fontWeight: 700, cursor: "pointer", opacity: !reply.trim() ? 0.5 : 1 }}><Send size={18} /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════════
    ОСНОВЕН КОМПОНЕНТ
    ═════════════════════════════════════════════════════════════════════ */
 export default function BezAgenciaLuxuryApp() {
@@ -1006,6 +1346,7 @@ export default function BezAgenciaLuxuryApp() {
   // ── Админ панел ────────────────────────────────────────────────────
   const [showAdmin, setShowAdmin] = useState(false); // вход/парола
   const [adminAuthed, setAdminAuthed] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState("");
   const [rememberAdmin, setRememberAdmin] = useState(true);
   const [adminAuthChecked, setAdminAuthChecked] = useState(false);
@@ -1842,8 +2183,8 @@ export default function BezAgenciaLuxuryApp() {
   // промяна на логиката), сървърът връща 401 — тогава автоматично
   // излизаме от админ панела, за да могат да влязат отново с истинската
   // парола, вместо действието тихо да не се случи нищо.
-  const adminActionFetch = async (body) => {
-    const res = await fetch("/api/admin-action", {
+  const adminActionFetch = async (body, endpoint = "/api/admin-action") => {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ passcode: adminPasscodeInput, ...body }),
@@ -2606,6 +2947,9 @@ export default function BezAgenciaLuxuryApp() {
       {showCardSecurity && (
         <CardSecurityModal onClose={() => setShowCardSecurity(false)} />
       )}
+
+      {/* ── ЧАТ НА ЖИВО (включва се с VITE_CHAT_ENABLED=true) ── */}
+      {CHAT_ENABLED && page !== "admin" && <ChatWidget />}
 
       {/* ── LIGHTBOX: снимка на цял екран, с навигация ляво/дясно ──────── */}
       {lightboxIndex !== null && lightboxPhotos?.length > 0 && (() => {
@@ -3869,6 +4213,7 @@ export default function BezAgenciaLuxuryApp() {
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "subscribers"} onClick={() => setAdminTab("subscribers")} icon={<Mail size={16} />} label="Абонати" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
+                  {CHAT_ENABLED && <AdminTabBtn active={adminTab === "chat"} onClick={() => setAdminTab("chat")} icon={<MessageCircle size={16} />} label={chatUnread > 0 ? `Чат (${chatUnread})` : "Чат"} />}
                 </div>
                 <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkFaint, padding: "6px 4px" }}>
                   Изход
@@ -4470,6 +4815,10 @@ export default function BezAgenciaLuxuryApp() {
                     {!adminContactsLoading && adminContacts.length === 0 && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма запитвания.</p>}
                   </div>
                 </div>
+              )}
+
+              {CHAT_ENABLED && adminTab === "chat" && (
+                <AdminChatPanel adminActionFetch={adminActionFetch} onUnread={setChatUnread} />
               )}
 
               {adminTab === "subscribers" && (
