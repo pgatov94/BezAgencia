@@ -1383,7 +1383,7 @@ function WithdrawModal({ onClose, defaultId, defaultEmail }) {
   const submit = async () => {
     setBusy(true); setError("");
     try {
-      const res = await fetch("/api/legal", {
+      const res = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "withdraw", inquiryId: id.trim(), email: email.trim(), name: name.trim() }),
       });
@@ -1983,7 +1983,7 @@ export default function BezAgenciaLuxuryApp() {
     setPayCheckoutStatus("loading"); setPayCheckoutError("");
     try {
       // Записваме избора на клиента (Общи условия, 18+, начало на изпълнението) ПРЕДИ плащането
-      const cr = await fetch("/api/legal", {
+      const cr = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "recordConsent", inquiryId: id, acceptedTerms: orderTerms, over18: orderAdult, startBeforeWithdrawal: orderStartNow, acknowledgeLoss: orderLoss }),
       });
@@ -2262,7 +2262,7 @@ export default function BezAgenciaLuxuryApp() {
       const data = await res.json();
       if (!res.ok || !data.ok) { setNewsletterStatus("error"); return; }
       // Доказателство за съгласието (дата и начин) — Политика за поверителност, т. 8
-      await fetch("/api/legal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "newsletterConsent", email }) }).catch(() => {});
+      await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "newsletterConsent", email }) }).catch(() => {});
       setNewsletterConsent(false);
       await sendTransactionalEmail({
         to: INQUIRY_EMAIL,

@@ -17,5 +17,5 @@ export function tokenOk(email, token) {
 }
 
 export function unsubscribeUrl(email) {
-  return `https://bezagencia.com/api/unsubscribe?e=${encodeURIComponent(email)}&t=${unsubscribeToken(email)}`;
+  return `https://bezagencia.com/api/chat?unsub=1&e=${encodeURIComponent(email)}&t=${unsubscribeToken(email)}`;
 }
