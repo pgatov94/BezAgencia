@@ -29,6 +29,8 @@ export default async function handler(req, res) {
   try {
     const params = new URLSearchParams();
     params.append("mode", "payment");
+    // Страницата за плащане на Stripe е на български.
+    params.append("locale", "bg");
     // Само карта (в която автоматично се показват Apple Pay / Google Pay
     // за поддържани устройства/браузъри) + Revolut Pay. Без банкови
     // преводи, Klarna и т.н.

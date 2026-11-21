@@ -36,6 +36,8 @@ function verifyStripeSignature(payload, sigHeader, secret) {
   if (!sigHeader) return false;
   const parts = Object.fromEntries(sigHeader.split(",").map((p) => p.split("=")));
   const timestamp = parts.t;
+  // Отхвърляме стари подписи (защита от повторно пускане), толеранс 5 минути.
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const signature = parts.v1;
   if (!timestamp || !signature) return false;
   const signedPayload = `${timestamp}.${payload}`;
@@ -57,11 +59,15 @@ export default async function handler(req, res) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const sig = req.headers["stripe-signature"];
 
-  if (webhookSecret) {
-    if (!verifyStripeSignature(rawBody, sig, webhookSecret)) {
-      res.status(400).json({ error: "Невалиден webhook подпис." });
-      return;
-    }
+  // Подписът е задължителен: без STRIPE_WEBHOOK_SECRET не приемаме нищо,
+  // за да не може никой да маркира плащане като платено с фалшива заявка.
+  if (!webhookSecret) {
+    res.status(500).json({ error: "Липсва STRIPE_WEBHOOK_SECRET." });
+    return;
+  }
+  if (!verifyStripeSignature(rawBody, sig, webhookSecret)) {
+    res.status(400).json({ error: "Невалиден webhook подпис." });
+    return;
   }
 
   let event;
@@ -74,6 +80,11 @@ export default async function handler(req, res) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data?.object;
+    // Маркираме като платено само ако парите реално са постъпили.
+    if (session?.payment_status !== "paid") {
+      res.status(200).json({ received: true, skipped: "not_paid" });
+      return;
+    }
     const inquiryId = session?.metadata?.inquiryId;
     const amount = session?.amount_total ? (session.amount_total / 100).toFixed(0) : null;
     const customerEmail = session?.customer_details?.email || session?.customer_email || null;
