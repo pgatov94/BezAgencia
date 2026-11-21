@@ -65,10 +65,10 @@ const SOCIAL_LINKS = {
 const VIBER_LINK = "viber://chat?number=+359882225301";
 const WHATSAPP_LINK = "https://wa.me/359882225301";
 const COMPANY_INFO = {
-  companyName: "БезАгенция ЕООД",
-  eik: "000000000",
-  address: "гр. ..., ул. ... №...",
-  mol: "Име Фамилия",
+  companyName: "„БезАгенция“ ЕООД",
+  eik: "208991291",
+  address: "гр. Асеновград 4230, ул. „Първомайска“ № 1, ет. 2",
+  mol: "Петър Божидаров Гатов",
 };
 
 const DEPARTURES = [
@@ -1092,7 +1092,7 @@ function ChatWidget() {
                 <Send size={18} />
               </button>
             </div>
-            <div style={{ fontSize: 11.5, color: PALETTE.inkFaint, marginTop: 6 }}>Съобщенията ти се съхраняват, за да ти отговорим.</div>
+            <div style={{ fontSize: 11.5, color: PALETTE.inkFaint, marginTop: 6 }}>Изпращайки съобщение, потвърждаваш, че си запознат/а с <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.goldText, fontWeight: 600 }}>Политиката за поверителност</a>.</div>
           </div>
         </div>
       )}
@@ -1230,6 +1230,220 @@ function AdminChatPanel({ adminActionFetch, onUnread }) {
 }
 
 /* ═════════════════════════════════════════════════════════════════════
+   ПРАВНИ КОМПОНЕНТИ: бисквитки (съгласие), отметки, отказ от договор
+   Документите са публикувани като страници: /obshti-uslovia,
+   /politika-poveritelnost, /politika-biskvitki
+   ═════════════════════════════════════════════════════════════════════ */
+const LEGAL_VERSION = "1.0";
+const LEGAL_LINKS = { terms: "/obshti-uslovia", privacy: "/politika-poveritelnost", cookies: "/politika-biskvitki" };
+const CONSENT_KEY = "ba_consent";
+const CONSENT_MS = 365 * 24 * 3600 * 1000; // 12 месеца, както е в Политиката за бисквитки
+const GA_ID = import.meta.env.VITE_GA_ID || "";
+const GADS_ID = import.meta.env.VITE_GADS_ID || "";
+const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "";
+
+const readConsent = () => {
+  try {
+    const c = JSON.parse(localStorage.getItem(CONSENT_KEY) || "null");
+    if (c && c.v === 1 && Date.now() - c.ts < CONSENT_MS) return c;
+  } catch { /* няма запазен избор */ }
+  return null;
+};
+const writeConsent = (analytics, marketing) => {
+  const c = { v: 1, analytics: !!analytics, marketing: !!marketing, ts: Date.now() };
+  try { localStorage.setItem(CONSENT_KEY, JSON.stringify(c)); } catch { /* */ }
+  return c;
+};
+
+// Скриптовете за анализ/реклама се зареждат САМО след съгласие за съответната категория.
+function loadTrackers(c) {
+  if (!c || typeof window === "undefined") return;
+  window.__baTrackers = window.__baTrackers || {};
+  const T = window.__baTrackers;
+  const gtagId = (c.analytics && GA_ID) || (c.marketing && GADS_ID) || "";
+  if (gtagId && !T.gtag) {
+    T.gtag = true;
+    const s = document.createElement("script");
+    s.async = true; s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gtagId)}`;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+  }
+  if (window.gtag) {
+    if (c.analytics && GA_ID && !T.ga) { T.ga = true; window.gtag("config", GA_ID, { anonymize_ip: true }); }
+    if (c.marketing && GADS_ID && !T.gads) { T.gads = true; window.gtag("config", GADS_ID); }
+  }
+  if (c.marketing && META_PIXEL_ID && !T.meta) {
+    T.meta = true;
+    /* eslint-disable */
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+    window.fbq("init", META_PIXEL_ID); window.fbq("track", "PageView");
+  }
+}
+
+// При оттегляне изтриваме познатите бисквитки за анализ и реклама.
+function clearTrackingCookies() {
+  try {
+    const host = window.location.hostname;
+    document.cookie.split(";").forEach((raw) => {
+      const name = raw.split("=")[0].trim();
+      if (/^(_ga|_gid|_gcl|_fbp|_fbc|IDE)/.test(name)) {
+        [host, "." + host, "." + host.split(".").slice(-2).join(".")].forEach((d) => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${d}`;
+        });
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    });
+    sessionStorage.removeItem("ba_session_id");
+  } catch { /* */ }
+}
+
+function LegalLink({ href, children, color }) {
+  return <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: color || PALETTE.goldText, fontWeight: 600 }}>{children}</a>;
+}
+
+function ConsentCheck({ checked, onChange, children, light, disabled }) {
+  return (
+    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 14.5, lineHeight: 1.5, color: light ? FOOT.muted : PALETTE.ink, margin: "0 0 10px" }}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)}
+        style={{ width: 20, height: 20, marginTop: 2, flexShrink: 0, accentColor: PALETTE.gold, cursor: disabled ? "default" : "pointer" }} />
+      <span>{children}</span>
+    </label>
+  );
+}
+
+function CookieBanner({ initial, onSave, onClose }) {
+  const [settings, setSettings] = useState(!!initial);
+  const [analytics, setAnalytics] = useState(!!initial?.analytics);
+  const [marketing, setMarketing] = useState(!!initial?.marketing);
+  const font = "Manrope, system-ui, sans-serif";
+  const btn = {
+    fontFamily: font, fontWeight: 700, fontSize: 15, padding: "11px 20px", borderRadius: 10, cursor: "pointer",
+    background: PALETTE.gold, color: PALETTE.bgDeep, border: `2px solid ${PALETTE.gold}`, minWidth: 150,
+  };
+  return (
+    <div role="dialog" aria-label="Бисквитки" style={{
+      position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 1000, background: PALETTE.bgDeep, color: "#fff",
+      padding: "18px 16px", boxShadow: "0 -8px 30px rgba(0,0,0,0.35)", fontFamily: font,
+    }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", position: "relative" }}>
+        {!initial && (
+          <button onClick={onClose} aria-label="Затвори без избор" style={{ position: "absolute", right: -4, top: -6, background: "none", border: "none", color: FOOT.muted, cursor: "pointer", padding: 4 }}><X size={20} /></button>
+        )}
+        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>Бисквитки на bezagencia.com</div>
+        <p style={{ margin: "0 0 12px", fontSize: 14.5, lineHeight: 1.6, color: FOOT.muted, paddingRight: 24 }}>
+          Използваме строго необходими бисквитки, за да работи сайтът. С твое съгласие ползваме и аналитични и маркетингови бисквитки.
+          Можеш да приемеш всички, да откажеш всички или да избереш сам. Ако затвориш банера без избор, незадължителни бисквитки не се поставят.
+          Подробности: <a href={LEGAL_LINKS.cookies} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.gold }}>Политика за бисквитки</a> и <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.gold }}>Политика за поверителност</a>.
+        </p>
+        {settings && (
+          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+            <ConsentCheck checked disabled onChange={() => {}} light>
+              <strong style={{ color: "#fff" }}>Строго необходими</strong> — винаги активни (работа на сайта, запомняне на избора, чат, плащане).
+            </ConsentCheck>
+            <ConsentCheck checked={analytics} onChange={setAnalytics} light>
+              <strong style={{ color: "#fff" }}>Аналитични</strong> — статистика за посещенията, за да подобряваме сайта.
+            </ConsentCheck>
+            <ConsentCheck checked={marketing} onChange={setMarketing} light>
+              <strong style={{ color: "#fff" }}>Маркетингови</strong> — измерване на реклами и показване на реклами.
+            </ConsentCheck>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button style={btn} onClick={() => onSave(true, true)}>Приемам всички</button>
+          <button style={btn} onClick={() => onSave(false, false)}>Отказвам всички</button>
+          {!settings ? (
+            <button style={{ ...btn, background: "transparent", color: "#fff", border: "2px solid rgba(255,255,255,0.45)" }} onClick={() => setSettings(true)}>Настройки</button>
+          ) : (
+            <button style={{ ...btn, background: "transparent", color: "#fff", border: "2px solid rgba(255,255,255,0.45)" }} onClick={() => onSave(analytics, marketing)}>Запази избора</button>
+          )}
+          {initial && (
+            <button style={{ ...btn, background: "transparent", color: FOOT.muted, border: "2px solid transparent", minWidth: 0 }} onClick={onClose}>Затвори</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Отказ от договора (чл. 47–49 от Общите условия): форма → потвърждение → готово.
+function WithdrawModal({ onClose, defaultId, defaultEmail }) {
+  const [id, setId] = useState(defaultId || "");
+  const [email, setEmail] = useState(defaultEmail || "");
+  const [name, setName] = useState("");
+  const [step, setStep] = useState("form"); // form | confirm | done
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [doneAt, setDoneAt] = useState("");
+  const font = "Manrope, system-ui, sans-serif";
+  const ok = id.trim() && /^\S+@\S+\.\S{2,}$/.test(email.trim()) && name.trim();
+
+  const submit = async () => {
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/api/legal", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "withdraw", inquiryId: id.trim(), email: email.trim(), name: name.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data?.error || "Неуспешно изпращане."); setStep("form"); }
+      else { setDoneAt(data.atText || ""); setStep("done"); }
+    } catch { setError("Проблем с връзката. Опитай пак."); setStep("form"); }
+    setBusy(false);
+  };
+
+  const field = { ...inputStyle, width: "100%", marginBottom: 10 };
+  return (
+    <PageModalShell onClose={onClose}>
+      <div style={{ maxWidth: 560, margin: "0 auto", fontFamily: font }}>
+        <h2 style={{ fontWeight: 700, fontSize: 24, color: PALETTE.ink, margin: "0 0 8px" }}>Откажете се от договора</h2>
+        {step === "form" && (
+          <>
+            <p style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 16px" }}>
+              Като потребител можеш да се откажеш от договора в срок от 14 дни от сключването му, без да посочваш причина (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
+              Попълни данните от поръчката си. Ще получиш потвърждение по имейл.
+            </p>
+            <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Номер на поръчката (BA-20261121-1234)" style={field} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Имейл, с който си поръчал/а" style={field} />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Име и фамилия" style={field} />
+            {error && <p style={{ color: PALETTE.coralDark, fontSize: 14.5, margin: "0 0 10px" }}>{error}</p>}
+            <button disabled={!ok} onClick={() => setStep("confirm")} className="lux-btn" style={{ background: ok ? PALETTE.gold : "rgba(15,23,42,0.06)", color: ok ? PALETTE.bgDeep : PALETTE.inkFaint, border: "none", borderRadius: 12, padding: "14px 24px", fontFamily: font, fontWeight: 700, fontSize: 15.5, cursor: ok ? "pointer" : "not-allowed" }}>
+              Откажете се от договора тук
+            </button>
+          </>
+        )}
+        {step === "confirm" && (
+          <>
+            <p style={{ fontSize: 15.5, color: PALETTE.ink, lineHeight: 1.6, margin: "0 0 12px" }}>Потвърди, че искаш да се откажеш от договора по поръчка <strong>{id.trim().toUpperCase()}</strong>:</p>
+            <div style={{ background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "12px 16px", fontSize: 15, lineHeight: 1.7, marginBottom: 16 }}>
+              <div><strong>Име:</strong> {name.trim()}</div><div><strong>Имейл:</strong> {email.trim()}</div>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button disabled={busy} onClick={submit} className="lux-btn" style={{ background: PALETTE.coral, color: "#fff", border: "none", borderRadius: 12, padding: "14px 24px", fontFamily: font, fontWeight: 700, fontSize: 15.5, cursor: "pointer" }}>
+                {busy ? "Изпращане…" : "Потвърждавам отказа"}
+              </button>
+              <button disabled={busy} onClick={() => setStep("form")} style={{ background: "none", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 24px", fontFamily: font, fontWeight: 600, fontSize: 15.5, cursor: "pointer", color: PALETTE.ink }}>Назад</button>
+            </div>
+          </>
+        )}
+        {step === "done" && (
+          <>
+            <p style={{ fontSize: 16, color: PALETTE.jungle, fontWeight: 700, margin: "0 0 10px" }}>Отказът е получен.</p>
+            <p style={{ fontSize: 15, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 10px" }}>
+              Изпратихме потвърждение на {email.trim()}{doneAt ? ` (подадено на ${doneAt})` : ""}. Сумите се връщат по реда на Общите условия — не по-късно от 14 дни, по същия платежен метод.
+            </p>
+            <button onClick={onClose} style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "12px 22px", fontFamily: font, fontWeight: 700, cursor: "pointer" }}>Затвори</button>
+          </>
+        )}
+        <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: "18px 0 0" }}>Може да се откажеш и с имейл на pgatov94@gmail.com (стандартен формуляр — в края на <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink>).</p>
+      </div>
+    </PageModalShell>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════════
    ОСНОВЕН КОМПОНЕНТ
    ═════════════════════════════════════════════════════════════════════ */
 export default function BezAgenciaLuxuryApp() {
@@ -1238,6 +1452,15 @@ export default function BezAgenciaLuxuryApp() {
   const [page, setPage] = useState("home"); // home | wizard | deals | dashboard | admin
   const [step, setStep] = useState(1);
   const [showAbout, setShowAbout] = useState(false);
+  const [cookieConsent, setCookieConsent] = useState(() => readConsent());
+  const [cookieDismissed, setCookieDismissed] = useState(false);
+  const [cookieSettingsOpen, setCookieSettingsOpen] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [orderTerms, setOrderTerms] = useState(false);
+  const [orderAdult, setOrderAdult] = useState(false);
+  const [orderStartNow, setOrderStartNow] = useState(false);
+  const [orderLoss, setOrderLoss] = useState(false);
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
   const [showDemoOffer, setShowDemoOffer] = useState(false);
   const [showCardSecurity, setShowCardSecurity] = useState(false);
   const [modalPage, setModalPage] = useState(null); // null | "deals" | "dashboard" | "reviews" — попъп върху текущата страница, не сменя page
@@ -1742,11 +1965,34 @@ export default function BezAgenciaLuxuryApp() {
   };
 
   /* ── Плащане с карта: реална Stripe Checkout сесия ──────────────────── */
+  const handleCookieSave = (analytics, marketing) => {
+    const prev = cookieConsent;
+    const c = writeConsent(analytics, marketing);
+    setCookieConsent(c);
+    setCookieSettingsOpen(false);
+    if ((prev?.analytics && !analytics) || (prev?.marketing && !marketing)) {
+      clearTrackingCookies();
+      window.location.reload(); // вече заредените скриптове се спират с презареждане
+    }
+  };
+  useEffect(() => { loadTrackers(cookieConsent); }, [cookieConsent]);
+
   const handleStripeCheckout = async () => {
     const id = dashLookupId.trim().toUpperCase();
     if (!id || !dashPayment) return;
     setPayCheckoutStatus("loading"); setPayCheckoutError("");
     try {
+      // Записваме избора на клиента (Общи условия, 18+, начало на изпълнението) ПРЕДИ плащането
+      const cr = await fetch("/api/legal", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "recordConsent", inquiryId: id, acceptedTerms: orderTerms, over18: orderAdult, startBeforeWithdrawal: orderStartNow, acknowledgeLoss: orderLoss }),
+      });
+      const cd = await cr.json().catch(() => ({}));
+      if (!cr.ok) {
+        setPayCheckoutError(cd?.error || "Не успяхме да запишем потвърждението ти. Опитай пак.");
+        setPayCheckoutStatus("error");
+        return;
+      }
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2005,6 +2251,7 @@ export default function BezAgenciaLuxuryApp() {
   const handleNewsletterSubscribe = async () => {
     const email = newsletterEmail.trim().toLowerCase();
     if (!email || !email.includes("@")) { setNewsletterStatus("error"); return; }
+    if (!newsletterConsent) { setNewsletterStatus("needconsent"); return; }
     setNewsletterStatus("sending");
     try {
       const res = await fetch("/api/subscribe-newsletter", {
@@ -2014,6 +2261,9 @@ export default function BezAgenciaLuxuryApp() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) { setNewsletterStatus("error"); return; }
+      // Доказателство за съгласието (дата и начин) — Политика за поверителност, т. 8
+      await fetch("/api/legal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "newsletterConsent", email }) }).catch(() => {});
+      setNewsletterConsent(false);
       await sendTransactionalEmail({
         to: INQUIRY_EMAIL,
         subject: "Нов абонат за бюлетина",
@@ -2173,11 +2423,12 @@ export default function BezAgenciaLuxuryApp() {
   // визити реалната картина за посетителите.
   useEffect(() => {
     if (page === "admin") return;
+    if (!cookieConsent?.analytics) return; // само със съгласие за аналитични бисквитки
     const path = modalPage ? `${page}#${modalPage}` : page;
     const device = window.innerWidth < 768 ? "mobile" : "desktop";
     db.logVisit(path, document.referrer, device);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, modalPage]);
+  }, [page, modalPage, cookieConsent?.analytics]);
 
 
   // Скрит достъп до Админ панела — не е видим никъде в интерфейса за клиенти.
@@ -3004,6 +3255,20 @@ export default function BezAgenciaLuxuryApp() {
       {/* ── ЧАТ НА ЖИВО (включва се с VITE_CHAT_ENABLED=true) ── */}
       {CHAT_ENABLED && page !== "admin" && <ChatWidget />}
 
+      {/* ── БИСКВИТКИ: банер при първо посещение / настройки от футъра ── */}
+      {page !== "admin" && ((!cookieConsent && !cookieDismissed) || cookieSettingsOpen) && (
+        <CookieBanner
+          initial={cookieSettingsOpen ? (cookieConsent || { analytics: false, marketing: false }) : null}
+          onSave={handleCookieSave}
+          onClose={() => { setCookieSettingsOpen(false); setCookieDismissed(true); }}
+        />
+      )}
+
+      {/* ── ОТКАЗ ОТ ДОГОВОРА ── */}
+      {showWithdraw && (
+        <WithdrawModal onClose={() => setShowWithdraw(false)} defaultId={dashLookupId.trim().toUpperCase()} defaultEmail={dashInquiry?.email || ""} />
+      )}
+
       {/* ── LIGHTBOX: снимка на цял екран, с навигация ляво/дясно ──────── */}
       {lightboxIndex !== null && lightboxPhotos?.length > 0 && (() => {
         const photos = lightboxPhotos;
@@ -3601,6 +3866,9 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               </div>
 
+              <p style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "22px 0 0" }}>
+                Запитването е безплатно и не те задължава. Изпращайки го, потвърждаваш, че си запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink> и че услугите са за лица над 18 години.
+              </p>
               <div style={{ display: "flex", gap: 12, marginTop: 26, flexWrap: "wrap" }}>
                 <button onClick={() => setStep(4)} className="lux-hover" style={{
                   background: "none", border: `1px solid ${PALETTE.panelBorder}`, color: PALETTE.ink, borderRadius: 12,
@@ -3835,8 +4103,30 @@ export default function BezAgenciaLuxuryApp() {
                   </div>
                   {!dashPayment.paid && (
                     <>
-                      <button onClick={handleStripeCheckout} disabled={payCheckoutStatus === "loading"} className="lux-btn" style={{ width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "14px 20px", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                        <CreditCard size={19} /> {payCheckoutStatus === "loading" ? "Зареждане…" : "Плати с Visa / Mastercard"}
+                      <div style={{ background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: PALETTE.ink }}>Преди да платиш</div>
+                        <p style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 10px" }}>
+                          <strong>Услуга:</strong> индивидуален маршрут за пътуване (консултантска услуга). <strong>Крайна цена:</strong> {dashPayment.amount} € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. <strong>Срок:</strong> според Предложението, което си получил по имейл.
+                          Като потребител имаш право да се откажеш от договора в срок от 14 дни без да посочваш причина (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
+                        </p>
+                        <ConsentCheck checked={orderTerms} onChange={setOrderTerms}>
+                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                        </ConsentCheck>
+                        <ConsentCheck checked={orderAdult} onChange={setOrderAdult}>
+                          Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
+                        </ConsentCheck>
+                        <ConsentCheck checked={orderStartNow} onChange={setOrderStartNow}>
+                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
+                        </ConsentCheck>
+                        <ConsentCheck checked={orderLoss} onChange={setOrderLoss}>
+                          Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                        </ConsentCheck>
+                        <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
+                          За да продължиш към плащането, отбележи всички полета.
+                        </p>
+                      </div>
+                      <button onClick={handleStripeCheckout} disabled={payCheckoutStatus === "loading" || !orderTerms || !orderAdult || !orderStartNow || !orderLoss} className="lux-btn" style={{ width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "14px 20px", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                        <CreditCard size={19} /> {payCheckoutStatus === "loading" ? "Зареждане…" : `Поръчай и плати ${dashPayment.amount} EUR`}
                       </button>
                       {payCheckoutStatus === "error" && (
                         <p style={{ fontSize: 16, color: PALETTE.coralDark, marginTop: 10, lineHeight: 1.5 }}>
@@ -5058,6 +5348,9 @@ export default function BezAgenciaLuxuryApp() {
                 placeholder="посочи email" style={{ ...inputStyle, marginBottom: 8, fontSize: 15, padding: "9px 12px" }}
                 onKeyDown={(e) => e.key === "Enter" && handleNewsletterSubscribe()}
               />
+              <ConsentCheck light checked={newsletterConsent} onChange={setNewsletterConsent}>
+                Съгласен/а съм да получавам бюлетин с оферти на имейла си. Мога да се отпиша по всяко време. Вж. <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.gold }}>Политиката за поверителност</a>.
+              </ConsentCheck>
               <button onClick={handleNewsletterSubscribe} disabled={newsletterStatus === "sending"} className="lux-btn" style={{
                 background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "9px 18px",
                 fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 13.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
@@ -5066,6 +5359,7 @@ export default function BezAgenciaLuxuryApp() {
               </button>
               {newsletterStatus === "sent" && <p style={{ fontSize: 15.5, color: FOOT.good, marginTop: 8 }}>Абонира се успешно!</p>}
               {newsletterStatus === "error" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Въведи валиден имейл.</p>}
+              {newsletterStatus === "needconsent" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Отбележи съгласието, за да се абонираш.</p>}
             </div>
 
             <div>
@@ -5103,7 +5397,11 @@ export default function BezAgenciaLuxuryApp() {
             <div style={{ display: "flex", justifyContent: "center", gap: 22, flexWrap: "wrap", marginBottom: 18, fontSize: 16 }}>
               <button onClick={() => setShowAbout(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer" }}>За нас</button>
               <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: FOOT.muted, textDecoration: "none" }}>Контакти</a>
-              <span title="Очаквайте скоро" style={{ color: FOOT.faint, cursor: "default" }}>Общи условия за ползване</span>
+              <a href={LEGAL_LINKS.terms} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.muted, textDecoration: "none" }}>Общи условия</a>
+              <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.muted, textDecoration: "none" }}>Политика за поверителност</a>
+              <a href={LEGAL_LINKS.cookies} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.muted, textDecoration: "none" }}>Политика за бисквитки</a>
+              <button onClick={() => setCookieSettingsOpen(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer", fontSize: 16 }}>Настройки на бисквитките</button>
+              <button onClick={() => setShowWithdraw(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer", fontSize: 16 }}>Откажете се от договора тук</button>
               <button onClick={() => setShowCardSecurity(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer", fontSize: 16 }}>Защита на картови данни</button>
             </div>
 
@@ -5259,7 +5557,7 @@ function AboutModal({ onClose, onStart, onShowDemo }) {
                     Плюс лични препоръки за преживявания на място (турове, билети за забележителности, екскурзии) през{" "}
                     <a href="https://www.getyourguide.com" target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.goldText, fontWeight: 600 }}>
                       GetYourGuide
-                    </a>.
+                    </a> (партньорски връзки — получавам комисионна, без да плащаш повече).
                   </span>
                 </div>
               ),
@@ -5410,6 +5708,9 @@ function OfferDetailsDisplay({ offer, openLightbox }) {
               {exp.link && <a href={exp.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", color: PALETTE.oceanBright, fontSize: 15, wordBreak: "break-all" }}>{exp.link}</a>}
             </div>
           ))}
+          <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: "6px 0 0", lineHeight: 1.5 }}>
+            Връзките към билети и екскурзии са партньорски (GetYourGuide): ако купиш през тях, получаваме комисионна, без това да променя цената за теб.
+          </p>
         </div>
       )}
 

@@ -8,6 +8,7 @@
 
 import { supabaseAdmin as supabase } from "./_lib/supabaseAdmin.js";
 import { sendEmail, emailWrap } from "./_lib/email.js";
+import { unsubscribeUrl } from "./_lib/unsubscribeToken.js";
 
 export default async function handler(req, res) {
   if (process.env.CRON_SECRET) {
@@ -63,7 +64,10 @@ export default async function handler(req, res) {
       const email = s.id;
       if (!email || !email.includes("@")) continue;
       try {
-        const ok = await sendEmail({ to: email, subject: "Офертите на седмицата в БезАгенция", html });
+        // Всяко съобщение съдържа връзка за отписване (изискване на Политиката за поверителност)
+        const footer = `<p style="margin:22px 0 0;font-size:12.5px;color:#8E99AE;text-align:center;">Получаваш това съобщение, защото си се абонирал/а за бюлетина на „БезАгенция“ ЕООД. <a href="${unsubscribeUrl(email)}" style="color:#8E99AE;">Отпиши се</a></p>`;
+        const body = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, footer + "</body>") : html + footer;
+        const ok = await sendEmail({ to: email, subject: "Офертите на седмицата в БезАгенция", html: body });
         if (ok) sent++;
       } catch { /* продължаваме към следващия абонат при грешка на един имейл */ }
     }
