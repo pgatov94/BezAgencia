@@ -5335,8 +5335,6 @@ export default function BezAgenciaLuxuryApp() {
               <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 15, color: FOOT.muted, lineHeight: 1.5 }}>
                 <span style={{ color: FOOT.ink, fontWeight: 600 }}>{COMPANY_INFO.companyName}</span>
                 <span>ЕИК: {COMPANY_INFO.eik}</span>
-                <span>Адрес: {COMPANY_INFO.address}</span>
-                <span>МОЛ: {COMPANY_INFO.mol}</span>
               </div>
             </div>
 
