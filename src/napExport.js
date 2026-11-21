@@ -194,6 +194,50 @@ export function buildFiles(settings, docs, period) {
   };
 }
 
+
+/* ─────────── VIES.TXT (Приложение № 15 към ППЗДДС) ─────────── */
+
+const EU_PREFIXES = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "EL", "ES", "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "XI"];
+const mmYYYY = (period) => `${period.slice(4, 6)}/${period.slice(0, 4)}`;
+const num12 = (c) => (c / 100).toFixed(2).padStart(12, " ");
+
+/**
+ * VIES декларация за услуги по чл. 21, ал. 2 към данъчно задължени лица от друга държава членка.
+ * Подава се само ако за периода има такива доставки (чл. 117, ал. 5 ППЗДДС).
+ * settings: vatId, name, submitterEgn, submitterName, submitterCity, submitterPostal, submitterAddress, companyAddress, quality ("R"|"A")
+ */
+export function buildVies(settings, docs, period) {
+  const warnings = [];
+  const byVin = new Map();
+  for (const d of docs) {
+    if (d.kind !== "income") continue;
+    const vin = (d.counterparty?.vatId || "").replace(/\s+/g, "").toUpperCase();
+    if (!vin) continue; // липсващ номер е отчетен като предупреждение в buildFiles
+    const pref = vin.slice(0, 2);
+    if (!EU_PREFIXES.includes(pref) || pref === "BG") warnings.push(`VIES: ${vin} няма валиден знак на друга държава членка (за Гърция се ползва EL).`);
+    byVin.set(vin, (byVin.get(vin) || 0) + baseCents(d));
+  }
+  const rows = [...byVin.entries()];
+  if (rows.length === 0) return { needed: false, text: "", rows: 0, warnings };
+
+  if (!settings.submitterEgn) warnings.push("VIES: липсва ЕГН/ЛНЧ на лицето, подаващо декларацията (Данни за декларацията).");
+  if (!/^\d{4}$/.test(String(settings.submitterPostal || ""))) warnings.push("VIES: пощенският код трябва да е 4 цифри.");
+
+  const total = rows.reduce((a, [, c]) => a + c, 0);
+  const lines = [];
+  lines.push("VHR" + sym(mmYYYY(period), 7) + String(rows.length).padStart(5, " "));
+  lines.push(
+    "VDR" + sym(settings.submitterEgn, 15) + sym(settings.submitterName || settings.submitter, 150) + sym(settings.submitterCity, 50) +
+    String(settings.submitterPostal || "").padStart(4, " ").slice(0, 4) + sym(settings.submitterAddress, 150) + sym(settings.quality === "A" ? "A" : "R", 1)
+  );
+  lines.push("VTR" + sym(settings.vatId, 15) + sym(settings.name, 150) + sym(settings.companyAddress, 200));
+  lines.push("TTR" + num12(total) + num12(0));
+  rows.forEach(([vin, c], i) => {
+    lines.push("VIR" + String(i + 1).padStart(5, " ") + sym(vin, 15) + num12(0) + num12(0) + num12(c) + sym("", 7));
+  });
+  return { needed: true, text: lines.map((l) => l + "\r\n").join(""), rows: rows.length, total: total / 100, warnings };
+}
+
 /** срок: 14-о число на следващия месец */
 export function deadlineOf(period) {
   const y = Number(period.slice(0, 4)), m = Number(period.slice(4, 6));

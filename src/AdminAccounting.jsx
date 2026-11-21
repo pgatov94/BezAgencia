@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { buildFiles, buildCsv, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
+import { buildFiles, buildVies, buildCsv, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
 
 /* Таб „Счетоводство“ — ДДС за лице по чл. 97а ЗДДС (самоначисляване) */
 
@@ -32,7 +32,11 @@ const IMPORT_EXAMPLE = `{
 }`;
 
 export default function AdminAccounting({ adminActionFetch, P, company }) {
-  const defaults = { vatId: "BG" + company.eik, name: "БезАгенция ЕООД", submitter: company.mol, zeroSeq: "0" };
+  const defaults = {
+    vatId: "BG" + company.eik, name: "БезАгенция ЕООД", submitter: company.mol, zeroSeq: "0",
+    submitterEgn: "", submitterName: company.mol, submitterCity: "Асеновград", submitterPostal: "4230",
+    submitterAddress: "ул. „Първомайска“ № 1, ет. 2", companyAddress: company.address, quality: "R",
+  };
   const [docs, setDocs] = useState([]);
   const [settings, setSettings] = useState(defaults);
   const [loading, setLoading] = useState(true);
@@ -183,6 +187,8 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
   }), [docs, from, to, sameMonth]);
   const result = useMemo(() => (sameMonth ? buildFiles(settings, inRange, period) : null), [settings, inRange, period, sameMonth]);
 
+  const vies = useMemo(() => (sameMonth ? buildVies(settings, inRange, period) : null), [settings, inRange, period, sameMonth]);
+
   const monthDocs = useMemo(() => [...docs].sort((a, b) => (docPeriod(b) + b.invoiceDate).localeCompare(docPeriod(a) + a.invoiceDate)), [docs]);
 
   const dlAll = () => {
@@ -297,8 +303,20 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
               <button onClick={() => downloadTxt("POKUPKI.TXT", result.pokupki)} style={btn(false)}>POKUPKI.TXT</button>
               <button onClick={dlCsv} style={btn(false)}>Таблица за проверка (CSV)</button>
             </div>
+            <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1px solid ${P.panelBorder}`, background: "rgba(15,23,42,0.03)" }}>
+              <div style={{ fontWeight: 700, color: P.ink, marginBottom: 4 }}>VIES декларация</div>
+              {vies?.needed ? (
+                <>
+                  <div style={{ fontSize: 14.5, color: P.inkMuted, lineHeight: 1.6 }}>За този месец е нужна: {vies.rows} контрагент(а), услуги по чл. 21, ал. 2 за {vies.total.toFixed(2)} €. Подава се заедно със справката-декларация, до {deadlineOf(period)}.</div>
+                  {vies.warnings.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "8px 0", paddingLeft: 20 }}>{vies.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+                  <button onClick={() => downloadTxt("VIES.TXT", vies.text)} style={{ ...btn(true), marginTop: 8 }}>Изтегли VIES.TXT</button>
+                </>
+              ) : (
+                <div style={{ fontSize: 14.5, color: P.inkMuted }}>Не е нужна за този период — няма издадени фактури към фирми от ЕС (чл. 117, ал. 5 от ППЗДДС).</div>
+              )}
+            </div>
             <p style={{ fontSize: 13.5, color: P.inkFaint, margin: "12px 0 0", lineHeight: 1.6 }}>
-              Файловете са във формат windows-1251, с точните имена и структура по Приложение № 12 към ППЗДДС. Стойностите са в евро (за периоди от 01.01.2026 г.). Качват се в портала на НАП (Справка-декларация по ЗДДС → подаване с файлове). При издадени фактури към ЕС е нужна и VIES декларация (не се генерира тук).
+              Файловете са във формат windows-1251, с точните имена и структура по Приложение № 12 към ППЗДДС. Стойностите са в евро (за периоди от 01.01.2026 г.). Качват се в портала на НАП (Справка-декларация по ЗДДС → подаване с файлове).
             </p>
           </>
         )}
@@ -312,6 +330,13 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
             {F("Наименование (до 50 знака)", <input value={settings.name} onChange={(e) => setSettings({ ...settings, name: e.target.value })} style={inp} maxLength={50} />)}
             {F("Лице, подаващо данните", <input value={settings.submitter} onChange={(e) => setSettings({ ...settings, submitter: e.target.value })} style={inp} maxLength={50} />)}
             {F("Пореден № в нулевия дневник за покупки", <select value={settings.zeroSeq} onChange={(e) => setSettings({ ...settings, zeroSeq: e.target.value })} style={inp}><option value="0">0 (по ППЗДДС, чл. 113, ал. 3)</option><option value="1">1 (ако порталът откаже 0)</option></select>)}
+            {F("ЕГН/ЛНЧ на подаващия (за VIES)", <input value={settings.submitterEgn} onChange={(e) => setSettings({ ...settings, submitterEgn: e.target.value })} style={inp} maxLength={15} />)}
+            {F("Три имена на подаващия (VIES)", <input value={settings.submitterName} onChange={(e) => setSettings({ ...settings, submitterName: e.target.value })} style={inp} maxLength={150} />)}
+            {F("Град (VIES)", <input value={settings.submitterCity} onChange={(e) => setSettings({ ...settings, submitterCity: e.target.value })} style={inp} maxLength={50} />)}
+            {F("Пощенски код (VIES)", <input value={settings.submitterPostal} onChange={(e) => setSettings({ ...settings, submitterPostal: e.target.value })} style={inp} maxLength={4} />)}
+            {F("Адрес за кореспонденция (VIES)", <input value={settings.submitterAddress} onChange={(e) => setSettings({ ...settings, submitterAddress: e.target.value })} style={inp} maxLength={150} />)}
+            {F("Адрес на фирмата (VIES)", <input value={settings.companyAddress} onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })} style={inp} maxLength={200} />)}
+            {F("Качество на подаващия", <select value={settings.quality} onChange={(e) => setSettings({ ...settings, quality: e.target.value })} style={inp}><option value="R">Представляващ</option><option value="A">Пълномощник</option></select>)}
             <div style={{ alignSelf: "end" }}><button onClick={saveSettings} style={btn(true)}>Запази</button></div>
           </div>
         )}
