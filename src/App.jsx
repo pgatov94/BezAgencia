@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
+import AdminAccounting from "./AdminAccounting";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
 import {
@@ -4600,6 +4601,7 @@ export default function BezAgenciaLuxuryApp() {
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "subscribers"} onClick={() => setAdminTab("subscribers")} icon={<Mail size={16} />} label="Абонати" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
+                  <AdminTabBtn active={adminTab === "accounting"} onClick={() => setAdminTab("accounting")} icon={<ClipboardCheck size={16} />} label="Счетоводство" />
                   {CHAT_ENABLED && <AdminTabBtn active={adminTab === "chat"} onClick={() => setAdminTab("chat")} icon={<MessageCircle size={16} />} label={chatUnread > 0 ? `Чат (${chatUnread})` : "Чат"} />}
                 </div>
                 <button onClick={handleAdminLogout} className="lux-link" style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 600, fontSize: 15.5, color: PALETTE.inkFaint, padding: "6px 4px" }}>
@@ -5202,6 +5204,10 @@ export default function BezAgenciaLuxuryApp() {
                     {!adminContactsLoading && adminContacts.length === 0 && <p style={{ fontSize: 15, color: PALETTE.inkMuted }}>Все още няма запитвания.</p>}
                   </div>
                 </div>
+              )}
+
+              {adminTab === "accounting" && (
+                <AdminAccounting adminActionFetch={adminActionFetch} P={PALETTE} company={COMPANY_INFO} />
               )}
 
               {CHAT_ENABLED && adminTab === "chat" && (

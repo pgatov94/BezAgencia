@@ -162,6 +162,33 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    /* ───────── СЧЕТОВОДСТВО (само админ) ───────── */
+    if (action === "accList") {
+      const { data, error } = await supabase.from("accounting_docs").select("id, data, updated_at").order("updated_at", { ascending: true }).limit(2000);
+      if (error) throw error;
+      return res.status(200).json({ ok: true, rows: data || [] });
+    }
+
+    if (action === "accSave") {
+      const id = String(b.id || "");
+      if (!/^[A-Za-z0-9_-]{3,60}$/.test(id)) return res.status(400).json({ error: "Невалиден номер на записа." });
+      const doc = b.doc;
+      if (!doc || typeof doc !== "object" || Array.isArray(doc)) return res.status(400).json({ error: "Липсват данни." });
+      const json = JSON.stringify(doc);
+      if (json.length > 20000) return res.status(400).json({ error: "Записът е твърде голям." });
+      const { error } = await supabase.from("accounting_docs").upsert({ id, data: doc, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === "accDelete") {
+      const id = String(b.id || "");
+      if (!/^[A-Za-z0-9_-]{3,60}$/.test(id) || id === "settings") return res.status(400).json({ error: "Невалиден запис." });
+      const { error } = await supabase.from("accounting_docs").delete().eq("id", id);
+      if (error) throw error;
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ error: "Непознато действие." });
   } catch (e) {
     console.error("chat api:", e?.message || e);
