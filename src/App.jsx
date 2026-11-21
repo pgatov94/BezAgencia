@@ -1512,6 +1512,10 @@ export default function BezAgenciaLuxuryApp() {
   const [offerInquiry, setOfferInquiry] = useState(null);
   const [offerLoadStatus, setOfferLoadStatus] = useState("idle"); // idle | loading | found | notfound
   const [offerDiscountCode, setOfferDiscountCode] = useState("");
+  const [offTerms, setOffTerms] = useState(false);
+  const [offAdult, setOffAdult] = useState(false);
+  const [offStartNow, setOffStartNow] = useState(false);
+  const [offLoss, setOffLoss] = useState(false);
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
   const [offerEditRequestStatus, setOfferEditRequestStatus] = useState("idle"); // idle | sending
   const [showDeclineForm, setShowDeclineForm] = useState(false);
@@ -2113,6 +2117,11 @@ export default function BezAgenciaLuxuryApp() {
 
   const handleConfirmOffer = async () => {
     if (!offerData || !offerViewId) return;
+    if (!offTerms || !offAdult || !offStartNow || !offLoss) {
+      setOfferConfirmError("За да продължиш към плащането, отбележи всички полета.");
+      setOfferConfirmStatus("error");
+      return;
+    }
     setOfferConfirmStatus("checking"); setOfferConfirmError("");
     try {
       const total = (Number(offerData.flightPrice) || 0) + (Number(offerData.hotelPrice) || 0);
@@ -2160,6 +2169,18 @@ export default function BezAgenciaLuxuryApp() {
       }), true);
       if (!setResult) {
         setOfferConfirmError("Възникна проблем при запазването. Опитай отново.");
+        setOfferConfirmStatus("error");
+        return;
+      }
+
+      // Записваме избора на клиента (Общи условия, 18+, начало на изпълнението) ПРЕДИ плащането
+      const cr = await fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "recordConsent", inquiryId: offerViewId, acceptedTerms: offTerms, over18: offAdult, startBeforeWithdrawal: offStartNow, acknowledgeLoss: offLoss }),
+      });
+      const cd = await cr.json().catch(() => ({}));
+      if (!cr.ok) {
+        setOfferConfirmError(cd?.error || "Не успяхме да запишем потвърждението ти. Опитай пак.");
         setOfferConfirmStatus("error");
         return;
       }
@@ -4436,12 +4457,35 @@ export default function BezAgenciaLuxuryApp() {
                   <p style={{ fontSize: 11.5, color: PALETTE.inkFaint, margin: 0 }}>5% от стойността на пътуването, минимум 50 € — това е комисионна за услугата, не цената на самото пътуване.</p>
                 </div>
 
-                <button onClick={handleConfirmOffer} disabled={offerConfirmStatus === "checking" || offerConfirmStatus === "redirecting"} className="lux-btn" style={{
+                <div style={{ background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: PALETTE.ink }}>Преди да платиш</div>
+                  <p style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 10px" }}>
+                    <strong>Услуга:</strong> индивидуален маршрут за пътуване (консултантска услуга). <strong>Крайна цена:</strong> {offerDiscountStatus === "applied" ? Math.round(baseCommission * (1 - offerDiscountPercent / 100)) : Math.round(baseCommission)} € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. Сумата се плаща сега. След потвърдено плащане получаваш пълната оферта.
+                    Като потребител имаш право да се откажеш от договора в срок от 14 дни без да посочваш причина (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
+                  </p>
+                  <ConsentCheck checked={offTerms} onChange={setOffTerms}>
+                    Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                  </ConsentCheck>
+                  <ConsentCheck checked={offAdult} onChange={setOffAdult}>
+                    Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
+                  </ConsentCheck>
+                  <ConsentCheck checked={offStartNow} onChange={setOffStartNow}>
+                    Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
+                  </ConsentCheck>
+                  <ConsentCheck checked={offLoss} onChange={setOffLoss}>
+                    Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                  </ConsentCheck>
+                  <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
+                    За да продължиш към плащането, отбележи всички полета.
+                  </p>
+                </div>
+
+                <button onClick={handleConfirmOffer} disabled={offerConfirmStatus === "checking" || offerConfirmStatus === "redirecting" || !offTerms || !offAdult || !offStartNow || !offLoss} className="lux-btn" style={{
                   background: `linear-gradient(135deg, ${PALETTE.goldBright}, ${PALETTE.gold})`, color: PALETTE.bgDeep, border: "none", borderRadius: 12,
                   padding: "16px 30px", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15.5, cursor: "pointer",
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}>
-                  <Check size={20} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : "Потвърди офертата"}
+                  <Check size={20} /> {offerConfirmStatus === "redirecting" ? "Пренасочване към плащане…" : offerConfirmStatus === "checking" ? "Проверявам…" : `Поръчай и плати ${offerDiscountStatus === "applied" ? Math.round(baseCommission * (1 - offerDiscountPercent / 100)) : Math.round(baseCommission)} EUR`}
                 </button>
                 {offerConfirmStatus === "error" && <p style={{ fontSize: 16, color: PALETTE.coralDark, margin: 0 }}>{offerConfirmError}</p>}
 
