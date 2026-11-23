@@ -7,7 +7,7 @@ import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown, MessageCircle,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown, MessageCircle, Gift,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');`;
@@ -1553,6 +1553,7 @@ export default function BezAgenciaLuxuryApp() {
   // ── Бюлетин (footer) ──────────────────────────────────────────────
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState("idle"); // idle | sending | sent | error
+  const [showSubscribe, setShowSubscribe] = useState(false);
 
   // ── Оферти (Deals) — публично видими, управлявани от админ ───────────
   const [deals, setDeals] = useState([]);
@@ -3203,6 +3204,15 @@ export default function BezAgenciaLuxuryApp() {
         .lux-chip.active .chip-dot svg { opacity: 1; transform: scale(1); }
         .lux-chip.active .chip-dot { background: ${PALETTE.gold}; border-color: ${PALETTE.gold}; color: ${PALETTE.bgDeep}; }
 
+        @keyframes baSubPulse {
+          0% { box-shadow: 0 8px 24px rgba(15,23,42,0.25), 0 0 0 0 rgba(212,175,55,0.55); }
+          70% { box-shadow: 0 8px 24px rgba(15,23,42,0.25), 0 0 0 18px rgba(212,175,55,0); }
+          100% { box-shadow: 0 8px 24px rgba(15,23,42,0.25), 0 0 0 0 rgba(212,175,55,0); }
+        }
+        .ba-sub-btn { animation: baSubPulse 3.2s ease-out infinite; }
+        .ba-sub-btn:hover { animation: none; transform: scale(1.04); }
+        @media (prefers-reduced-motion: reduce) { .ba-sub-btn { animation: none; } }
+        @media (max-width: 480px) { .ba-sub-btn { height: 52px !important; padding: 0 16px 0 12px !important; } .ba-sub-sub { display: none; } }
         ::selection { background: rgba(212,175,55,0.35); }
 
         @media (max-width: 760px) {
@@ -3276,6 +3286,56 @@ export default function BezAgenciaLuxuryApp() {
 
       {/* ── ЧАТ НА ЖИВО (включва се с VITE_CHAT_ENABLED=true) ── */}
       {CHAT_ENABLED && page !== "admin" && <ChatWidget />}
+
+      {/* ── АБОНИРАЙ СЕ: плаващ бутон отляво + прозорец с формата ── */}
+      {page !== "admin" && newsletterStatus !== "sent" && !showSubscribe && (
+        <button className="ba-sub-btn" onClick={() => setShowSubscribe(true)} aria-label="Абонирай се и вземи 10% отстъпка"
+          style={{ position: "fixed", left: 16, bottom: 16, zIndex: 900, border: "none", cursor: "pointer", borderRadius: 999,
+            background: PALETTE.gold, color: PALETTE.bgDeep, padding: "0 20px 0 16px", height: 58, display: "flex", alignItems: "center", gap: 10,
+            fontFamily: "Manrope, system-ui, sans-serif", boxShadow: "0 8px 24px rgba(15,23,42,0.25)" }}>
+          <Gift size={24} />
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.15 }}>
+            <span style={{ fontWeight: 800, fontSize: 16 }}>Вземи -10%</span>
+            <span className="ba-sub-sub" style={{ fontWeight: 600, fontSize: 12.5 }}>Абонирай се</span>
+          </span>
+        </button>
+      )}
+      {page !== "admin" && showSubscribe && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) setShowSubscribe(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 1001, background: "rgba(6,8,16,0.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div role="dialog" aria-label="Абонирай се" style={{ position: "relative", background: PALETTE.bgDeep, border: `1px solid ${FOOT.border}`, borderRadius: 16, padding: "28px 24px 24px", width: "100%", maxWidth: 420, maxHeight: "92vh", overflowY: "auto", fontFamily: "Manrope, system-ui, sans-serif" }}>
+            <button onClick={() => setShowSubscribe(false)} aria-label="Затвори" style={{ position: "absolute", right: 10, top: 10, background: "none", border: "none", color: FOOT.muted, cursor: "pointer", padding: 6 }}><X size={20} /></button>
+            <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: FOOT.gold, marginBottom: 8 }}>Абонирай се</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: FOOT.ink, marginBottom: 8 }}>Вземи 10% отстъпка</div>
+            <p style={{ fontSize: 15, color: FOOT.muted, margin: "0 0 14px", lineHeight: 1.5 }}>Получавай първи новите ни оферти и вземи еднократен код за 10% отстъпка от комисионната.</p>
+            {newsletterStatus === "sent" ? (
+              <div>
+                <p style={{ fontSize: 16, color: FOOT.good, margin: "0 0 14px" }}>Абонира се успешно!</p>
+                <button onClick={() => setShowSubscribe(false)} className="lux-btn" style={{ background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Затвори</button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="посочи email" style={{ ...inputStyle, marginBottom: 10, fontSize: 16, padding: "10px 12px" }}
+                  onKeyDown={(e) => e.key === "Enter" && handleNewsletterSubscribe()}
+                />
+                <ConsentCheck light checked={newsletterConsent} onChange={setNewsletterConsent}>
+                  Съгласен/а съм да получавам бюлетин с оферти на имейла си. Мога да се отпиша по всяко време. Вж. <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.gold }}>Политиката за поверителност</a>.
+                </ConsentCheck>
+                <button onClick={handleNewsletterSubscribe} disabled={newsletterStatus === "sending"} className="lux-btn" style={{
+                  background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "11px 22px",
+                  fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
+                }}>
+                  {newsletterStatus === "sending" ? "Изпращане…" : "Абониране"}
+                </button>
+                {newsletterStatus === "error" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Въведи валиден имейл.</p>}
+                {newsletterStatus === "needconsent" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Отбележи съгласието, за да се абонираш.</p>}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── БИСКВИТКИ: банер при първо посещение / настройки от футъра ── */}
       {page !== "admin" && ((!cookieConsent && !cookieDismissed) || cookieSettingsOpen) && (
@@ -5361,7 +5421,7 @@ export default function BezAgenciaLuxuryApp() {
             <img src={LOGO_IMAGE} alt="БезАгенция" style={{ height: 96, width: "auto", margin: "0 auto" }} />
           </div>
 
-          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 28, marginBottom: 36 }}>
+          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 28, marginBottom: 36 }}>
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: FOOT.gold, marginBottom: 14 }}>Контакти</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15, color: FOOT.muted, lineHeight: 1.5 }}>
@@ -5386,28 +5446,6 @@ export default function BezAgenciaLuxuryApp() {
                 <span style={{ color: FOOT.ink, fontWeight: 600 }}>{COMPANY_INFO.companyName}</span>
                 <span>ЕИК: {COMPANY_INFO.eik}</span>
               </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: FOOT.gold, marginBottom: 14 }}>Абонирай се</div>
-              <p style={{ fontSize: 15, color: FOOT.muted, margin: "0 0 12px", lineHeight: 1.5 }}>Получавай първи новите ни оферти и вземи еднократен код за 10% отстъпка от комисионната.</p>
-              <input
-                type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="посочи email" style={{ ...inputStyle, marginBottom: 8, fontSize: 15, padding: "9px 12px" }}
-                onKeyDown={(e) => e.key === "Enter" && handleNewsletterSubscribe()}
-              />
-              <ConsentCheck light checked={newsletterConsent} onChange={setNewsletterConsent}>
-                Съгласен/а съм да получавам бюлетин с оферти на имейла си. Мога да се отпиша по всяко време. Вж. <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.gold }}>Политиката за поверителност</a>.
-              </ConsentCheck>
-              <button onClick={handleNewsletterSubscribe} disabled={newsletterStatus === "sending"} className="lux-btn" style={{
-                background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 8, padding: "9px 18px",
-                fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 13.5, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer",
-              }}>
-                Абониране
-              </button>
-              {newsletterStatus === "sent" && <p style={{ fontSize: 15.5, color: FOOT.good, marginTop: 8 }}>Абонира се успешно!</p>}
-              {newsletterStatus === "error" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Въведи валиден имейл.</p>}
-              {newsletterStatus === "needconsent" && <p style={{ fontSize: 15.5, color: FOOT.bad, marginTop: 8 }}>Отбележи съгласието, за да се абонираш.</p>}
             </div>
 
             <div>
