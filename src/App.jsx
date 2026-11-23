@@ -2942,7 +2942,8 @@ export default function BezAgenciaLuxuryApp() {
     setAdminDealSaveStatus("saving");
     try {
       const id = editingDealId || genDealId();
-      const flightPrice = Number(f.flightPrice);
+      // Полетът се въвежда за 1 човек, а се записва за двама (нощувките се въвеждат вече за двама)
+      const flightPrice = Math.round(Number(f.flightPrice) * 2 * 100) / 100;
       const hotelPrice = Number(f.hotelPrice);
       const existing = editingDealId ? deals.find((d) => d.id === editingDealId) : null;
       const key = `deal:${id}`;
@@ -3006,7 +3007,7 @@ export default function BezAgenciaLuxuryApp() {
     setAdminDealForm({
       title: full.title || "", city: full.city || "", country: full.country || "", tag: full.tag || "flash",
       departureFrom: full.departureFrom || "",
-      flightPrice: full.flightPrice != null ? String(full.flightPrice) : "", hotelPrice: full.hotelPrice != null ? String(full.hotelPrice) : "",
+      flightPrice: full.flightPrice != null ? String(Math.round((Number(full.flightPrice) / 2) * 100) / 100) : "", hotelPrice: full.hotelPrice != null ? String(full.hotelPrice) : "",
       travelMonth: full.travelMonth || "", imageDataUrl: full.imageDataUrl || "",
       flightDateFrom: full.flightDateFrom || "", flightDateTo: full.flightDateTo || "",
       flightLinks: full.flightLinks?.length ? full.flightLinks : [""],
@@ -5169,8 +5170,8 @@ export default function BezAgenciaLuxuryApp() {
                     <select value={adminDealForm.tag} onChange={(e) => setAdminDealForm((f) => ({ ...f, tag: e.target.value }))} style={selectStyle}>
                       {Object.entries(DEAL_TAGS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
-                    <input type="number" value={adminDealForm.flightPrice} onChange={(e) => setAdminDealForm((f) => ({ ...f, flightPrice: e.target.value }))} placeholder="Цена на полети €" style={inputStyle} />
-                    <input type="number" value={adminDealForm.hotelPrice} onChange={(e) => setAdminDealForm((f) => ({ ...f, hotelPrice: e.target.value }))} placeholder="Цена на нощувки €" style={inputStyle} />
+                    <input type="number" step="any" value={adminDealForm.flightPrice} onChange={(e) => setAdminDealForm((f) => ({ ...f, flightPrice: e.target.value }))} placeholder="Билет за 1 човек €" title="Билет за 1 човек — записва се за двама" style={inputStyle} />
+                    <input type="number" step="any" value={adminDealForm.hotelPrice} onChange={(e) => setAdminDealForm((f) => ({ ...f, hotelPrice: e.target.value }))} placeholder="Нощувки за двама €" title="Нощувки за двама" style={inputStyle} />
                     <select value={adminDealForm.travelMonth} onChange={(e) => setAdminDealForm((f) => ({ ...f, travelMonth: e.target.value }))} style={selectStyle}>
                       <option value="">Месец на пътуване (незадължително)</option>
                       {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -5216,7 +5217,8 @@ export default function BezAgenciaLuxuryApp() {
                   </p>
                   {(adminDealForm.flightPrice || adminDealForm.hotelPrice) && (
                     <p style={{ fontSize: 16, color: PALETTE.inkMuted, margin: "0 0 12px" }}>
-                      Обща цена: <span style={{ color: PALETTE.goldText, fontWeight: 700 }}>{(Number(adminDealForm.flightPrice) || 0) + (Number(adminDealForm.hotelPrice) || 0)} €</span>
+                      Обща цена за двама: <span style={{ color: PALETTE.goldText, fontWeight: 700 }}>{(Number(adminDealForm.flightPrice) || 0) * 2 + (Number(adminDealForm.hotelPrice) || 0)} €</span>
+                      <span style={{ fontSize: 14, color: PALETTE.inkFaint }}> (билети {(Number(adminDealForm.flightPrice) || 0)} € × 2 = {(Number(adminDealForm.flightPrice) || 0) * 2} € + нощувки {Number(adminDealForm.hotelPrice) || 0} €)</span>
                     </p>
                   )}
 
