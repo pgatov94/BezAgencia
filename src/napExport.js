@@ -100,7 +100,7 @@ function salesLine(settings, period, seq, doc) {
     sym(cpId, 15) + sym(cp.name, 50) + sym(desc, 30);
   for (const k of SALES_VALUE_ORDER) line += numField(v[k], 15);
   line += sym("", 2); // 02-27 (не се попълва)
-  return { line, values: v, docType };
+  return { line, values: v, docType, meta: { docNo, docDate, cpId, cpName: cp.name || "", desc } };
 }
 
 /* ─────────── POKUPKI.TXT (нулев запис за 97а) ─────────── */
@@ -160,13 +160,15 @@ export function buildFiles(settings, docs, period) {
 
   const sums = { base: 0, vat: 0, v11: 0, v21: 0, v12: 0, v26: 0, v22: 0, v23: 0, v13: 0, v24: 0, v14: 0, v15: 0, v16: 0, v17: 0, v18: 0, v25: 0, v19: 0 };
   const lines = [];
+  const rowsOut = [];
   sorted.forEach((doc, i) => {
     if (doc.kind === "expense" && (!doc.protocolNo || !doc.protocolDate)) warnings.push(`Документ ${doc.invoiceNo || doc.id}: липсва номер или дата на протокола.`);
     if (doc.currency && doc.currency !== "EUR" && !(Number(doc.rate) > 0)) warnings.push(`Документ ${doc.invoiceNo || doc.id}: липсва курс към EUR.`);
     if (doc.kind === "expense" && !(doc.counterparty?.vatId || "").trim()) warnings.push(`Документ ${doc.invoiceNo || doc.id}: липсва ДДС номер на доставчика.`);
     if (doc.kind !== "expense" && !(doc.counterparty?.vatId || "").trim()) warnings.push(`Документ ${doc.invoiceNo || doc.id}: липсва ДДС номер на клиента (нужен за чл. 21, ал. 2).`);
-    const { line, values: v } = salesLine(settings, period, i + 1, doc);
+    const { line, values: v, docType, meta } = salesLine(settings, period, i + 1, doc);
     lines.push(line);
+    rowsOut.push({ seq: i + 1, docType, ...meta, v });
     sums.base += v["02-10"]; sums.vat += v["02-20"];
     sums.v11 += v["02-11"]; sums.v21 += v["02-21"]; sums.v12 += v["02-12"]; sums.v26 += v["02-26"]; sums.v22 += v["02-22"];
     sums.v23 += v["02-23"]; sums.v13 += v["02-13"]; sums.v24 += v["02-24"]; sums.v14 += v["02-14"]; sums.v15 += v["02-15"];
@@ -184,7 +186,7 @@ export function buildFiles(settings, docs, period) {
   if (sums.vat !== sums.v21 + sums.v22 + sums.v23 + sums.v24) checks.push("01-20 ≠ сума от данъците");
 
   return {
-    deklar, prodagbi, pokupki, warnings, checks,
+    deklar, prodagbi, pokupki, warnings, checks, rows: rowsOut, sums,
     summary: {
       period, salesCount: lines.length,
       baseSelfCharged: fromCents(sums.v26), vatSelfCharged: fromCents(sums.v22),
@@ -235,7 +237,7 @@ export function buildVies(settings, docs, period) {
   rows.forEach(([vin, c], i) => {
     lines.push("VIR" + String(i + 1).padStart(5, " ") + sym(vin, 15) + num12(0) + num12(0) + num12(c) + sym("", 7));
   });
-  return { needed: true, text: lines.map((l) => l + "\r\n").join(""), rows: rows.length, total: total / 100, warnings };
+  return { needed: true, text: lines.map((l) => l + "\r\n").join(""), rows: rows.length, total: total / 100, warnings, list: rows.map(([vin, c]) => ({ vin, amount: c / 100 })) };
 }
 
 /** срок: 14-о число на следващия месец */
@@ -299,4 +301,43 @@ table{width:100%;border-collapse:collapse;margin:14px 0}th,td{border:1px solid #
 <p>Дата на възникване на данъчното събитие: <b>${e(bgDate(doc.eventDate || doc.invoiceDate))}</b></p>
 <p>Основание за начисляване на данъка: <b>чл. 82, ал. 2, т. 3 от ЗДДС</b> — услуга с място на изпълнение на територията на страната (чл. 21, ал. 2), получена от доставчик, установен в друга държава членка.</p>
 <div class="sign"><div>Получил:</div><div>Съставил: ${e(settings.submitter)}</div></div></body></html>`;
+}
+
+
+/** Справка-декларация във вид за показване: [кл., описание, стойност] (по Приложение № 13) */
+export function declTable(sums) {
+  const m = (c) => c / 100;
+  const due = Math.max(sums.vat, 0);
+  return [
+    ["01", "Общ размер на данъчните основи за облагане с ДДС", m(sums.base)],
+    ["20", "Всичко начислен ДДС", m(sums.vat)],
+    ["11", "Данъчна основа — доставки със ставка 20 % в страната", m(sums.v11)],
+    ["21", "Начислен ДДС 20 %", m(sums.v21)],
+    ["12", "Данъчна основа на ВОП и на получени доставки по чл. 82, ал. 2–6 ЗДДС", m(sums.v12 + sums.v26)],
+    ["22", "Начислен ДДС за ВОП и за получени доставки по чл. 82, ал. 2–6 ЗДДС", m(sums.v22)],
+    ["23", "Начислен данък за доставки на стоки и услуги за лични нужди", m(sums.v23)],
+    ["13", "Данъчна основа — доставки със ставка 9 %", m(sums.v13)],
+    ["24", "Начислен ДДС 9 %", m(sums.v24)],
+    ["14", "Данъчна основа — ставка 0 % по глава трета ЗДДС", m(sums.v14)],
+    ["15", "Данъчна основа — ставка 0 % за ВОД на стоки", m(sums.v15)],
+    ["16", "Данъчна основа — 0 % по чл. 140, 146 и 173 ЗДДС", m(sums.v16)],
+    ["17", "Данъчна основа на услуги по чл. 21, ал. 2 с място на изпълнение в друга държава членка", m(sums.v17)],
+    ["18", "Данъчна основа на доставки по чл. 69, ал. 2 ЗДДС", m(sums.v18 + sums.v25)],
+    ["19", "Данъчна основа на освободени доставки и освободени ВОП", m(sums.v19)],
+    ["30", "Получени доставки без право на данъчен кредит или без данък", 0],
+    ["31", "Данъчна основа — с право на пълен данъчен кредит", 0],
+    ["41", "ДДС с право на пълен данъчен кредит", 0],
+    ["32", "Данъчна основа — с право на частичен данъчен кредит", 0],
+    ["42", "ДДС с право на частичен данъчен кредит", 0],
+    ["43", "Годишна корекция по чл. 73, ал. 8 (+/-)", 0],
+    ["33", "Коефициент по чл. 73, ал. 5 ЗДДС", 0],
+    ["40", "Общо данъчен кредит", 0],
+    ["50", "ДДС за внасяне (кл. 20 − кл. 40)", m(due)],
+    ["60", "ДДС за възстановяване (кл. 20 − кл. 40 < 0)", 0],
+    ["70", "Данък за внасяне, приспаднат по чл. 92, ал. 1 ЗДДС", 0],
+    ["71", "Данък за внасяне, внесен ефективно", 0],
+    ["80", "ДДС за възстановяване по чл. 92, ал. 1 ЗДДС", 0],
+    ["81", "ДДС за възстановяване по чл. 92, ал. 3 ЗДДС", 0],
+    ["82", "ДДС за възстановяване по чл. 92, ал. 4 ЗДДС", 0],
+  ];
 }
