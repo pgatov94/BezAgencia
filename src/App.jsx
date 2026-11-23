@@ -1315,6 +1315,63 @@ function ConsentCheck({ checked, onChange, children, light, disabled }) {
   );
 }
 
+const EMPTY_INVOICE = { want: false, type: "person", name: "", eik: "", vat: "", mol: "", address: "", city: "" };
+
+function invoiceError(v) {
+  if (!v?.want) return "";
+  if (String(v.name || "").trim().length < 3) return v.type === "company" ? "Въведи името на фирмата за фактурата." : "Въведи трите си имена за фактурата.";
+  if (v.type === "company" && !/^\d{9}(\d{4})?$/.test(String(v.eik || "").replace(/\s+/g, ""))) return "Въведи валиден ЕИК (9 или 13 цифри).";
+  if (String(v.address || "").trim().length < 5) return "Въведи адрес за фактурата.";
+  return "";
+}
+
+function invoicePayload(v) {
+  if (!v?.want) return null;
+  const t = (x, n) => String(x || "").trim().slice(0, n);
+  return {
+    type: v.type === "company" ? "company" : "person",
+    name: t(v.name, 120), eik: t(v.eik, 13).replace(/\s+/g, ""), vat: t(v.vat, 20).replace(/\s+/g, "").toUpperCase(),
+    mol: t(v.mol, 80), address: t(v.address, 200), city: t(v.city, 60),
+  };
+}
+
+function InvoiceRequest({ value, onChange }) {
+  const set = (k) => (e) => onChange({ ...value, [k]: e.target.value });
+  const fld = { ...inputStyle, padding: "9px 12px", fontSize: 15, marginBottom: 8 };
+  return (
+    <div style={{ margin: "4px 0 12px" }}>
+      <ConsentCheck checked={!!value.want} onChange={(c) => onChange({ ...value, want: c })}>
+        <strong>Искам фактура.</strong> Съгласен/а съм фактурата да ми бъде издадена и изпратена в електронен вид на имейла, посочен в запитването.
+      </ConsentCheck>
+      {value.want && (
+        <div style={{ background: "#fff", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
+          <div style={{ display: "flex", gap: 16, marginBottom: 10, flexWrap: "wrap", fontSize: 14.5, color: PALETTE.ink }}>
+            <label style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+              <input type="radio" name="inv-type" checked={value.type !== "company"} onChange={() => onChange({ ...value, type: "person" })} style={{ accentColor: PALETTE.gold }} /> Физическо лице
+            </label>
+            <label style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+              <input type="radio" name="inv-type" checked={value.type === "company"} onChange={() => onChange({ ...value, type: "company" })} style={{ accentColor: PALETTE.gold }} /> Фирма / ЕТ
+            </label>
+          </div>
+          <input value={value.name} onChange={set("name")} placeholder={value.type === "company" ? "Име на фирмата" : "Три имена"} style={fld} maxLength={120} />
+          {value.type === "company" && (
+            <>
+              <input value={value.eik} onChange={set("eik")} placeholder="ЕИК (9 или 13 цифри)" inputMode="numeric" style={fld} maxLength={13} />
+              <input value={value.vat} onChange={set("vat")} placeholder="ДДС номер (ако има, напр. BG123456789)" style={fld} maxLength={20} />
+              <input value={value.mol} onChange={set("mol")} placeholder="МОЛ (по желание)" style={fld} maxLength={80} />
+            </>
+          )}
+          <input value={value.address} onChange={set("address")} placeholder="Адрес (улица, номер)" style={fld} maxLength={200} />
+          <input value={value.city} onChange={set("city")} placeholder="Град, пощенски код" style={{ ...fld, marginBottom: 0 }} maxLength={60} />
+          <p style={{ fontSize: 12.5, color: PALETTE.inkFaint, margin: "8px 0 0", lineHeight: 1.5 }}>
+            Данните се ползват само за издаване на фактурата. Провери ги внимателно, защото промяна след издаването става само с кредитно известие.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CookieBanner({ initial, onSave, onClose }) {
   const [settings, setSettings] = useState(!!initial);
   const [analytics, setAnalytics] = useState(!!initial?.analytics);
@@ -1517,6 +1574,7 @@ export default function BezAgenciaLuxuryApp() {
   const [offAdult, setOffAdult] = useState(false);
   const [offStartNow, setOffStartNow] = useState(false);
   const [offLoss, setOffLoss] = useState(false);
+  const [invForm, setInvForm] = useState(EMPTY_INVOICE);
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
   const [offerEditRequestStatus, setOfferEditRequestStatus] = useState("idle"); // idle | sending
   const [showDeclineForm, setShowDeclineForm] = useState(false);
@@ -1986,12 +2044,14 @@ export default function BezAgenciaLuxuryApp() {
   const handleStripeCheckout = async () => {
     const id = dashLookupId.trim().toUpperCase();
     if (!id || !dashPayment) return;
+    const invErr = invoiceError(invForm);
+    if (invErr) { setPayCheckoutError(invErr); setPayCheckoutStatus("error"); return; }
     setPayCheckoutStatus("loading"); setPayCheckoutError("");
     try {
       // Записваме избора на клиента (Общи условия, 18+, начало на изпълнението) ПРЕДИ плащането
       const cr = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "recordConsent", inquiryId: id, acceptedTerms: orderTerms, over18: orderAdult, startBeforeWithdrawal: orderStartNow, acknowledgeLoss: orderLoss }),
+        body: JSON.stringify({ action: "recordConsent", inquiryId: id, acceptedTerms: orderTerms, over18: orderAdult, startBeforeWithdrawal: orderStartNow, acknowledgeLoss: orderLoss, invoice: invoicePayload(invForm) }),
       });
       const cd = await cr.json().catch(() => ({}));
       if (!cr.ok) {
@@ -2124,6 +2184,8 @@ export default function BezAgenciaLuxuryApp() {
       setOfferConfirmStatus("error");
       return;
     }
+    const invErr = invoiceError(invForm);
+    if (invErr) { setOfferConfirmError(invErr); setOfferConfirmStatus("error"); return; }
     setOfferConfirmStatus("checking"); setOfferConfirmError("");
     try {
       const total = (Number(offerData.flightPrice) || 0) + (Number(offerData.hotelPrice) || 0);
@@ -2178,7 +2240,7 @@ export default function BezAgenciaLuxuryApp() {
       // Записваме избора на клиента (Общи условия, 18+, начало на изпълнението) ПРЕДИ плащането
       const cr = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "recordConsent", inquiryId: offerViewId, acceptedTerms: offTerms, over18: offAdult, startBeforeWithdrawal: offStartNow, acknowledgeLoss: offLoss }),
+        body: JSON.stringify({ action: "recordConsent", inquiryId: offerViewId, acceptedTerms: offTerms, over18: offAdult, startBeforeWithdrawal: offStartNow, acknowledgeLoss: offLoss, invoice: invoicePayload(invForm) }),
       });
       const cd = await cr.json().catch(() => ({}));
       if (!cr.ok) {
@@ -4203,6 +4265,7 @@ export default function BezAgenciaLuxuryApp() {
                         <ConsentCheck checked={orderLoss} onChange={setOrderLoss}>
                           Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
                         </ConsentCheck>
+                        <InvoiceRequest value={invForm} onChange={setInvForm} />
                         <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
                           За да продължиш към плащането, отбележи всички полета.
                         </p>
@@ -4536,6 +4599,7 @@ export default function BezAgenciaLuxuryApp() {
                   <ConsentCheck checked={offLoss} onChange={setOffLoss}>
                     Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
                   </ConsentCheck>
+                  <InvoiceRequest value={invForm} onChange={setInvForm} />
                   <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
                     За да продължиш към плащането, отбележи всички полета.
                   </p>

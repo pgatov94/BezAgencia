@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { buildFiles, buildVies, buildCsv, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
+import { buildFiles, buildVies, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
+import { downloadExcel, downloadWord } from "./reports";
+import AdminInvoices from "./AdminInvoices";
+import { DEFAULT_INVOICE_NOTE } from "./invoiceHtml";
 
 /* Таб „Счетоводство“ — ДДС за лице по чл. 97а ЗДДС (самоначисляване) */
 
@@ -35,9 +38,10 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
   const defaults = {
     vatId: "BG" + company.eik, name: "БезАгенция ЕООД", submitter: company.mol, zeroSeq: "0",
     submitterEgn: "", submitterName: company.mol, submitterCity: "Асеновград", submitterPostal: "4230",
-    submitterAddress: "ул. „Първомайска“ № 1, ет. 2", companyAddress: company.address, quality: "R",
+    submitterAddress: "ул. „Първомайска“ № 1, ет. 2", companyAddress: company.address, quality: "R", invoiceNote: DEFAULT_INVOICE_NOTE,
   };
   const [docs, setDocs] = useState([]);
+  const [saleDocs, setSaleDocs] = useState([]);
   const [settings, setSettings] = useState(defaults);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -60,7 +64,9 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
     if (ok && data?.rows) {
       const st = data.rows.find((r) => r.id === "settings");
       if (st?.data) setSettings({ ...defaults, ...st.data });
-      setDocs(data.rows.filter((r) => r.id !== "settings").map((r) => ({ ...r.data, id: r.id })));
+      const rest = data.rows.filter((r) => r.id !== "settings").map((r) => ({ ...r.data, id: r.id }));
+      setSaleDocs(rest.filter((d) => d.kind === "sale"));
+      setDocs(rest.filter((d) => d.kind !== "sale"));
     } else if (!ok) {
       setMsg("Не успях да заредя данните. Пусна ли sql-accounting.sql в Supabase?");
     }
@@ -196,17 +202,14 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
     setTimeout(() => downloadTxt("PRODAGBI.TXT", result.prodagbi), 400);
     setTimeout(() => downloadTxt("POKUPKI.TXT", result.pokupki), 800);
   };
-  const dlCsv = () => {
-    const blob = new Blob([buildCsv(inRange)], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `schetovodstvo-${period}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-  };
 
   const F = (label, el, style) => <label style={{ ...lbl, ...style }}>{label}{el}</label>;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   return (
     <div>
+      <AdminInvoices adminActionFetch={adminActionFetch} P={P} company={company} settings={settings} saleDocs={saleDocs} onChanged={load} />
+
       <div style={card}>
         <h3 style={h}>Счетоводство — ДДС по чл. 97а (самоначисляване)</h3>
         <p style={{ margin: 0, fontSize: 14.5, color: P.inkMuted, lineHeight: 1.6 }}>
@@ -301,7 +304,8 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
               <button onClick={() => downloadTxt("DEKLAR.TXT", result.deklar)} style={btn(false)}>DEKLAR.TXT</button>
               <button onClick={() => downloadTxt("PRODAGBI.TXT", result.prodagbi)} style={btn(false)}>PRODAGBI.TXT</button>
               <button onClick={() => downloadTxt("POKUPKI.TXT", result.pokupki)} style={btn(false)}>POKUPKI.TXT</button>
-              <button onClick={dlCsv} style={btn(false)}>Таблица за проверка (CSV)</button>
+              <button onClick={() => downloadExcel(settings, result, vies, period)} style={btn(false)}>Excel (за проверка)</button>
+              <button onClick={() => downloadWord(settings, result, vies, period)} style={btn(false)}>Word (за архив)</button>
             </div>
             <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1px solid ${P.panelBorder}`, background: "rgba(15,23,42,0.03)" }}>
               <div style={{ fontWeight: 700, color: P.ink, marginBottom: 4 }}>VIES декларация</div>
@@ -316,7 +320,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
               )}
             </div>
             <p style={{ fontSize: 13.5, color: P.inkFaint, margin: "12px 0 0", lineHeight: 1.6 }}>
-              Файловете са във формат windows-1251, с точните имена и структура по Приложение № 12 към ППЗДДС. Стойностите са в евро (за периоди от 01.01.2026 г.). Качват се в портала на НАП (Справка-декларация по ЗДДС → подаване с файлове).
+              За подаване в НАП се използват само TXT файловете (windows-1251, точните имена и структура по Приложение № 12 към ППЗДДС). Excel и Word са четими копии за проверка и архив — НАП не ги приема. Стойностите са в евро (за периоди от 01.01.2026 г.). Качват се в портала на НАП (Справка-декларация по ЗДДС → подаване с файлове).
             </p>
           </>
         )}
@@ -336,6 +340,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
             {F("Пощенски код (VIES)", <input value={settings.submitterPostal} onChange={(e) => setSettings({ ...settings, submitterPostal: e.target.value })} style={inp} maxLength={4} />)}
             {F("Адрес за кореспонденция (VIES)", <input value={settings.submitterAddress} onChange={(e) => setSettings({ ...settings, submitterAddress: e.target.value })} style={inp} maxLength={150} />)}
             {F("Адрес на фирмата (VIES)", <input value={settings.companyAddress} onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })} style={inp} maxLength={200} />)}
+            {F("Основание за неначисляване на ДДС (във фактурите)", <input value={settings.invoiceNote || ""} onChange={(e) => setSettings({ ...settings, invoiceNote: e.target.value })} style={inp} maxLength={250} />)}
             {F("Качество на подаващия", <select value={settings.quality} onChange={(e) => setSettings({ ...settings, quality: e.target.value })} style={inp}><option value="R">Представляващ</option><option value="A">Пълномощник</option></select>)}
             <div style={{ alignSelf: "end" }}><button onClick={saveSettings} style={btn(true)}>Запази</button></div>
           </div>

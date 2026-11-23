@@ -189,6 +189,42 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    /* ───────── ФАКТУРИ КЪМ КЛИЕНТИ (само админ) ───────── */
+    if (action === "invList") {
+      const { data: cons, error } = await supabase.from("order_consents").select("id, data, updated_at").order("updated_at", { ascending: false }).limit(1000);
+      if (error) throw error;
+      const withInv = (cons || []).filter((c) => c.data?.invoice);
+      const ids = withInv.map((c) => c.id);
+      let pays = [], inqs = [];
+      if (ids.length) {
+        const [p, q] = await Promise.all([
+          supabase.from("payments").select("id, data").in("id", ids),
+          supabase.from("inquiries").select("id, data").in("id", ids),
+        ]);
+        pays = p.data || []; inqs = q.data || [];
+      }
+      const rows = withInv.map((c) => {
+        const pay = pays.find((x) => x.id === c.id)?.data || {};
+        const inq = inqs.find((x) => x.id === c.id)?.data || {};
+        return {
+          id: c.id, invoice: c.data.invoice, acceptedAt: c.data.acceptedAt || null,
+          paid: pay.paid === true, amount: pay.amount ?? c.data.amountShown ?? null, paidAt: pay.updatedAt || null,
+          email: inq.email || "", customerName: inq.name || "",
+        };
+      });
+      return res.status(200).json({ ok: true, rows });
+    }
+
+    if (action === "invSend") {
+      const to = String(b.to || "").trim();
+      if (!EMAIL_RE.test(to)) return res.status(400).json({ error: "Невалиден имейл на клиента." });
+      const subject = String(b.subject || "").trim().slice(0, 150);
+      const html = String(b.html || "");
+      if (!subject || !html || html.length > 80000) return res.status(400).json({ error: "Липсва тема или съдържание." });
+      await sendEmail({ to, subject, html });
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ error: "Непознато действие." });
   } catch (e) {
     console.error("chat api:", e?.message || e);
@@ -226,6 +262,26 @@ async function legalHandler(req, res, b) {
       if (!pay) return res.status(404).json({ error: "Не намираме плащане по този номер." });
       if (pay.data?.paid) return res.status(409).json({ error: "Плащането вече е извършено." });
 
+      // Данни за фактура (по желание). Проверяват се и се чистят от сървъра.
+      let invoice = null;
+      if (b.invoice && typeof b.invoice === "object") {
+        const t = (x, n) => String(x ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+        const type = b.invoice.type === "company" ? "company" : "person";
+        invoice = {
+          type,
+          name: t(b.invoice.name, 120),
+          eik: t(b.invoice.eik, 13).replace(/\s+/g, ""),
+          vat: t(b.invoice.vat, 20).replace(/\s+/g, "").toUpperCase(),
+          mol: t(b.invoice.mol, 80),
+          address: t(b.invoice.address, 200),
+          city: t(b.invoice.city, 60),
+          consentElectronic: true,
+        };
+        if (invoice.name.length < 3 || invoice.address.length < 5) return res.status(400).json({ error: "Попълни име и адрес за фактурата." });
+        if (type === "company" && !/^\d{9}(\d{4})?$/.test(invoice.eik)) return res.status(400).json({ error: "Невалиден ЕИК за фактурата." });
+        if (type === "person") { invoice.eik = ""; invoice.vat = ""; invoice.mol = ""; }
+      }
+
       const rec = {
         termsVersion: TERMS_VERSION,
         acceptedAt: new Date().toISOString(),
@@ -234,6 +290,7 @@ async function legalHandler(req, res, b) {
         startBeforeWithdrawal: startNow,
         acknowledgeLoss: startNow ? lose : false,
         amountShown: pay.data?.amount ?? null,
+        ...(invoice ? { invoice } : {}),
       };
       const { error } = await supabase.from("order_consents").upsert({ id, data: rec, updated_at: new Date().toISOString() });
       if (error) throw error;
