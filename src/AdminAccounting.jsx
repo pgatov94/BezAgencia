@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { buildFiles, buildVies, deadlineOf, docPeriod, baseCents, vatCents, protocolHtml } from "./napExport";
-import { downloadExcel, downloadWord } from "./reports";
+import { downloadExcel, downloadWord, downloadSalesExcel, downloadPurchasesExcel } from "./reports";
 import { downloadNapExcel } from "./napRequest";
 import AdminInvoices from "./AdminInvoices";
 import { DEFAULT_INVOICE_NOTE } from "./invoiceHtml";
@@ -405,7 +405,9 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
             {result.warnings.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "0 0 12px", paddingLeft: 20 }}>{result.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
             {result.checks.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "0 0 12px", paddingLeft: 20 }}>{result.checks.map((w, i) => <li key={i}>{w}</li>)}</ul>}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={() => downloadExcel(settings, result, vies, period)} style={btn(true)}>Изтегли Excel</button>
+              <button onClick={() => downloadSalesExcel(settings, result, period)} style={btn(true)}>Продажби (Excel)</button>
+              <button onClick={() => downloadPurchasesExcel(settings, period)} style={btn(true)}>Покупки (Excel)</button>
+              <button onClick={() => downloadExcel(settings, result, vies, period)} style={btn(false)}>Справка-декларация (Excel)</button>
               <button onClick={() => downloadWord(settings, result, vies, period)} style={btn(false)}>Word (за архив)</button>
             </div>
             <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1px solid ${P.panelBorder}`, background: "rgba(15,23,42,0.03)" }}>
@@ -414,7 +416,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
                 <>
                   <div style={{ fontSize: 14.5, color: P.inkMuted, lineHeight: 1.6 }}>За този месец е нужна: {vies.rows} контрагент(а), услуги по чл. 21, ал. 2 за {vies.total.toFixed(2)} €. Подава се заедно със справката-декларация, до {deadlineOf(period)}.</div>
                   {vies.warnings.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "8px 0", paddingLeft: 20 }}>{vies.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-                  <div style={{ fontSize: 14, color: P.inkMuted, marginTop: 6 }}>Данните за VIES са в отделен лист „VIES“ в Excel файла.</div>
+                  <div style={{ fontSize: 14, color: P.inkMuted, marginTop: 6 }}>Данните за VIES са в отделен лист „VIES“ във файла със справката-декларация.</div>
                 </>
               ) : (
                 <div style={{ fontSize: 14.5, color: P.inkMuted }}>Не е нужна за този период — няма издадени фактури към фирми от ЕС (чл. 117, ал. 5 от ППЗДДС).</div>
