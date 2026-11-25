@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { buildFiles, buildVies, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
 import { downloadExcel, downloadWord } from "./reports";
+import { downloadNapExcel } from "./napRequest";
 import AdminInvoices from "./AdminInvoices";
 import { DEFAULT_INVOICE_NOTE } from "./invoiceHtml";
 
@@ -21,8 +22,10 @@ function prevMonthRange() {
 
 const EMPTY_FORM = {
   kind: "expense", name: "", vatId: "", country: "", address: "", invoiceNo: "", invoiceDate: "", currency: "EUR",
-  amount: "", rate: "", description: "", protocolNo: "", protocolDate: "", docType: "01",
+  amount: "", rate: "", description: "", protocolNo: "", protocolDate: "", docType: "01", payDate: "", payMethod: "",
 };
+
+const EMPTY_ASSET = { name: "", eik: "", vat: "", invoiceNo: "", invoiceDate: "", payMethod: "Дебитна карта", payDate: "", lines: [{ code: "", desc: "", qty: "1", price: "" }] };
 
 const IMPORT_EXAMPLE = `{
   "kind": "expense",
@@ -42,6 +45,10 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
   };
   const [docs, setDocs] = useState([]);
   const [saleDocs, setSaleDocs] = useState([]);
+  const [assetDocs, setAssetDocs] = useState([]);
+  const [assetForm, setAssetForm] = useState(EMPTY_ASSET);
+  const [assetEditId, setAssetEditId] = useState(null);
+  const [napRange, setNapRange] = useState([`${new Date().getFullYear()}-01-01`, iso(new Date())]);
   const [settings, setSettings] = useState(defaults);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -66,7 +73,8 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
       if (st?.data) setSettings({ ...defaults, ...st.data });
       const rest = data.rows.filter((r) => r.id !== "settings").map((r) => ({ ...r.data, id: r.id }));
       setSaleDocs(rest.filter((d) => d.kind === "sale"));
-      setDocs(rest.filter((d) => d.kind !== "sale"));
+      setAssetDocs(rest.filter((d) => d.kind === "asset"));
+      setDocs(rest.filter((d) => d.kind === "expense" || d.kind === "income"));
     } else if (!ok) {
       setMsg("Не успях да заредя данните. Пусна ли sql-accounting.sql в Supabase?");
     }
@@ -101,6 +109,8 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
       amount: Number(String(raw.amount).replace(",", ".")),
       rate: raw.rate === "" || raw.rate == null ? 0 : Number(String(raw.rate).replace(",", ".")),
       description: String(raw.description || "").trim().slice(0, 30),
+      payDate: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.payDate || "")) ? String(raw.payDate) : "",
+      payMethod: String(raw.payMethod || "").trim().slice(0, 60),
     };
     if (d.currency === "EUR") d.rate = 1;
     else if (!(d.rate > 0)) throw new Error(`Фактура ${raw.invoiceNo || ""}: за валута ${d.currency} е нужен курс към EUR (rate).`);
@@ -125,6 +135,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
         kind: form.kind, counterparty: { name: form.name, vatId: form.vatId, country: form.country, address: form.address },
         invoiceNo: form.invoiceNo, invoiceDate: form.invoiceDate, currency: form.currency, amount: form.amount, rate: form.rate,
         description: form.description, protocolNo: form.protocolNo, protocolDate: form.protocolDate, docType: form.docType,
+        payDate: form.payDate, payMethod: form.payMethod,
       };
       const d = normalize(raw, docs.filter((x) => x.id !== editId));
       const id = editId || `acc-${Date.now()}`;
@@ -161,6 +172,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
       kind: d.kind, name: d.counterparty?.name || "", vatId: d.counterparty?.vatId || "", country: d.counterparty?.country || "", address: d.counterparty?.address || "",
       invoiceNo: d.invoiceNo || "", invoiceDate: d.invoiceDate || "", currency: d.currency || "EUR", amount: String(d.amount ?? ""), rate: d.currency === "EUR" ? "" : String(d.rate ?? ""),
       description: d.description || "", protocolNo: d.protocolNo || "", protocolDate: d.protocolDate || "", docType: d.docType || "01",
+      payDate: d.payDate || "", payMethod: d.payMethod || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -181,6 +193,42 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
     w.document.write(protocolHtml(settings, d, { eik: company.eik, address: company.address, city: "гр. Асеновград" }));
     w.document.close();
   };
+
+  /* ── закупени активи (фактури от български доставчици) ── */
+  const setAL = (i, k) => (e) => setAssetForm({ ...assetForm, lines: assetForm.lines.map((l, j) => (j === i ? { ...l, [k]: e.target.value } : l)) });
+  const submitAsset = async () => {
+    setMsg("");
+    try {
+      const f = assetForm;
+      if (!f.name.trim()) throw new Error("Липсва име на доставчика.");
+      if (!f.invoiceNo.trim()) throw new Error("Липсва номер на фактурата.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f.invoiceDate)) throw new Error("Невалидна дата на фактурата.");
+      const lines = f.lines.map((l) => ({ code: String(l.code || "").trim().slice(0, 30), desc: String(l.desc || "").trim().slice(0, 120), qty: Number(String(l.qty).replace(",", ".")), price: Number(String(l.price).replace(",", ".")) })).filter((l) => l.desc || l.price);
+      if (!lines.length) throw new Error("Добави поне един артикул.");
+      if (lines.some((l) => !l.desc || !(l.qty > 0) || !(l.price >= 0) || !isFinite(l.price))) throw new Error("Всеки артикул иска описание, количество и цена с ДДС.");
+      const doc = {
+        kind: "asset", supplier: { name: f.name.trim().slice(0, 80), eik: f.eik.trim().slice(0, 15), vat: f.vat.trim().toUpperCase().slice(0, 15) },
+        invoiceNo: f.invoiceNo.trim().slice(0, 30), invoiceDate: f.invoiceDate, payMethod: f.payMethod.trim().slice(0, 60), payDate: /^\d{4}-\d{2}-\d{2}$/.test(f.payDate) ? f.payDate : "",
+        buyer: `${settings.name}, ЕИК ${company.eik}`, lines,
+      };
+      await save(assetEditId || `asset-${Date.now()}`, doc);
+      setAssetForm(EMPTY_ASSET); setAssetEditId(null);
+      await load();
+      setMsg("Фактурата за актив е записана ✓");
+    } catch (e) { setMsg(e.message); }
+  };
+  const editAsset = (d) => {
+    setAssetEditId(d.id);
+    setAssetForm({ name: d.supplier?.name || "", eik: d.supplier?.eik || "", vat: d.supplier?.vat || "", invoiceNo: d.invoiceNo || "", invoiceDate: d.invoiceDate || "", payMethod: d.payMethod || "", payDate: d.payDate || "", lines: (d.lines || []).map((l) => ({ code: l.code || "", desc: l.desc || "", qty: String(l.qty), price: String(l.price) })) });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const delAsset = async (d) => {
+    if (!window.confirm(`Изтриване на фактура ${d.invoiceNo}?`)) return;
+    const { ok } = await adminActionFetch({ action: "accDelete", id: d.id }, "/api/chat");
+    if (ok) load();
+  };
+  const assetTotal = (d) => (d.lines || []).reduce((a, l) => a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0) * 100), 0);
+  const napOk = napRange[0] && napRange[1] && napRange[0] <= napRange[1];
 
   /* ── експорт ── */
   const [from, to] = range;
@@ -232,6 +280,8 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
           {F("Сума без ДДС", <input value={form.amount} onChange={set("amount")} style={inp} inputMode="decimal" />)}
           {form.currency !== "EUR" && F("Курс към EUR (1 " + (form.currency || "…") + " = ? EUR)", <input value={form.rate} onChange={set("rate")} style={inp} inputMode="decimal" />)}
           {F("Описание (до 30 знака)", <input value={form.description} onChange={set("description")} style={inp} maxLength={30} placeholder="напр. Реклама Meta Ads" />)}
+          {F("Дата на плащане (по желание)", <input type="date" value={form.payDate} onChange={set("payDate")} style={inp} />)}
+          {F("Начин на плащане (по желание)", <input value={form.payMethod} onChange={set("payMethod")} style={inp} maxLength={60} placeholder="напр. Дебитна карта" />)}
           {form.kind === "expense" && F("Протокол № (празно = автоматично)", <input value={form.protocolNo} onChange={set("protocolNo")} style={inp} maxLength={20} />)}
           {form.kind === "expense" && F("Дата на протокола (празно = дата на фактурата)", <input type="date" value={form.protocolDate} onChange={set("protocolDate")} style={inp} />)}
           {form.kind === "income" && F("Вид документ", <select value={form.docType} onChange={set("docType")} style={inp}><option value="01">01 Фактура</option><option value="02">02 Дебитно известие</option><option value="03">03 Кредитно известие</option></select>)}
@@ -277,6 +327,66 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
               );
             })}</tbody>
           </table>
+        </div>
+      </div>
+
+      <div style={card}>
+        <h3 style={h}>{assetEditId ? "Редакция на фактура за актив" : "Закупени активи — фактури от български доставчици"}</h3>
+        <p style={{ margin: "0 0 12px", fontSize: 14, color: P.inkMuted, lineHeight: 1.6 }}>Покупки на стоки и оборудване (напр. таблет) с фактура от български доставчик. Не влизат в ДДС файловете — само в Excel справките за НАП по-долу. Цените са с ДДС (20%); основата и ДДС се изчисляват.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12 }}>
+          {F("Доставчик", <input value={assetForm.name} onChange={(e) => setAssetForm({ ...assetForm, name: e.target.value })} style={inp} maxLength={80} placeholder="Технополис България ЕАД" />)}
+          {F("ЕИК на доставчика", <input value={assetForm.eik} onChange={(e) => setAssetForm({ ...assetForm, eik: e.target.value })} style={inp} maxLength={15} />)}
+          {F("ДДС № на доставчика", <input value={assetForm.vat} onChange={(e) => setAssetForm({ ...assetForm, vat: e.target.value })} style={inp} maxLength={15} placeholder="BG…" />)}
+          {F("Номер на фактурата", <input value={assetForm.invoiceNo} onChange={(e) => setAssetForm({ ...assetForm, invoiceNo: e.target.value })} style={inp} maxLength={30} />)}
+          {F("Дата на фактурата", <input type="date" value={assetForm.invoiceDate} onChange={(e) => setAssetForm({ ...assetForm, invoiceDate: e.target.value })} style={inp} />)}
+          {F("Начин на плащане", <input value={assetForm.payMethod} onChange={(e) => setAssetForm({ ...assetForm, payMethod: e.target.value })} style={inp} maxLength={60} />)}
+          {F("Дата на плащане", <input type="date" value={assetForm.payDate} onChange={(e) => setAssetForm({ ...assetForm, payDate: e.target.value })} style={inp} />)}
+        </div>
+        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+          {assetForm.lines.map((l, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "110px minmax(180px,1fr) 80px 130px auto", gap: 10, alignItems: "end" }}>
+              {F("Код", <input value={l.code} onChange={setAL(i, "code")} style={inp} maxLength={30} />)}
+              {F("Описание на артикула", <input value={l.desc} onChange={setAL(i, "desc")} style={inp} maxLength={120} />)}
+              {F("Кол.", <input value={l.qty} onChange={setAL(i, "qty")} style={inp} inputMode="decimal" />)}
+              {F("Ед. цена с ДДС (€)", <input value={l.price} onChange={setAL(i, "price")} style={inp} inputMode="decimal" />)}
+              <button onClick={() => setAssetForm({ ...assetForm, lines: assetForm.lines.length > 1 ? assetForm.lines.filter((_, j) => j !== i) : assetForm.lines })} style={{ ...btn(false), color: P.coralDark }}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+          <button onClick={() => setAssetForm({ ...assetForm, lines: [...assetForm.lines, { code: "", desc: "", qty: "1", price: "" }] })} style={btn(false)}>+ Още артикул</button>
+          <button onClick={submitAsset} style={btn(true)}>{assetEditId ? "Запази промените" : "Запиши фактурата"}</button>
+          {assetEditId && <button onClick={() => { setAssetEditId(null); setAssetForm(EMPTY_ASSET); }} style={btn(false)}>Отказ</button>}
+        </div>
+        {assetDocs.length > 0 && (
+          <div style={{ marginTop: 16, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead><tr style={{ textAlign: "left", color: P.inkMuted }}>{["Дата", "Доставчик", "Фактура", "Артикули", "Сума с ДДС", ""].map((x) => <th key={x} style={{ padding: "6px 8px", borderBottom: `1px solid ${P.panelBorder}`, whiteSpace: "nowrap" }}>{x}</th>)}</tr></thead>
+              <tbody>{[...assetDocs].sort((a, b) => String(b.invoiceDate).localeCompare(a.invoiceDate)).map((d) => (
+                <tr key={d.id} style={{ borderBottom: `1px solid ${P.panelBorder}` }}>
+                  <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>{d.invoiceDate}</td>
+                  <td style={{ padding: "7px 8px" }}>{d.supplier?.name}<div style={{ fontSize: 12, color: P.inkFaint }}>ЕИК {d.supplier?.eik}</div></td>
+                  <td style={{ padding: "7px 8px" }}>№ {d.invoiceNo}</td>
+                  <td style={{ padding: "7px 8px" }}>{(d.lines || []).map((l) => l.desc).join("; ")}</td>
+                  <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>{eur(assetTotal(d))}</td>
+                  <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>
+                    <button onClick={() => editAsset(d)} style={{ ...btn(false), padding: "5px 10px", fontSize: 13 }}>Редакция</button>{" "}
+                    <button onClick={() => delAsset(d)} style={{ ...btn(false), padding: "5px 10px", fontSize: 13, color: P.coralDark }}>Изтрий</button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div style={card}>
+        <h3 style={h}>Справки по искане на НАП (Excel)</h3>
+        <p style={{ margin: "0 0 12px", fontSize: 14, color: P.inkMuted, lineHeight: 1.6 }}>Един Excel файл с листове: Приложение № 1 (оборот по месеци и по дни), Приложение № 2 (издадени фактури и плащания), Приложение № 3 (получени фактури от чуждестранни контрагенти), „Закупени активи“ и описание на колоните. Данните идват от фактурите към клиенти, документите по чл. 97а и закупените активи по-горе.</p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          {F("От дата", <input type="date" value={napRange[0]} onChange={(e) => setNapRange([e.target.value, napRange[1]])} style={inp} />, { width: 180 })}
+          {F("До дата", <input type="date" value={napRange[1]} onChange={(e) => setNapRange([napRange[0], e.target.value])} style={inp} />, { width: 180 })}
+          <button disabled={!napOk} onClick={() => downloadNapExcel({ settings, saleDocs, docs, assetDocs, from: napRange[0], to: napRange[1] })} style={{ ...btn(true), opacity: napOk ? 1 : 0.5 }}>Изтегли Excel за НАП</button>
         </div>
       </div>
 
