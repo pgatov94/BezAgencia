@@ -3,7 +3,7 @@ import { db } from "./db";
 import AdminAccounting from "./AdminAccounting";
 import AdminVideo from "./AdminVideo";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
-import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut, SiStripe } from "react-icons/si";
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
@@ -5577,12 +5577,8 @@ export default function BezAgenciaLuxuryApp() {
       )}
 
       <footer style={{ background: PALETTE.bgDeep, borderTop: `1px solid ${FOOT.border}` }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 24px 28px" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <img src={LOGO_IMAGE} alt="БезАгенция" style={{ height: 96, width: "auto", margin: "0 auto" }} />
-          </div>
-
-          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 28, marginBottom: 36 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "30px 24px 20px" }}>
+          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 22 }}>
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: FOOT.gold, marginBottom: 14 }}>Контакти</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15, color: FOOT.muted, lineHeight: 1.5 }}>
@@ -5620,13 +5616,14 @@ export default function BezAgenciaLuxuryApp() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
             {[
               { label: "Visa", Icon: SiVisa, color: "#1A1F71" },
               { label: "Mastercard", Icon: SiMastercard, color: "#EB001B" },
               { label: "Apple Pay", Icon: SiApplepay, color: "#FFFFFF" },
               { label: "Google Pay", Icon: SiGooglepay, color: "#FFFFFF" },
               { label: "Revolut", Icon: SiRevolut, color: "#0075EB" },
+              { label: "Stripe", Icon: SiStripe, color: "#635BFF" },
             ].map(({ label, Icon, color }) => (
               <span key={label} style={{
                 display: "inline-flex", alignItems: "center", gap: 6, background: FOOT.panel, border: `1px solid ${FOOT.border}`,
@@ -5636,12 +5633,12 @@ export default function BezAgenciaLuxuryApp() {
               </span>
             ))}
           </div>
-          <p style={{ textAlign: "center", fontSize: 11.5, color: FOOT.faint, margin: "0 0 28px" }}>
-            Всички цени са в евро.
+          <p style={{ textAlign: "center", fontSize: 11.5, color: FOOT.faint, margin: "0 0 16px" }}>
+            Всички цени са в евро. Плащанията се обработват от Stripe.
           </p>
 
-          <div style={{ borderTop: `1px solid ${FOOT.border}`, paddingTop: 22, textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 22, flexWrap: "wrap", marginBottom: 18, fontSize: 16 }}>
+          <div style={{ borderTop: `1px solid ${FOOT.border}`, paddingTop: 14, textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: "6px 22px", flexWrap: "wrap", marginBottom: 12, fontSize: 15 }}>
               <button onClick={() => setShowAbout(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer" }}>За нас</button>
               <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: FOOT.muted, textDecoration: "none" }}>Контакти</a>
               <a href={LEGAL_LINKS.terms} target="_blank" rel="noopener noreferrer" style={{ color: FOOT.muted, textDecoration: "none" }}>Общи условия</a>
@@ -5652,13 +5649,12 @@ export default function BezAgenciaLuxuryApp() {
               <button onClick={() => setShowCardSecurity(true)} className="lux-link" style={{ background: "none", border: "none", color: FOOT.muted, cursor: "pointer", fontSize: 16 }}>Защита на картови данни</button>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
               <SocialIcon id="viber" href={VIBER_LINK} />
               <SocialIcon id="whatsapp" href={WHATSAPP_LINK} />
               <SocialIcon id="facebook" href={SOCIAL_LINKS.facebook} />
               <SocialIcon id="instagram" href={SOCIAL_LINKS.instagram} />
             </div>
-            <p onClick={handleFooterSecretClick} style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: 15.5, color: FOOT.faint, margin: 0, cursor: "default", userSelect: "none" }}>БезАгенция — бюджетни екскурзии без агенция</p>
           </div>
         </div>
       </footer>
