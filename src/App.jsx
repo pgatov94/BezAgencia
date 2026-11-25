@@ -4303,17 +4303,11 @@ export default function BezAgenciaLuxuryApp() {
                           <strong>Услуга:</strong> индивидуален маршрут за пътуване (консултантска услуга). <strong>Крайна цена:</strong> {dashPayment.amount} € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. <strong>Срок:</strong> според Предложението, което си получил по имейл.
                           Като потребител имаш право да се откажеш от договора в срок от 14 дни без да посочваш причина (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
                         </p>
-                        <ConsentCheck checked={orderTerms} onChange={setOrderTerms}>
-                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                        <ConsentCheck checked={orderTerms && orderAdult} onChange={(c) => { setOrderTerms(c); setOrderAdult(c); }}>
+                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink>, запознат/а съм с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink> и потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
                         </ConsentCheck>
-                        <ConsentCheck checked={orderAdult} onChange={setOrderAdult}>
-                          Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
-                        </ConsentCheck>
-                        <ConsentCheck checked={orderStartNow} onChange={setOrderStartNow}>
-                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
-                        </ConsentCheck>
-                        <ConsentCheck checked={orderLoss} onChange={setOrderLoss}>
-                          Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                        <ConsentCheck checked={orderStartNow && orderLoss} onChange={(c) => { setOrderStartNow(c); setOrderLoss(c); }}>
+                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ, и знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
                         </ConsentCheck>
                         <InvoiceRequest value={invForm} onChange={setInvForm} />
                         <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
@@ -4376,17 +4370,11 @@ export default function BezAgenciaLuxuryApp() {
                         <p style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 10px" }}>
                           <strong>Услуга:</strong> видео консултация до 30 минути. <strong>Цена:</strong> 20 € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. Сумата се плаща сега, а ден и час потвърждаваме по имейл. Като потребител имаш право да се откажеш от договора в срок от 14 дни (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
                         </p>
-                        <ConsentCheck checked={vidTerms} onChange={setVidTerms}>
-                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                        <ConsentCheck checked={vidTerms && vidAdult} onChange={(c) => { setVidTerms(c); setVidAdult(c); }}>
+                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink>, запознат/а съм с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink> и потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
                         </ConsentCheck>
-                        <ConsentCheck checked={vidAdult} onChange={setVidAdult}>
-                          Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
-                        </ConsentCheck>
-                        <ConsentCheck checked={vidStartNow} onChange={setVidStartNow}>
-                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
-                        </ConsentCheck>
-                        <ConsentCheck checked={vidLoss} onChange={setVidLoss}>
-                          Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                        <ConsentCheck checked={vidStartNow && vidLoss} onChange={(c) => { setVidStartNow(c); setVidLoss(c); }}>
+                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ, и знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
                         </ConsentCheck>
                         <InvoiceRequest value={vidInv} onChange={setVidInv} />
                       </div>
@@ -4699,17 +4687,11 @@ export default function BezAgenciaLuxuryApp() {
                     <strong>Услуга:</strong> индивидуален маршрут за пътуване (консултантска услуга). <strong>Крайна цена:</strong> {offerDiscountStatus === "applied" ? Math.round(baseCommission * (1 - offerDiscountPercent / 100)) : Math.round(baseCommission)} € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. Сумата се плаща сега. След потвърдено плащане получаваш пълната оферта.
                     Като потребител имаш право да се откажеш от договора в срок от 14 дни без да посочваш причина (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
                   </p>
-                  <ConsentCheck checked={offTerms} onChange={setOffTerms}>
-                    Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                  <ConsentCheck checked={offTerms && offAdult} onChange={(c) => { setOffTerms(c); setOffAdult(c); }}>
+                    Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink>, запознат/а съм с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink> и потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
                   </ConsentCheck>
-                  <ConsentCheck checked={offAdult} onChange={setOffAdult}>
-                    Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
-                  </ConsentCheck>
-                  <ConsentCheck checked={offStartNow} onChange={setOffStartNow}>
-                    Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
-                  </ConsentCheck>
-                  <ConsentCheck checked={offLoss} onChange={setOffLoss}>
-                    Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                  <ConsentCheck checked={offStartNow && offLoss} onChange={(c) => { setOffStartNow(c); setOffLoss(c); }}>
+                    Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ, и знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
                   </ConsentCheck>
                   <InvoiceRequest value={invForm} onChange={setInvForm} />
                   <p style={{ fontSize: 13, color: PALETTE.inkFaint, margin: 0, lineHeight: 1.5 }}>
