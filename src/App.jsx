@@ -5799,12 +5799,12 @@ function AboutModal({ onClose, onStart, onShowDemo }) {
               icon: <Check size={19} />, title: "5. Получаваш всичко нужно",
               text: "Линкове за резервация и плащане, плюс инфо за трансфери и добри места.",
               extra: (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                   <span style={{ fontSize: 16, color: PALETTE.inkMuted }}>
-                    Плюс лични препоръки за преживявания на място (турове, билети за забележителности, екскурзии) през{" "}
-                    <a href="https://www.getyourguide.com" target="_blank" rel="noopener noreferrer" style={{ color: PALETTE.goldText, fontWeight: 600 }}>
-                      GetYourGuide
-                    </a> (партньорски връзки — получавам комисионна, без да плащаш повече).
+                    Плюс лични препоръки за преживявания на място (турове, билети за забележителности, екскурзии).
+                  </span>
+                  <span style={{ fontSize: 16, color: PALETTE.inkMuted }}>
+                    Ако не можеш да се справиш сам/сама с резервациите, след плащането и получаването на пълната оферта можеш да поръчаш и <strong style={{ color: PALETTE.ink }}>видео консултация (20 €)</strong> — ще те водя на живо и ще резервираме заедно.
                   </span>
                 </div>
               ),
