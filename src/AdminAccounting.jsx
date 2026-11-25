@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { buildFiles, buildVies, deadlineOf, docPeriod, baseCents, vatCents, downloadTxt, protocolHtml } from "./napExport";
+import { buildFiles, buildVies, deadlineOf, docPeriod, baseCents, vatCents, protocolHtml } from "./napExport";
 import { downloadExcel, downloadWord } from "./reports";
 import { downloadNapExcel } from "./napRequest";
 import AdminInvoices from "./AdminInvoices";
@@ -245,11 +245,6 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
 
   const monthDocs = useMemo(() => [...docs].sort((a, b) => (docPeriod(b) + b.invoiceDate).localeCompare(docPeriod(a) + a.invoiceDate)), [docs]);
 
-  const dlAll = () => {
-    downloadTxt("DEKLAR.TXT", result.deklar);
-    setTimeout(() => downloadTxt("PRODAGBI.TXT", result.prodagbi), 400);
-    setTimeout(() => downloadTxt("POKUPKI.TXT", result.pokupki), 800);
-  };
 
   const F = (label, el, style) => <label style={{ ...lbl, ...style }}>{label}{el}</label>;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -410,11 +405,7 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
             {result.warnings.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "0 0 12px", paddingLeft: 20 }}>{result.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
             {result.checks.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "0 0 12px", paddingLeft: 20 }}>{result.checks.map((w, i) => <li key={i}>{w}</li>)}</ul>}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={dlAll} style={btn(true)}>Изтегли трите файла</button>
-              <button onClick={() => downloadTxt("DEKLAR.TXT", result.deklar)} style={btn(false)}>DEKLAR.TXT</button>
-              <button onClick={() => downloadTxt("PRODAGBI.TXT", result.prodagbi)} style={btn(false)}>PRODAGBI.TXT</button>
-              <button onClick={() => downloadTxt("POKUPKI.TXT", result.pokupki)} style={btn(false)}>POKUPKI.TXT</button>
-              <button onClick={() => downloadExcel(settings, result, vies, period)} style={btn(false)}>Excel (за проверка)</button>
+              <button onClick={() => downloadExcel(settings, result, vies, period)} style={btn(true)}>Изтегли Excel</button>
               <button onClick={() => downloadWord(settings, result, vies, period)} style={btn(false)}>Word (за архив)</button>
             </div>
             <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1px solid ${P.panelBorder}`, background: "rgba(15,23,42,0.03)" }}>
@@ -423,14 +414,14 @@ export default function AdminAccounting({ adminActionFetch, P, company }) {
                 <>
                   <div style={{ fontSize: 14.5, color: P.inkMuted, lineHeight: 1.6 }}>За този месец е нужна: {vies.rows} контрагент(а), услуги по чл. 21, ал. 2 за {vies.total.toFixed(2)} €. Подава се заедно със справката-декларация, до {deadlineOf(period)}.</div>
                   {vies.warnings.length > 0 && <ul style={{ color: P.coralDark, fontSize: 14.5, margin: "8px 0", paddingLeft: 20 }}>{vies.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-                  <button onClick={() => downloadTxt("VIES.TXT", vies.text)} style={{ ...btn(true), marginTop: 8 }}>Изтегли VIES.TXT</button>
+                  <div style={{ fontSize: 14, color: P.inkMuted, marginTop: 6 }}>Данните за VIES са в отделен лист „VIES“ в Excel файла.</div>
                 </>
               ) : (
                 <div style={{ fontSize: 14.5, color: P.inkMuted }}>Не е нужна за този период — няма издадени фактури към фирми от ЕС (чл. 117, ал. 5 от ППЗДДС).</div>
               )}
             </div>
             <p style={{ fontSize: 13.5, color: P.inkFaint, margin: "12px 0 0", lineHeight: 1.6 }}>
-              За подаване в НАП се използват само TXT файловете (windows-1251, точните имена и структура по Приложение № 12 към ППЗДДС). Excel и Word са четими копии за проверка и архив — НАП не ги приема. Стойностите са в евро (за периоди от 01.01.2026 г.). Качват се в портала на НАП (Справка-декларация по ЗДДС → подаване с файлове).
+              Excel файлът (и Word копието) съдържа справка-декларацията, дневника за продажби и дневника за покупки. Стойностите са в евро (за периоди от 01.01.2026 г.).
             </p>
           </>
         )}

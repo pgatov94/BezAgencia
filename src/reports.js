@@ -1,7 +1,7 @@
 import { declTable, bgDate, deadlineOf } from "./napExport";
 import { buildXlsx, downloadBlob } from "./xlsxLite";
 
-/* Четими копии на документите за НАП: Excel (.xlsx) и Word (.doc). За подаване се ползват само TXT файловете. */
+/* Четими копии на документите за НАП: Excel (.xlsx) и Word (.doc). */
 
 const H = (v) => ({ v, bold: true });
 const c = (cents) => Math.round(cents) / 100;
@@ -52,7 +52,7 @@ ${tbl(["Кл.", "Описание", "Стойност (EUR)"], declTable(result.
 ${result.rows.length ? tbl(["№", "Вид", "Номер", "Дата", "ИН контрагент", "Контрагент", "Описание", "Основа (02-10)", "ДДС (02-20)", "ДО услуги ЕС (02-17)"], result.rows.map((r) => [String(r.seq), r.docType, r.docNo, bgDate(r.docDate), r.cpId, r.cpName, r.desc, c(r.v["02-10"]), c(r.v["02-20"]), c(r.v["02-17"])])) : "<p>Няма документи.</p>"}
 <h2>Дневник за покупките</h2><p>Лице по чл. 97а — подава се нулев запис (чл. 113, ал. 3 от ППЗДДС).</p>
 ${vies?.needed ? `<h2>VIES декларация</h2>${tbl(["№", "ДДС номер на контрагента", "Услуги по чл. 21, ал. 2 (EUR)"], vies.list.map((r, i) => [String(i + 1), r.vin, r.amount]))}` : ""}
-<p style="margin-top:24pt;font-size:9pt;color:#555">Четима копия. За подаване в НАП се ползват файловете DEKLAR.TXT, PRODAGBI.TXT, POKUPKI.TXT${vies?.needed ? " и VIES.TXT" : ""}.</p>
+<p style="margin-top:24pt;font-size:9pt;color:#555">Копие от данните в таб „Счетоводство“ на bezagencia.com.</p>
 </body></html>`;
   downloadBlob(`ZDDS-${period}.doc`, "﻿" + html, "application/msword");
 }
