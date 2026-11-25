@@ -47,7 +47,7 @@ export default function AdminInvoices({ adminActionFetch, P, company, settings, 
   const startDraft = (r) => setDraft({
     orderId: r.id, buyer: { ...r.invoice }, email: r.email || "", issueDate: todayIso(), supplyDate: isoOfMs(r.paidAt) || todayIso(),
     paidDate: isoOfMs(r.paidAt) || todayIso(), amount: String(r.amount ?? ""),
-    description: `Консултантска услуга — индивидуален маршрут за пътуване, поръчка ${r.id}`,
+    description: r.video ? `Видео консултация (30 мин.), поръчка ${r.id}` : `Консултантска услуга — индивидуален маршрут за пътуване, поръчка ${r.id}`,
   });
 
   const issue = async () => {

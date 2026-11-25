@@ -49,6 +49,51 @@ function verifyStripeSignature(payload, sigHeader, secret) {
   }
 }
 
+// Платена видео консултация (номер, завършващ на -V)
+async function handleVideoPaid(inquiryId, customerEmail, sumText) {
+  const { data } = await supabase.from("payments").select("data").eq("id", inquiryId).maybeSingle();
+  const current = data?.data || {};
+  if (current.kind !== "video") return;
+  if (current.paid) return; // вече обработено (Stripe може да изпрати събитието повторно)
+  await supabase.from("payments").upsert({
+    id: inquiryId,
+    data: { ...current, paid: true, status: "paid", paidAt: Date.now(), customerEmail: customerEmail || current.customerEmail || "", updatedAt: Date.now() },
+    updated_at: new Date().toISOString(),
+  });
+  const base = inquiryId.replace(/-V$/, "");
+  let customerName = "";
+  try {
+    const { data: inqData } = await supabase.from("inquiries").select("data").eq("id", base).maybeSingle();
+    customerName = inqData?.data?.name || "";
+  } catch { /* не е критично */ }
+  const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  if (customerEmail) {
+    await sendEmail({
+      to: customerEmail,
+      subject: `Плащането за видео консултация (${base}) е потвърдено`,
+      html: emailWrap("Видео консултация — плащане потвърдено", `
+        <p style="margin:0 0 10px;">Здравей ${esc(customerName)},</p>
+        <p style="margin:0 0 10px;">Плащането ти за видео консултация по запитване <strong style="color:#D4AF37;">${esc(base)}</strong>${sumText ? ` (${esc(sumText)})` : ""} е потвърдено.</p>
+        <p style="margin:0 0 10px;">Обикновено в рамките на един работен ден ще получиш имейл с потвърден ден, час и връзка за срещата. Ако ще резервираш полет, настаняване или екскурзии и не знаеш как, ще минем заедно през всяка стъпка по време на срещата.</p>
+        <p style="margin:0;color:#8A6410;font-size:13px;">Платформа: ${esc(current.platform || "")}<br>Удобни часове: ${esc(current.slots || "")}</p>
+      `),
+    });
+  }
+  await sendEmail({
+    to: INQUIRY_EMAIL,
+    subject: `Нова видео консултация — ${base}`,
+    html: emailWrap("Нова платена видео консултация", `
+      <p style="margin:0 0 10px;">Клиент${customerName ? ` ${esc(customerName)}` : ""} плати видео консултация по <strong style="color:#D4AF37;">${esc(base)}</strong>${sumText ? ` — ${esc(sumText)}` : ""}.</p>
+      <p style="margin:0 0 6px;"><strong>Платформа:</strong> ${esc(current.platform || "")}</p>
+      <p style="margin:0 0 6px;"><strong>Удобни часове:</strong> ${esc(current.slots || "")}</p>
+      ${current.notes ? `<p style="margin:0 0 6px;"><strong>Бележки:</strong> ${esc(current.notes)}</p>` : ""}
+      ${customerEmail ? `<p style="margin:0;">Имейл на клиента: ${esc(customerEmail)}</p>` : ""}
+      <p style="margin:10px 0 0;">Насрочи я в админ панела → Консултации.</p>
+    `),
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).end();
@@ -88,6 +133,18 @@ export default async function handler(req, res) {
     const inquiryId = session?.metadata?.inquiryId;
     const amount = session?.amount_total ? (session.amount_total / 100).toFixed(0) : null;
     const customerEmail = session?.customer_details?.email || session?.customer_email || null;
+
+    if (inquiryId && /-V$/.test(String(inquiryId))) {
+      try {
+        await handleVideoPaid(String(inquiryId), customerEmail, amount ? `${amount} €` : "");
+      } catch (e) {
+        console.error("Webhook: грешка при видео консултация:", e.message);
+        res.status(500).json({ error: "Временна грешка, Stripe ще опита пак." });
+        return;
+      }
+      res.status(200).json({ received: true });
+      return;
+    }
 
     if (inquiryId) {
       let voucherCodeUsed = null;

@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   const b = req.body && typeof req.body === "object" ? req.body : {};
   const action = b.action;
   // Правни действия (отметки при поръчка, съгласие за бюлетин, отказ от договор)
-  if (["recordConsent", "newsletterConsent", "withdraw"].includes(action)) return legalHandler(req, res, b);
+  if (["recordConsent", "newsletterConsent", "withdraw", "videoRequest", "videoStatus"].includes(action)) return legalHandler(req, res, b);
 
   try {
     /* ───────── ПОСЕТИТЕЛ ───────── */
@@ -199,17 +199,17 @@ export default async function handler(req, res) {
       if (ids.length) {
         const [p, q] = await Promise.all([
           supabase.from("payments").select("id, data").in("id", ids),
-          supabase.from("inquiries").select("id, data").in("id", ids),
+          supabase.from("inquiries").select("id, data").in("id", ids.map((x) => x.replace(/-V$/, ""))),
         ]);
         pays = p.data || []; inqs = q.data || [];
       }
       const rows = withInv.map((c) => {
         const pay = pays.find((x) => x.id === c.id)?.data || {};
-        const inq = inqs.find((x) => x.id === c.id)?.data || {};
+        const inq = inqs.find((x) => x.id === c.id.replace(/-V$/, ""))?.data || {};
         return {
           id: c.id, invoice: c.data.invoice, acceptedAt: c.data.acceptedAt || null,
           paid: pay.paid === true, amount: pay.amount ?? c.data.amountShown ?? null, paidAt: pay.updatedAt || null,
-          email: inq.email || "", customerName: inq.name || "",
+          email: inq.email || pay.customerEmail || "", customerName: inq.name || "", video: c.id.endsWith("-V"),
         };
       });
       return res.status(200).json({ ok: true, rows });
@@ -223,6 +223,66 @@ export default async function handler(req, res) {
       if (!subject || !html || html.length > 80000) return res.status(400).json({ error: "Липсва тема или съдържание." });
       await sendEmail({ to, subject, html });
       return res.status(200).json({ ok: true });
+    }
+
+    /* ───────── ВИДЕО КОНСУЛТАЦИИ (само админ) ───────── */
+    if (action === "videoList") {
+      const { data: rows, error } = await supabase.from("payments").select("id, data, updated_at").like("id", "%-V").order("updated_at", { ascending: false }).limit(300);
+      if (error) throw error;
+      const vids = (rows || []).filter((r) => r.data?.kind === "video");
+      const bases = vids.map((r) => r.id.replace(/-V$/, ""));
+      let inqs = [];
+      if (bases.length) inqs = (await supabase.from("inquiries").select("id, data").in("id", bases)).data || [];
+      const out = vids.map((r) => {
+        const base = r.id.replace(/-V$/, "");
+        const inq = inqs.find((x) => x.id === base)?.data || {};
+        return { id: r.id, base, ...r.data, name: inq.name || "", email: r.data.customerEmail || inq.email || "" };
+      });
+      return res.status(200).json({ ok: true, rows: out });
+    }
+
+    if (action === "videoSet") {
+      const id = String(b.id || "").trim().toUpperCase();
+      if (!ID_RE.test(id) || !id.endsWith("-V")) return res.status(400).json({ error: "Невалиден номер." });
+      const status = ["paid", "scheduled", "done", "cancelled"].includes(b.status) ? b.status : null;
+      if (!status) return res.status(400).json({ error: "Невалиден статус." });
+      const { data: row } = await supabase.from("payments").select("data").eq("id", id).maybeSingle();
+      if (!row || row.data?.kind !== "video") return res.status(404).json({ error: "Не намирам консултацията." });
+      if (!row.data.paid) return res.status(409).json({ error: "Консултацията още не е платена." });
+      const whenText = String(b.whenText ?? row.data.whenText ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 200);
+      const link = String(b.link ?? row.data.link ?? "").trim().slice(0, 500);
+      if (link && !/^https:\/\/[^\s]+$/.test(link)) return res.status(400).json({ error: "Линкът трябва да започва с https://" });
+      const next = { ...row.data, status, whenText, link, updatedAt: Date.now() };
+      let emailed = false;
+      if (status === "scheduled" && b.sendEmail === true) {
+        if (!whenText || !link) return res.status(400).json({ error: "За имейл попълни дата/час и линк." });
+        const base = id.replace(/-V$/, "");
+        const inq = (await supabase.from("inquiries").select("data").eq("id", base).maybeSingle()).data?.data || {};
+        const to = row.data.customerEmail || inq.email || "";
+        if (!EMAIL_RE.test(to)) return res.status(400).json({ error: "Няма имейл на клиента." });
+        await sendEmail({
+          to, subject: `Видео консултация — ${whenText}`,
+          html: emailWrap("Видео консултацията ти е потвърдена", `
+            <p style="margin:0 0 10px;">Здравей${inq.name ? " " + esc(inq.name) : ""},</p>
+            <p style="margin:0 0 10px;">Потвърждавам видео консултацията по запитване <strong>${esc(base)}</strong>.</p>
+            <p style="margin:0 0 4px;"><strong>Дата и час:</strong> ${esc(whenText)}</p>
+            <p style="margin:0 0 4px;"><strong>Платформа:</strong> ${esc(row.data.platform || "")}</p>
+            <p style="margin:0 0 12px;"><strong>Връзка за срещата:</strong> <a href="${esc(link)}">${esc(link)}</a></p>
+            <p style="margin:0 0 6px;"><strong>Какво да подготвиш:</strong></p>
+            <ul style="margin:0 0 12px;padding-left:20px;">
+              <li>Маршрута, който си получил, отворен на екрана или разпечатан.</li>
+              <li>Лаптоп или телефон с камера и микрофон. Ако ще резервираме заедно, по-удобен е лаптопът.</li>
+              <li>Сайтовете на доставчиците, в които искаш да резервираш, и собствените ти данни и карта под ръка.</li>
+            </ul>
+            <p style="margin:0 0 10px;">Ако не знаеш как се прави резервацията, ще минем заедно през всяка стъпка: ти ще споделиш екрана си и ще въвеждаш данните сам/сама, а аз ще те насочвам. Не показвай на екрана документи за самоличност и платежни данни на други хора. Срещата не се записва.</p>
+            <p style="margin:0;">Ако часът не ти е удобен, отговори на този имейл и ще го преместим.</p>
+          `),
+        });
+        emailed = true;
+      }
+      const { error } = await supabase.from("payments").upsert({ id, data: next, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      return res.status(200).json({ ok: true, emailed });
     }
 
     return res.status(400).json({ error: "Непознато действие." });
@@ -295,6 +355,62 @@ async function legalHandler(req, res, b) {
       const { error } = await supabase.from("order_consents").upsert({ id, data: rec, updated_at: new Date().toISOString() });
       if (error) throw error;
       return res.status(200).json({ ok: true });
+    }
+
+    /* ── Видео консултация: заявка (цената 20 EUR се определя тук, не от браузъра) ── */
+    if (b.action === "videoRequest") {
+      const base = String(b.inquiryId || "").trim().toUpperCase();
+      if (!ID_RE.test(base) || base.endsWith("-V")) return res.status(400).json({ error: "Невалиден номер." });
+      if (b.acceptedTerms !== true || b.over18 !== true || b.startBeforeWithdrawal !== true || b.acknowledgeLoss !== true) {
+        return res.status(400).json({ error: "За да продължиш към плащането, отбележи всички полета." });
+      }
+      const clean = (x, n) => String(x ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+      const platform = ["Google Meet", "Zoom", "Microsoft Teams"].includes(b.platform) ? b.platform : "";
+      const slots = clean(b.slots, 400);
+      const notes = clean(b.notes, 600);
+      if (!platform) return res.status(400).json({ error: "Избери платформа за срещата." });
+      if (slots.length < 5) return res.status(400).json({ error: "Напиши поне един удобен ден и час." });
+
+      const { data: pay } = await supabase.from("payments").select("data").eq("id", base).maybeSingle();
+      if (!pay?.data?.paid) return res.status(409).json({ error: "Видео консултация може да се поръча след платена оферта." });
+      const vid = `${base}-V`;
+      const { data: ex } = await supabase.from("payments").select("data").eq("id", vid).maybeSingle();
+      if (ex?.data?.paid) return res.status(409).json({ error: "Вече имаш платена видео консултация към тази поръчка." });
+
+      let invoice = null;
+      if (b.invoice && typeof b.invoice === "object") {
+        const type = b.invoice.type === "company" ? "company" : "person";
+        invoice = {
+          type, name: clean(b.invoice.name, 120), eik: clean(b.invoice.eik, 13).replace(/\s+/g, ""),
+          vat: clean(b.invoice.vat, 20).replace(/\s+/g, "").toUpperCase(), mol: clean(b.invoice.mol, 80),
+          address: clean(b.invoice.address, 200), city: clean(b.invoice.city, 60), consentElectronic: true,
+        };
+        if (invoice.name.length < 3 || invoice.address.length < 5) return res.status(400).json({ error: "Попълни име и адрес за фактурата." });
+        if (type === "company" && !/^\d{9}(\d{4})?$/.test(invoice.eik)) return res.status(400).json({ error: "Невалиден ЕИК за фактурата." });
+        if (type === "person") { invoice.eik = ""; invoice.vat = ""; invoice.mol = ""; }
+      }
+
+      const nowIso = new Date().toISOString();
+      const { error: e1 } = await supabase.from("payments").upsert({
+        id: vid, updated_at: nowIso,
+        data: { kind: "video", amount: 20, currency: "EUR", status: "pending", paid: false, platform, slots, notes, createdAt: Date.now(), updatedAt: Date.now() },
+      });
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("order_consents").upsert({
+        id: vid, updated_at: nowIso,
+        data: { kind: "video", termsVersion: TERMS_VERSION, acceptedAt: nowIso, acceptedTerms: true, over18: true, startBeforeWithdrawal: true, acknowledgeLoss: true, amountShown: 20, ...(invoice ? { invoice } : {}) },
+      });
+      if (e2) throw e2;
+      return res.status(200).json({ ok: true, videoId: vid, amount: 20 });
+    }
+
+    if (b.action === "videoStatus") {
+      const base = String(b.inquiryId || "").trim().toUpperCase();
+      if (!ID_RE.test(base) || base.endsWith("-V")) return res.status(400).json({ error: "Невалиден номер." });
+      const { data } = await supabase.from("payments").select("data").eq("id", `${base}-V`).maybeSingle();
+      const d = data?.data;
+      if (!d || d.kind !== "video") return res.status(200).json({ ok: true, exists: false });
+      return res.status(200).json({ ok: true, exists: true, paid: d.paid === true, status: d.status || "pending", platform: d.platform || "", slots: d.slots || "", whenText: d.whenText || "" });
     }
 
     /* ── Съгласие за бюлетин (доказателство: дата и начин) ── */

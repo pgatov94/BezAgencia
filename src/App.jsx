@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { db } from "./db";
 import AdminAccounting from "./AdminAccounting";
+import AdminVideo from "./AdminVideo";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 import { SiFacebook, SiInstagram, SiTiktok, SiViber, SiWhatsapp, SiVisa, SiMastercard, SiApplepay, SiGooglepay, SiRevolut } from "react-icons/si";
 import {
   Plane, MapPin, ChevronLeft, ChevronRight, Check, RotateCcw, Mail, Copy, Info,
   Search, Send, Percent, Compass, X, CreditCard, Lock, Home as HomeIcon, Phone,
   Sparkles, Wallet, Users, BarChart3, Tag, Clock, LayoutDashboard, Trash2, Plus, Edit3, ClipboardCheck,
-  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown, MessageCircle, Gift,
+  MailCheck, ShieldCheck, TrendingUp, Euro, Star, Car, Eye, EyeOff, ChevronDown, MessageCircle, Gift, Video,
 } from "lucide-react";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');`;
@@ -1575,6 +1576,17 @@ export default function BezAgenciaLuxuryApp() {
   const [offStartNow, setOffStartNow] = useState(false);
   const [offLoss, setOffLoss] = useState(false);
   const [invForm, setInvForm] = useState(EMPTY_INVOICE);
+  const [vidStatus, setVidStatus] = useState(null); // {exists,paid,status,platform,slots,whenText} | null
+  const [vidPlatform, setVidPlatform] = useState("Google Meet");
+  const [vidSlots, setVidSlots] = useState("");
+  const [vidNotes, setVidNotes] = useState("");
+  const [vidTerms, setVidTerms] = useState(false);
+  const [vidAdult, setVidAdult] = useState(false);
+  const [vidStartNow, setVidStartNow] = useState(false);
+  const [vidLoss, setVidLoss] = useState(false);
+  const [vidInv, setVidInv] = useState(EMPTY_INVOICE);
+  const [vidBusy, setVidBusy] = useState(false);
+  const [vidError, setVidError] = useState("");
   const [offerConfirmStatus, setOfferConfirmStatus] = useState("idle"); // idle | checking | redirecting | error
   const [offerEditRequestStatus, setOfferEditRequestStatus] = useState("idle"); // idle | sending
   const [showDeclineForm, setShowDeclineForm] = useState(false);
@@ -2017,7 +2029,7 @@ export default function BezAgenciaLuxuryApp() {
   const handleDashLookup = async (idOverride) => {
     const id = (idOverride || dashLookupId).trim().toUpperCase();
     if (!id) return;
-    setDashStatus("loading"); setDashInquiry(null); setDashPayment(null); setDashOffer(null);
+    setDashStatus("loading"); setDashInquiry(null); setDashPayment(null); setDashOffer(null); setVidStatus(null);
     try {
       let inq = null, pay = null, off = null;
       try { const r = await db.get(`inquiry:${id}`, true); inq = r?.value ? JSON.parse(r.value) : null; } catch {}
@@ -2025,7 +2037,44 @@ export default function BezAgenciaLuxuryApp() {
       try { const r = await db.get(`offer:${id}`, true); off = r?.value ? JSON.parse(r.value) : null; } catch {}
       if (!inq && !pay) { setDashStatus("notfound"); return; }
       setDashInquiry(inq); setDashPayment(pay); setDashOffer(off); setDashStatus("found");
+      if (pay?.paid) {
+        try {
+          const vr = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "videoStatus", inquiryId: id }) });
+          const vd = await vr.json().catch(() => null);
+          if (vr.ok && vd?.exists) setVidStatus(vd);
+        } catch { /* блокът за консултация просто не показва статус */ }
+      }
     } catch { setDashStatus("notfound"); }
+  };
+
+  const handleVideoCheckout = async () => {
+    const id = dashLookupId.trim().toUpperCase();
+    if (!id || !dashPayment?.paid) return;
+    if (!vidTerms || !vidAdult || !vidStartNow || !vidLoss) { setVidError("За да продължиш към плащането, отбележи всички полета."); return; }
+    if (vidSlots.trim().length < 5) { setVidError("Напиши поне един удобен за теб ден и час."); return; }
+    const invErr = invoiceError(vidInv);
+    if (invErr) { setVidError(invErr); return; }
+    setVidBusy(true); setVidError("");
+    try {
+      const r = await fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "videoRequest", inquiryId: id, platform: vidPlatform, slots: vidSlots, notes: vidNotes,
+          acceptedTerms: vidTerms, over18: vidAdult, startBeforeWithdrawal: vidStartNow, acknowledgeLoss: vidLoss, invoice: invoicePayload(vidInv),
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d?.videoId) { setVidError(d?.error || "Не успяхме да запишем заявката. Опитай пак."); setVidBusy(false); return; }
+      const cr = await fetch("/api/create-checkout-session", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: d.amount, inquiryId: d.videoId, email: dashInquiry?.email }),
+      });
+      const cd = await cr.json().catch(() => ({}));
+      if (!cr.ok || !cd?.url) { setVidError(cd?.error || "Плащането с карта не е налично в момента."); setVidBusy(false); return; }
+      window.location.href = cd.url;
+    } catch {
+      setVidError("Възникна грешка. Опитай пак."); setVidBusy(false);
+    }
   };
 
   /* ── Плащане с карта: реална Stripe Checkout сесия ──────────────────── */
@@ -4287,6 +4336,68 @@ export default function BezAgenciaLuxuryApp() {
               {dashPayment?.paid && dashOffer && (dashOffer.flightLinks?.length || dashOffer.hotelLinks?.length || dashOffer.experienceLinks?.length || dashOffer.cityPdfLink || dashOffer.fullNotes) && (
                 <OfferDetailsDisplay offer={dashOffer} openLightbox={openLightbox} />
               )}
+
+              {dashPayment?.paid && (
+                <div style={{ marginTop: 22, background: PALETTE.panel, border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 19, color: PALETTE.ink, marginBottom: 4 }}>Видео консултация · 20 €</div>
+                  <p style={{ fontSize: 14.5, color: PALETTE.inkMuted, margin: "0 0 12px", lineHeight: 1.6 }}>
+                    30 минути на живо с консултант по твоя маршрут. Не е нужно да си сам/сама с резервациите.
+                  </p>
+                  <ul style={{ margin: "0 0 14px", paddingLeft: 20, fontSize: 14.5, color: PALETTE.inkMuted, lineHeight: 1.65 }}>
+                    <li>Разглеждаме заедно маршрута и отговарям на въпросите ти.</li>
+                    <li>Показвам ти как да намериш, сравниш и провериш полети, настаняване и екскурзии (крайна цена, багаж, условия за анулиране).</li>
+                    <li><strong style={{ color: PALETTE.ink }}>Ако не знаеш как се прави резервацията, ще я направим заедно:</strong> споделяш екрана си и въвеждаш данните сам/сама, а аз те водя стъпка по стъпка.</li>
+                    <li>Срещата не се записва.</li>
+                  </ul>
+
+                  {vidStatus?.paid ? (
+                    <div style={{ background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", fontSize: 15, color: PALETTE.ink, lineHeight: 1.6 }}>
+                      {vidStatus.status === "scheduled" ? (
+                        <><strong style={{ color: PALETTE.jungle }}>Консултацията е насрочена:</strong> {vidStatus.whenText}. Връзката за срещата е изпратена на имейла ти ({vidStatus.platform}).</>
+                      ) : vidStatus.status === "done" ? (
+                        <strong style={{ color: PALETTE.jungle }}>Консултацията е проведена. Благодарим ти!</strong>
+                      ) : vidStatus.status === "cancelled" ? (
+                        <>Консултацията е отказана. При въпроси пиши на <a href={`mailto:${INQUIRY_EMAIL}`} style={{ color: PALETTE.oceanBright, fontWeight: 600 }}>{INQUIRY_EMAIL}</a>.</>
+                      ) : (
+                        <><strong style={{ color: PALETTE.jungle }}>Плащането е получено.</strong> Обикновено в рамките на един работен ден ще получиш имейл с ден, час и връзка за срещата. Предпочитана платформа: {vidStatus.platform}. Удобни часове: {vidStatus.slots}.</>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+                        <select value={vidPlatform} onChange={(e) => setVidPlatform(e.target.value)} style={selectStyle}>
+                          <option>Google Meet</option><option>Zoom</option><option>Microsoft Teams</option>
+                        </select>
+                        <textarea value={vidSlots} onChange={(e) => setVidSlots(e.target.value)} placeholder="Удобни дни и часове (напр. сряда 18:00–20:00, четвъртък след 19:00)" rows={2} maxLength={400} style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }} />
+                        <input value={vidNotes} onChange={(e) => setVidNotes(e.target.value)} placeholder="По желание: с какво искаш да помогнем най-много" maxLength={600} style={inputStyle} />
+                      </div>
+                      <div style={{ background: "rgba(15,23,42,0.03)", border: `1px solid ${PALETTE.panelBorder}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: PALETTE.ink }}>Преди да платиш</div>
+                        <p style={{ fontSize: 14, color: PALETTE.inkMuted, lineHeight: 1.6, margin: "0 0 10px" }}>
+                          <strong>Услуга:</strong> видео консултация до 30 минути. <strong>Цена:</strong> 20 € — „БезАгенция“ ЕООД не е регистрирана по ЗДДС и не начислява ДДС. Сумата се плаща сега, а ден и час потвърждаваме по имейл. Като потребител имаш право да се откажеш от договора в срок от 14 дни (<LegalLink href={LEGAL_LINKS.terms}>Раздел X от Общите условия</LegalLink>).
+                        </p>
+                        <ConsentCheck checked={vidTerms} onChange={setVidTerms}>
+                          Прочетох и приемам <LegalLink href={LEGAL_LINKS.terms}>Общите условия</LegalLink> и съм запознат/а с <LegalLink href={LEGAL_LINKS.privacy}>Политиката за поверителност</LegalLink>.
+                        </ConsentCheck>
+                        <ConsentCheck checked={vidAdult} onChange={setVidAdult}>
+                          Потвърждавам, че съм навършил/а 18 години (или че имам право да представлявам юридическото лице или ЕТ, което поръчва).
+                        </ConsentCheck>
+                        <ConsentCheck checked={vidStartNow} onChange={setVidStartNow}>
+                          Желая изпълнението на услугата да започне веднага, преди изтичането на 14-дневния срок за отказ.
+                        </ConsentCheck>
+                        <ConsentCheck checked={vidLoss} onChange={setVidLoss}>
+                          Знам, че ще загубя правото си на отказ, след като услугата бъде изпълнена изцяло.
+                        </ConsentCheck>
+                        <InvoiceRequest value={vidInv} onChange={setVidInv} />
+                      </div>
+                      <button onClick={handleVideoCheckout} disabled={vidBusy || !vidTerms || !vidAdult || !vidStartNow || !vidLoss} className="lux-btn" style={{ width: "100%", background: PALETTE.gold, color: PALETTE.bgDeep, border: "none", borderRadius: 12, padding: "14px 20px", fontFamily: "Manrope, system-ui, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                        <CreditCard size={19} /> {vidBusy ? "Зареждане…" : "Поръчай и плати 20 EUR"}
+                      </button>
+                      {vidError && <p style={{ fontSize: 15.5, color: PALETTE.coralDark, marginTop: 10, lineHeight: 1.5 }}>{vidError}</p>}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -4726,6 +4837,7 @@ export default function BezAgenciaLuxuryApp() {
                   <AdminTabBtn active={adminTab === "contacts"} onClick={() => setAdminTab("contacts")} icon={<Users size={16} />} label="Контакти" />
                   <AdminTabBtn active={adminTab === "subscribers"} onClick={() => setAdminTab("subscribers")} icon={<Mail size={16} />} label="Абонати" />
                   <AdminTabBtn active={adminTab === "analytics"} onClick={() => setAdminTab("analytics")} icon={<BarChart3 size={16} />} label="Анализи" />
+                  <AdminTabBtn active={adminTab === "video"} onClick={() => setAdminTab("video")} icon={<Video size={16} />} label="Консултации" />
                   <AdminTabBtn active={adminTab === "accounting"} onClick={() => setAdminTab("accounting")} icon={<ClipboardCheck size={16} />} label="Счетоводство" />
                   {CHAT_ENABLED && <AdminTabBtn active={adminTab === "chat"} onClick={() => setAdminTab("chat")} icon={<MessageCircle size={16} />} label={chatUnread > 0 ? `Чат (${chatUnread})` : "Чат"} />}
                 </div>
@@ -5332,6 +5444,7 @@ export default function BezAgenciaLuxuryApp() {
                 </div>
               )}
 
+              {adminTab === "video" && <AdminVideo adminActionFetch={adminActionFetch} P={PALETTE} />}
               {adminTab === "accounting" && (
                 <AdminAccounting adminActionFetch={adminActionFetch} P={PALETTE} company={COMPANY_INFO} />
               )}
