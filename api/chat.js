@@ -294,7 +294,7 @@ export default async function handler(req, res) {
 
 /* ───────── Правни действия ───────── */
 const ID_RE = /^[A-Z0-9-]{6,40}$/;
-const TERMS_VERSION = "1.0";
+const TERMS_VERSION = "1.1";
 
 const hits = new Map(); // грубо ограничение по IP
 function limited(req, max, windowMs) {
